@@ -1,0 +1,61 @@
+[project]
+name = "fastapi-api-key"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Athroniaeth", email = "pierre.chaumont@hotmail.fr" }
+]
+requires-python = ">=3.13"
+
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+lint = "fastapi_api_key:lint"
+test = "fastapi_api_key:test"
+
+[dependency-groups]
+dev = [
+    "ty>=0.0.1a21",
+    "ruff>=0.13.2",
+    "bandit>=1.8.6",
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "commitizen>=4.9.1",
+    "pre-commit>=4.3.0",
+]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "$version"
+version_scheme = "pep440"
+version_provider = "uv"
+update_changelog_on_bump = true
+major_version_zero = true
+
+[tool.pytest.ini_options]
+# Automatically create html and xml coverage reports
+addopts = [
+    "--cov=src",
+    "--cov-report=xml",
+    "--doctest-modules",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+]
+
+doctest_optionflags = [
+    # Allow "..." in expected outputs
+    "ELLIPSIS",
+    # Ignore the multiple spaces
+    "NORMALIZE_WHITESPACE",
+    # Allow to test the type of exception
+    "IGNORE_EXCEPTION_DETAIL",
+]
+testpaths = ["src", "tests"]
+
+
+[tool.coverage.run]
+omit = ["src/fastapi_api_key/__init__.py"]

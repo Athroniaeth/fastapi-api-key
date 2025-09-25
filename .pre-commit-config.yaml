@@ -1,0 +1,30 @@
+repos:
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v4.8.3
+    hooks:
+      # Check the commit message when committing
+      - id: commitizen
+        stages: [commit-msg]
+
+      # Check all commits before pushing (optional but recommended)
+      - id: commitizen-branch
+        stages: [pre-push]
+
+  # Local hooks for linting and testing
+  - repo: local
+    hooks:
+      # Lint
+      - id: uv-lint
+        name: "Run linters and formatters"
+        entry: uv run lint
+        language: system           # we leave the binary as is
+        pass_filenames: false      # « uv run lint » don't need filenames
+        stages: [pre-commit]
+
+      # Tests
+      - id: uv-test
+        name: "Run tests"
+        entry: uv run test
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
