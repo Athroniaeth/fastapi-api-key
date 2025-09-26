@@ -1,0 +1,126 @@
+from datetime import timedelta
+from typing import AsyncIterator
+
+import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key.repositories.base import ApiKeyRepository
+from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
+from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
+from fastapi_api_key.utils import datetime_factory, prefix_factory, hash_factory
+
+
+def make_api_key() -> ApiKey:
+    """Create a fresh ApiKey domain entity with unique prefix/hash."""
+    return ApiKey(
+        name="test-key",
+        description="A test API key",
+        is_active=True,
+        expires_at=datetime_factory() + timedelta(days=30),
+        created_at=datetime_factory(),
+        key_prefix=prefix_factory(),
+        key_hash=hash_factory(),
+    )
+
+
+@pytest.fixture(params=["memory", "sqlalchemy"], scope="function")
+@pytest.mark.asyncio
+def repository(request, async_session: AsyncSession) -> AsyncIterator[ApiKeyRepository]:
+    """Fixture to provide different ApiKeyRepository implementations."""
+    if request.param == "memory":
+        yield InMemoryApiKeyRepository()
+    elif request.param == "sqlalchemy":
+        yield SqlAlchemyApiKeyRepository(async_session=async_session)
+    else:
+        raise ValueError(f"Unknown repository type: {request.param}")
+
+
+@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
+@pytest.mark.asyncio
+async def test_api_key_create(repository: ApiKeyRepository) -> None:
+    """Test creating an API key."""
+    api_key = make_api_key()
+    created = await repository.create(entity=api_key)
+
+    assert created.id_ is not None
+    assert created.name == api_key.name
+    assert created.description == api_key.description
+    assert created.is_active == api_key.is_active
+    assert created.expires_at == api_key.expires_at
+    assert created.key_prefix == api_key.key_prefix
+    assert created.key_hash == api_key.key_hash
+
+
+@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
+@pytest.mark.asyncio
+async def test_api_key_get_by_id(repository: ApiKeyRepository) -> None:
+    """Test retrieving an API key by ID."""
+    api_key = make_api_key()
+    created = await repository.create(entity=api_key)
+
+    retrieved = await repository.get_by_id(id_=created.id_)
+    assert retrieved is not None
+    assert retrieved.id_ == created.id_
+    assert retrieved.name == created.name
+    assert retrieved.description == created.description
+    assert retrieved.is_active == created.is_active
+    assert retrieved.expires_at == created.expires_at
+    assert retrieved.key_prefix == created.key_prefix
+    assert retrieved.key_hash == created.key_hash
+
+
+@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
+@pytest.mark.asyncio
+async def test_api_key_update(repository: ApiKeyRepository) -> None:
+    """Test updating an existing API key."""
+    api_key = make_api_key()
+    created = await repository.create(entity=api_key)
+    created.name = "updated-name"
+    created.is_active = False
+    updated = await repository.update(entity=created)
+    assert updated.id_ == created.id_
+    assert updated.name == "updated-name"
+    assert updated.is_active is False
+    assert updated.description == created.description
+    assert updated.expires_at == created.expires_at
+    assert updated.key_prefix == created.key_prefix
+    assert updated.key_hash == created.key_hash
+
+
+@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
+@pytest.mark.asyncio
+async def test_api_key_delete(repository: ApiKeyRepository) -> None:
+    """Test deleting an API key."""
+    api_key = make_api_key()
+    created = await repository.create(entity=api_key)
+    await repository.delete(id_=created.id_)
+    deleted = await repository.get_by_id(id_=created.id_)
+    assert deleted is None
+
+
+@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
+@pytest.mark.asyncio
+async def test_api_key_list(repository: ApiKeyRepository) -> None:
+    """Test listing API keys with pagination."""
+    # Create multiple API keys
+    keys = [make_api_key() for _ in range(5)]
+
+    for key in keys:
+        await repository.create(entity=key)
+
+    listed = await repository.list(limit=3, offset=1)
+    assert len(listed) == 3
+
+    # Ensure the listed keys are part of the created keys
+    created_ids = {key.id_ for key in keys}
+
+    for key in listed:
+        assert key.id_ in created_ids
+
+    listed = await repository.list(limit=3, offset=1)
+    assert all(isinstance(key, ApiKey) for key in listed)
+    assert (
+        listed[0].created_at >= listed[1].created_at
+    )  # Ensure ordering by created_at desc
+    assert listed[1].created_at >= listed[2].created_at

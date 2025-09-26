@@ -29,6 +29,8 @@ dev = [
     "pytest-cov>=7.0.0",
     "commitizen>=4.9.1",
     "pre-commit>=4.3.0",
+    "pytest-asyncio>=1.2.0",
+    "aiosqlite>=0.21.0",
 ]
 
 [tool.commitizen]

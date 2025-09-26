@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
+from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import ApiKeyRepository, D
 
 
@@ -69,6 +70,8 @@ class ApiKeyModel(Base):
 
 
 M = TypeVar("M", bound=ApiKeyModel)  # SQLAlchemy row type
+ToModel = Callable[[D, Type[M]], M]
+ToDomain = Callable[[Optional[M], Type[D]], Optional[D]]
 
 
 def to_model(entity: D, model_cls: Type[M]) -> M:
@@ -104,45 +107,45 @@ def to_domain(model: Optional[M], model_cls: Type[D]) -> Optional[D]:
     )
 
 
-class SqlAlchemyRepository(Generic[D, M], ApiKeyRepository[D]):
+class SqlAlchemyApiKeyRepository(Generic[D, M], ApiKeyRepository[D]):
     def __init__(
         self,
-        session: AsyncSession,
-        model_cls: Type[M],
-        domain_cls: Type[D],
-        to_model_fn: Callable[[D, Type[M]], M],
-        to_domain_fn: Callable[[Optional[M], Type[D]], Optional[D]],
+        async_session: AsyncSession,
+        model_cls: Optional[Type[M]] = None,
+        domain_cls: Optional[Type[D]] = None,
+        to_model_fn: Optional[ToModel] = None,
+        to_domain_fn: Optional[ToDomain] = None,
     ) -> None:
-        self._session = session
-        self.model_cls = model_cls
-        self.domain_cls = domain_cls
+        self._async_session = async_session
+        self.model_cls = model_cls or ApiKeyModel
+        self.domain_cls = domain_cls or ApiKey
 
-        self.to_model = to_model_fn
-        self.to_domain = to_domain_fn
+        self.to_model = to_model_fn or to_model
+        self.to_domain = to_domain_fn or to_domain
 
     async def get_by_id(self, id_: str) -> Optional[D]:
         stmt = select(self.model_cls).where(self.model_cls.id_ == id_)
-        result = await self._session.execute(stmt)
+        result = await self._async_session.execute(stmt)
         model = result.scalar_one_or_none()
         return self.to_domain(model, self.domain_cls)
 
     async def get_by_prefix(self, prefix: str) -> Optional[D]:
         stmt = select(self.model_cls).where(self.model_cls.key_prefix == prefix)
-        result = await self._session.execute(stmt)
+        result = await self._async_session.execute(stmt)
         model = result.scalar_one_or_none()
         return self.to_domain(model, self.domain_cls)
 
     async def create(self, entity: D) -> Optional[D]:
         model = self.to_model(entity, self.model_cls)
-        self._session.add(model)
-        await self._session.flush()
+        self._async_session.add(model)
+        await self._async_session.flush()
         return self.to_domain(model, self.domain_cls)
 
     async def update(self, entity: D) -> Optional[D]:
         if not entity.id_:
             return None
         stmt = select(self.model_cls).where(self.model_cls.id_ == entity.id_)
-        result = await self._session.execute(stmt)
+        result = await self._async_session.execute(stmt)
         model = result.scalar_one_or_none()
         if model is None:
             return None
@@ -156,25 +159,25 @@ class SqlAlchemyRepository(Generic[D, M], ApiKeyRepository[D]):
         model.key_prefix = entity.key_prefix
         model.key_hash = entity.key_hash
 
-        self._session.add(model)
-        await self._session.flush()
+        self._async_session.add(model)
+        await self._async_session.flush()
         return self.to_domain(model, self.domain_cls)
 
     async def delete(self, id_: str) -> Optional[D]:
         stmt = select(self.model_cls).where(self.model_cls.id_ == id_)
-        result = await self._session.execute(stmt)
+        result = await self._async_session.execute(stmt)
         model = result.scalar_one_or_none()
 
         if model is None:
             return None
 
-        await self._session.delete(model)
-        await self._session.flush()
+        await self._async_session.delete(model)
+        await self._async_session.flush()
         return self.to_domain(model, self.domain_cls)
 
     async def list(self, limit: int = 100, offset: int = 0) -> List[D]:
         stmt = select(self.model_cls).order_by(self.model_cls.created_at.desc())
         stmt = stmt.limit(limit).offset(offset)
-        result = await self._session.execute(stmt)
+        result = await self._async_session.execute(stmt)
         models = result.scalars().all()
         return [self.to_domain(m, self.domain_cls) for m in models]
