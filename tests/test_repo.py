@@ -4,11 +4,11 @@ from typing import Iterator
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.repositories.base import ApiKeyRepository, D
+from fastapi_api_key.domain.entities import ApiKey, D
+from fastapi_api_key.repositories.base import ApiKeyRepository
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
-from fastapi_api_key.utils import datetime_factory, prefix_factory, hash_factory
+from fastapi_api_key.utils import datetime_factory, prefix_factory, plain_key_factory
 
 
 def make_api_key() -> ApiKey:
@@ -20,7 +20,7 @@ def make_api_key() -> ApiKey:
         expires_at=datetime_factory() + timedelta(days=30),
         created_at=datetime_factory(),
         key_prefix=prefix_factory(),
-        key_hash=hash_factory(),
+        key_hash=plain_key_factory(),
     )
 
 
@@ -117,7 +117,7 @@ async def test_api_key_delete(repository: ApiKeyRepository) -> None:
     created = await repository.create(entity=api_key)
     assert created.id_ is not None
 
-    result = await repository.delete(id_=created.id_)
+    result = await repository.delete_by_id(id_=created.id_)
     assert result is True
 
     deleted = await repository.get_by_id(id_=created.id_)
@@ -181,7 +181,7 @@ async def test_api_key_update_not_found(repository: ApiKeyRepository) -> None:
 @pytest.mark.asyncio
 async def test_api_key_delete_not_found(repository: ApiKeyRepository) -> None:
     """Test deleting a non-existent API key."""
-    deleted = await repository.delete(id_="non-existent-id")
+    deleted = await repository.delete_by_id(id_="non-existent-id")
     assert deleted is False
 
 

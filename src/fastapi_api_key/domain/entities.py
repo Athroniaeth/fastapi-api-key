@@ -1,9 +1,10 @@
 import warnings
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Optional, runtime_checkable, Protocol
+from typing import Optional, runtime_checkable, Protocol, TypeVar
 
 from argon2 import PasswordHasher, exceptions
+
 from fastapi_api_key.domain.errors import ApiKeyDisabledError, ApiKeyExpiredError
 from fastapi_api_key.utils import uuid_factory, datetime_factory
 
@@ -22,6 +23,30 @@ class ApiKeyEntity(Protocol):
     key_prefix: str
     key_hash: str
 
+    def disable(self) -> None:
+        """Disable the API key so it cannot be used for authentication."""
+        ...
+
+    def enable(self) -> None:
+        """Enable the API key so it can be used for authentication."""
+        ...
+
+    def touch(self) -> None:
+        """Mark the key as used now. Trigger for each ensured authentication."""
+        ...
+
+    def ensure_can_authenticate(self) -> None:
+        """Raise domain errors if this key cannot be used for authentication.
+
+        Raises:
+            ApiKeyDisabledError: If the key is disabled.
+            ApiKeyExpiredError: If the key is expired.
+        """
+        ...
+
+
+D = TypeVar("D", bound=ApiKeyEntity)
+
 
 @dataclass
 class ApiKey(ApiKeyEntity):
@@ -38,19 +63,15 @@ class ApiKey(ApiKeyEntity):
     key_hash: str = field(default="")
 
     def disable(self) -> None:
-        """Disable the API key."""
         self.is_active = False
 
     def enable(self) -> None:
-        """Enable the API key."""
         self.is_active = True
 
     def touch(self) -> None:
-        """Mark the key as used now."""
         self.last_used_at = datetime.now(timezone.utc)
 
     def ensure_can_authenticate(self) -> None:
-        """Raise domain errors if this key cannot be used for authentication."""
         if not self.is_active:
             raise ApiKeyDisabledError("API key is disabled.")
 

@@ -7,8 +7,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.repositories.base import ApiKeyRepository, D
+from fastapi_api_key.domain.entities import ApiKey, D
+from fastapi_api_key.repositories.base import ApiKeyRepository
 
 
 class Base(DeclarativeBase): ...
@@ -161,7 +161,7 @@ class SqlAlchemyApiKeyRepository(ApiKeyRepository[D], Generic[D, M]):
         await self._async_session.flush()
         return self.to_domain(model, self.domain_cls)
 
-    async def delete(self, id_: str) -> bool:
+    async def delete_by_id(self, id_: str) -> bool:
         stmt = select(self.model_cls).where(self.model_cls.id_ == id_)
         result = await self._async_session.execute(stmt)
         model = result.scalar_one_or_none()

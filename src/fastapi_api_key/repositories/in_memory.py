@@ -1,6 +1,7 @@
 from typing import Optional, List
 
-from fastapi_api_key.repositories.base import ApiKeyRepository, D
+from fastapi_api_key.repositories.base import ApiKeyRepository
+from fastapi_api_key.domain.entities import D
 
 
 class InMemoryApiKeyRepository(ApiKeyRepository[D]):
@@ -37,7 +38,7 @@ class InMemoryApiKeyRepository(ApiKeyRepository[D]):
         self._store[entity.id_] = entity
         return entity
 
-    async def delete(self, id_: str) -> bool:
+    async def delete_by_id(self, id_: str) -> bool:
         """Return True if deleted, None if not found (aligns with abstract docstring)."""
         if id_ not in self._store:
             return False

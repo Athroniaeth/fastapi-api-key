@@ -13,9 +13,11 @@ def prefix_factory() -> str:
     return uuid_factory()
 
 
-def hash_factory() -> str:
-    """Helper function to create a 64-character hash."""
-    return secrets.token_hex(32)  # 32 bytes = 64 hex characters
+def plain_key_factory(length: int = 32) -> str:
+    """Helper function to create a secure random plain key."""
+    if length < 16:
+        raise ValueError("Length must be at least 16 bytes for sufficient security.")
+    return secrets.token_urlsafe(32)  # 32 bytes = 64 hex characters
 
 
 def datetime_factory() -> datetime:

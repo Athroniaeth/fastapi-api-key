@@ -174,7 +174,7 @@ def test_api_key_hasher_contract(hasher: ApiKeyHasher):
     assert hasher.verify(stored_hash, raw_key)
     assert not hasher.verify(stored_hash, "wrong-key")
 
-    # Hashing must implementing salting (different hash for same input)
+    # Hashing must implement salting (different hash for same input)
     stored_hash_2 = hasher.hash(raw_key)
     assert stored_hash != stored_hash_2
 

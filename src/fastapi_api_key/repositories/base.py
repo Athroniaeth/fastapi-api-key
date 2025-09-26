@@ -1,10 +1,7 @@
 from abc import ABC, abstractmethod
-from typing import TypeVar, Generic, Optional, List
+from typing import Generic, Optional, List
 
-from fastapi_api_key.domain.entities import ApiKeyEntity
-
-# Row / Domain type
-D = TypeVar("D", bound=ApiKeyEntity)
+from fastapi_api_key.domain.entities import D
 
 
 class ApiKeyRepository(ABC, Generic[D]):
@@ -46,7 +43,7 @@ class ApiKeyRepository(ABC, Generic[D]):
         ...
 
     @abstractmethod
-    async def delete(self, id_: str) -> bool:
+    async def delete_by_id(self, id_: str) -> bool:
         """Delete the model by ID and return True if deleted, False if not found."""
         ...
 
