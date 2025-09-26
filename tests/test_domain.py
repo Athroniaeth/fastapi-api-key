@@ -1,11 +1,15 @@
+import hashlib
+import os
 from datetime import datetime, timedelta, timezone
 from types import NoneType
 from typing import Type
 
 import pytest
+from argon2.exceptions import VerifyMismatchError
 
-from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key.domain.entities import ApiKey, ApiKeyHasher, Argon2ApiKeyHasher
 from fastapi_api_key.domain.errors import ApiKeyDisabledError, ApiKeyExpiredError
+from argon2 import PasswordHasher
 
 
 @pytest.mark.parametrize(
@@ -107,3 +111,76 @@ def test_ensure_can_authenticate(
             api_key.ensure_can_authenticate()
     else:
         api_key.ensure_can_authenticate()
+
+
+class MockPasswordHasher(PasswordHasher):
+    """Mock implementation of Argon2 PasswordHasher with fake salting.
+
+    This mock is designed for unit testing. It simulates hashing with a random
+    salt and verification against the stored hash. The raw password is never
+    stored in plain form inside the hash.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def hash(self, password: str | bytes, *, salt: bytes | None = None) -> str:
+        _salt = os.urandom(8).hex()
+        if isinstance(password, bytes):
+            password_bytes = password
+        else:
+            password_bytes = password.encode()
+        digest = hashlib.sha256(password_bytes + _salt.encode()).hexdigest()
+        return f"hashed-{digest}:{_salt}"
+
+    def verify(self, hash: str, password: str | bytes) -> bool:
+        try:
+            digest, salt = hash.replace("hashed-", "").split(":")
+        except ValueError:
+            raise VerifyMismatchError("Malformed hash format")
+
+        if isinstance(password, bytes):
+            password_bytes = password
+        else:
+            password_bytes = password.encode()
+
+        expected = hashlib.sha256(password_bytes + salt.encode()).hexdigest()
+        if digest == expected:
+            return True
+        raise VerifyMismatchError("Mock mismatch")
+
+
+@pytest.mark.parametrize(
+    "hasher",
+    [
+        Argon2ApiKeyHasher(
+            pepper="unit-test-pepper",
+            password_hasher=MockPasswordHasher(),
+        ),
+    ],
+)
+def test_api_key_hasher_contract(hasher: ApiKeyHasher):
+    raw_key = "test-api-key-123"
+    stored_hash = hasher.hash(raw_key)
+
+    # Raw key don't must be in the hash
+    assert raw_key not in stored_hash
+
+    # Stored hash must be a non-empty string
+    assert isinstance(stored_hash, str)
+    assert len(stored_hash) > 0
+
+    # Stored hash must be verifiable
+    assert hasher.verify(stored_hash, raw_key)
+    assert not hasher.verify(stored_hash, "wrong-key")
+
+    # Hashing must implementing salting (different hash for same input)
+    stored_hash_2 = hasher.hash(raw_key)
+    assert stored_hash != stored_hash_2
+
+    # Verification must fail if pepper is different
+    no_pepper = Argon2ApiKeyHasher(
+        pepper="different-unit-test-pepper",
+        password_hasher=MockPasswordHasher(),
+    )
+    assert not no_pepper.verify(stored_hash, raw_key)
