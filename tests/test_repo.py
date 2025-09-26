@@ -25,7 +25,6 @@ def make_api_key() -> ApiKey:
 
 
 @pytest.fixture(params=["memory", "sqlalchemy"], scope="function")
-@pytest.mark.asyncio
 def repository(request, async_session: AsyncSession) -> Iterator[ApiKeyRepository[D]]:
     """Fixture to provide different ApiKeyRepository implementations."""
     if request.param == "memory":
