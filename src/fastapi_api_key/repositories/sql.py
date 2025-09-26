@@ -107,7 +107,7 @@ def to_domain(model: Optional[M], model_cls: Type[D]) -> Optional[D]:
     )
 
 
-class SqlAlchemyApiKeyRepository(Generic[D, M], ApiKeyRepository[D]):
+class SqlAlchemyApiKeyRepository(ApiKeyRepository[D], Generic[D, M]):
     def __init__(
         self,
         async_session: AsyncSession,
@@ -135,15 +135,13 @@ class SqlAlchemyApiKeyRepository(Generic[D, M], ApiKeyRepository[D]):
         model = result.scalar_one_or_none()
         return self.to_domain(model, self.domain_cls)
 
-    async def create(self, entity: D) -> Optional[D]:
+    async def create(self, entity: D) -> D:
         model = self.to_model(entity, self.model_cls)
         self._async_session.add(model)
         await self._async_session.flush()
         return self.to_domain(model, self.domain_cls)
 
     async def update(self, entity: D) -> Optional[D]:
-        if not entity.id_:
-            return None
         stmt = select(self.model_cls).where(self.model_cls.id_ == entity.id_)
         result = await self._async_session.execute(stmt)
         model = result.scalar_one_or_none()
@@ -163,17 +161,17 @@ class SqlAlchemyApiKeyRepository(Generic[D, M], ApiKeyRepository[D]):
         await self._async_session.flush()
         return self.to_domain(model, self.domain_cls)
 
-    async def delete(self, id_: str) -> Optional[D]:
+    async def delete(self, id_: str) -> bool:
         stmt = select(self.model_cls).where(self.model_cls.id_ == id_)
         result = await self._async_session.execute(stmt)
         model = result.scalar_one_or_none()
 
         if model is None:
-            return None
+            return False
 
         await self._async_session.delete(model)
         await self._async_session.flush()
-        return self.to_domain(model, self.domain_cls)
+        return True
 
     async def list(self, limit: int = 100, offset: int = 0) -> List[D]:
         stmt = select(self.model_cls).order_by(self.model_cls.created_at.desc())

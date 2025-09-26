@@ -26,10 +26,7 @@ class InMemoryApiKeyRepository(ApiKeyRepository[D]):
 
         return None
 
-    async def create(self, entity: D) -> Optional[D]:
-        if entity.id_ in self._store:
-            return None
-
+    async def create(self, entity: D) -> D:
         self._store[entity.id_] = entity
         return entity
 
@@ -40,16 +37,20 @@ class InMemoryApiKeyRepository(ApiKeyRepository[D]):
         self._store[entity.id_] = entity
         return entity
 
-    async def delete(self, id_: str) -> Optional[bool]:
+    async def delete(self, id_: str) -> bool:
         """Return True if deleted, None if not found (aligns with abstract docstring)."""
         if id_ not in self._store:
-            return None
+            return False
 
         del self._store[id_]
         return True
 
     async def list(self, limit: int = 100, offset: int = 0) -> List[D]:
         items = list(
-            sorted(self._store.values(), key=lambda x: x.created_at, reverse=True)
+            sorted(
+                self._store.values(),
+                key=lambda x: x.created_at,
+                reverse=True,
+            )
         )
         return items[offset : offset + limit]

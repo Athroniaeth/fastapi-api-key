@@ -31,8 +31,8 @@ class ApiKeyRepository(ABC, Generic[D]):
         ...
 
     @abstractmethod
-    async def create(self, entity: D) -> Optional[D]:
-        """Create a new entity and return the created version, or None if it failed."""
+    async def create(self, entity: D) -> D:
+        """Create a new entity and return the created version."""
         ...
 
     @abstractmethod
@@ -46,7 +46,7 @@ class ApiKeyRepository(ABC, Generic[D]):
         ...
 
     @abstractmethod
-    async def delete(self, id_: str) -> Optional[bool]:
+    async def delete(self, id_: str) -> bool:
         """Delete the model by ID and return True if deleted, False if not found."""
         ...
 
