@@ -12,7 +12,7 @@ from fastapi_api_key.domain.entities import ApiKey, ApiKeyHasher
 from fastapi_api_key.repositories.base import ApiKeyRepository
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
-from fastapi_api_key.utils import datetime_factory, prefix_factory, plain_key_factory
+from fastapi_api_key.utils import datetime_factory, prefix_factory, key_secret_factory
 
 # Adaptez l'import ci-dessous à l'emplacement réel de votre service.
 from fastapi_api_key.services.base import (
@@ -85,7 +85,7 @@ async def test_create_returns_entity_and_full_key(
 ) -> None:
     """create(): should persist entity and return full plain key with expected format."""
     prefix = prefix_factory()
-    secret = plain_key_factory()
+    secret = key_secret_factory()
     expires_at = datetime_factory() + timedelta(days=7)
 
     created_entity, full_key = await service.create(
@@ -94,7 +94,7 @@ async def test_create_returns_entity_and_full_key(
         is_active=True,
         expires_at=expires_at,
         key_id=prefix,
-        plain_key=secret,
+        key_secret=secret,
     )
 
     assert full_key == _full_key(prefix, secret)
@@ -157,9 +157,9 @@ async def test_get_by_id_not_found_raises(hasher_mock: ApiKeyHasher) -> None:
 async def test_get_by_prefix_success(service: ApiKeyService[ApiKey]) -> None:
     """get_by_prefix(): should find by key_id."""
     prefix = prefix_factory()
-    secret = plain_key_factory()
-    ent, _ = await service.create(name="by-key_id", key_id=prefix, plain_key=secret)
-    got = await service.get_by_prefix(prefix)
+    secret = key_secret_factory()
+    ent, _ = await service.create(name="by-key_id", key_id=prefix, key_secret=secret)
+    got = await service.get_by_key_id(prefix)
     assert got.id_ == ent.id_
 
 
@@ -167,7 +167,7 @@ async def test_get_by_prefix_success(service: ApiKeyService[ApiKey]) -> None:
 async def test_get_by_prefix_empty_raises(service: ApiKeyService[ApiKey]) -> None:
     """get_by_prefix(): should raise KeyNotProvided on empty."""
     with pytest.raises(KeyNotProvided):
-        await service.get_by_prefix("   ")
+        await service.get_by_key_id("   ")
 
 
 @pytest.mark.asyncio
@@ -178,7 +178,7 @@ async def test_get_by_prefix_not_found_raises(hasher_mock: ApiKeyHasher) -> None
     svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
 
     with pytest.raises(KeyNotFound):
-        await svc.get_by_prefix("nope")
+        await svc.get_by_key_id("nope")
 
 
 # ---------- update ----------
@@ -270,8 +270,8 @@ async def test_verify_key_success_calls_hasher_with_secret(
     This asserts protocol correctness: the *service* extracts the secret and passes it to hasher.verify.
     """
     prefix = prefix_factory()
-    secret = plain_key_factory()
-    ent, full = await service.create(name="verify-ok", key_id=prefix, plain_key=secret)
+    secret = key_secret_factory()
+    ent, full = await service.create(name="verify-ok", key_id=prefix, key_secret=secret)
 
     got = await service.verify_key(full)
     assert got.id_ == ent.id_
@@ -288,7 +288,7 @@ async def test_verify_key_rejects_missing_global_prefix(
     service: ApiKeyService[ApiKey],
 ) -> None:
     """verify_key(): should reject keys without the required global key_id."""
-    bad = _full_key(prefix_factory(), plain_key_factory()).replace("ak.", "xx.")
+    bad = _full_key(prefix_factory(), key_secret_factory()).replace("ak.", "xx.")
     with pytest.raises(InvalidKey):
         await service.verify_key(bad)
 
@@ -312,7 +312,7 @@ async def test_verify_key_id_not_found_raises(hasher_mock: ApiKeyHasher) -> None
 
     svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
     with pytest.raises(KeyNotFound):
-        await svc.verify_key(_full_key(prefix_factory(), plain_key_factory()))
+        await svc.verify_key(_full_key(prefix_factory(), key_secret_factory()))
 
 
 @pytest.mark.asyncio
@@ -320,7 +320,7 @@ async def test_verify_key_inactive_raises(hasher_mock: ApiKeyHasher) -> None:
     """verify_key(): should raise KeyInactive when entity cannot authenticate."""
     # Arrange a fake entity that raises on ensure_can_authenticate
     prefix = prefix_factory()
-    secret = plain_key_factory()
+    secret = key_secret_factory()
 
     class _E:
         id_ = "id1"
@@ -344,7 +344,7 @@ async def test_verify_key_inactive_raises(hasher_mock: ApiKeyHasher) -> None:
 async def test_verify_key_expired_raises(hasher_mock: ApiKeyHasher) -> None:
     """verify_key(): should raise KeyExpired when entity is expired."""
     prefix = prefix_factory()
-    secret = plain_key_factory()
+    secret = key_secret_factory()
 
     class _E:
         id_ = "id1"
@@ -420,6 +420,6 @@ async def test_full_key_format_with_custom_separator_and_prefix(
         global_prefix="APIKEY",
     )
     prefix = prefix_factory()
-    secret = plain_key_factory()
-    _, full = await svc.create(name="custom", key_id=prefix, plain_key=secret)
+    secret = key_secret_factory()
+    _, full = await svc.create(name="custom", key_id=prefix, key_secret=secret)
     assert full == f"APIKEY:{prefix}:{secret}"

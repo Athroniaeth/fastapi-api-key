@@ -14,7 +14,7 @@ def prefix_factory() -> str:
     return uuid_factory()[:10]
 
 
-def plain_key_factory(length: int = 64) -> str:
+def key_secret_factory(length: int = 64) -> str:
     """Helper function to create a secure random plain key."""
     alphabet = string.ascii_letters + string.digits  # 62 chars
     return "".join(secrets.choice(alphabet) for _ in range(length))
