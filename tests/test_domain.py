@@ -1,6 +1,6 @@
 import hashlib
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from types import NoneType
 from typing import Type
 
@@ -10,6 +10,8 @@ from argon2.exceptions import VerifyMismatchError
 from fastapi_api_key.domain.entities import ApiKey, ApiKeyHasher, Argon2ApiKeyHasher
 from fastapi_api_key.domain.errors import ApiKeyDisabledError, ApiKeyExpiredError
 from argon2 import PasswordHasher
+
+from fastapi_api_key.utils import datetime_factory
 
 
 @pytest.mark.parametrize(
@@ -77,7 +79,7 @@ def test_touch_updates_last_used_at():
     # Check that it's "recent"
     api_key.touch()
     assert isinstance(api_key.last_used_at, datetime)
-    difference = (datetime.now(timezone.utc) - api_key.last_used_at).total_seconds()
+    difference = (datetime_factory() - api_key.last_used_at).total_seconds()
     assert difference < 2, "last_used_at was not updated to a recent time"
 
 
@@ -93,9 +95,9 @@ def test_touch_updates_last_used_at():
         # Key not active but no expiration → error
         (False, None, ApiKeyDisabledError),
         # Key active but expired → error
-        (True, datetime.now(timezone.utc) - timedelta(days=1), ApiKeyExpiredError),
+        (True, datetime_factory() - timedelta(days=1), ApiKeyExpiredError),
         # Key active and not expired → OK
-        (True, datetime.now(timezone.utc) + timedelta(days=1), None),
+        (True, datetime_factory() + timedelta(days=1), None),
     ],
 )
 def test_ensure_can_authenticate(
