@@ -1,6 +1,6 @@
 import warnings
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional, runtime_checkable, Protocol, TypeVar
 
 from argon2 import PasswordHasher, exceptions
@@ -69,13 +69,13 @@ class ApiKey(ApiKeyEntity):
         self.is_active = True
 
     def touch(self) -> None:
-        self.last_used_at = datetime.now(timezone.utc)
+        self.last_used_at = datetime_factory()
 
     def ensure_can_authenticate(self) -> None:
         if not self.is_active:
             raise ApiKeyDisabledError("API key is disabled.")
 
-        if self.expires_at and self.expires_at < datetime.now(timezone.utc):
+        if self.expires_at and self.expires_at < datetime_factory():
             raise ApiKeyExpiredError("API key is expired.")
 
 

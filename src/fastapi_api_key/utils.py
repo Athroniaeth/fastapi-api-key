@@ -1,4 +1,5 @@
 import secrets
+import string
 import uuid
 from datetime import datetime
 
@@ -9,17 +10,16 @@ def uuid_factory() -> str:
 
 
 def prefix_factory() -> str:
-    """Helper function to create a 16-character prefix."""
-    return uuid_factory()
+    """Helper function to create unique prefix for API keys."""
+    return uuid_factory()[:10]
 
 
-def plain_key_factory(length: int = 32) -> str:
+def plain_key_factory(length: int = 64) -> str:
     """Helper function to create a secure random plain key."""
-    if length < 16:
-        raise ValueError("Length must be at least 16 bytes for sufficient security.")
-    return secrets.token_urlsafe(32)  # 32 bytes = 64 hex characters
+    alphabet = string.ascii_letters + string.digits  # 62 chars
+    return "".join(secrets.choice(alphabet) for _ in range(length))
 
 
 def datetime_factory() -> datetime:
     """Helper function to create a timezone-aware datetime object."""
-    return datetime.now()
+    return datetime.now()  # timezone.utc)

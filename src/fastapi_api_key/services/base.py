@@ -4,7 +4,7 @@ from typing import Generic, Optional, Type, Tuple, List
 
 from fastapi_api_key.domain.entities import ApiKeyHasher, D, Argon2ApiKeyHasher, ApiKey
 from fastapi_api_key.repositories.base import ApiKeyRepository
-from fastapi_api_key.utils import plain_key_factory, datetime_factory
+from fastapi_api_key.utils import plain_key_factory, datetime_factory, prefix_factory
 
 DEFAULT_SEPARATOR = "."
 """
@@ -212,7 +212,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
         if expires_at and expires_at < datetime_factory():
             raise ValueError("Expiration date must be in the future")
 
-        prefix_key = prefix_key or plain_key_factory()
+        prefix_key = prefix_key or prefix_factory()
         plain_key = plain_key or plain_key_factory()
         hashed_key = self._hasher.hash(plain_key)
 

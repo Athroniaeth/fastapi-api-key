@@ -2,13 +2,14 @@ from datetime import datetime
 from typing import Callable, Generic, Type, TypeVar, List
 from typing import Optional
 
-from sqlalchemy import String, Text, Boolean, DateTime, func
+from sqlalchemy import String, Text, Boolean, DateTime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
 from fastapi_api_key.domain.entities import ApiKey, D
 from fastapi_api_key.repositories.base import ApiKeyRepository
+from fastapi_api_key.utils import datetime_factory
 
 
 class Base(DeclarativeBase): ...
@@ -49,7 +50,7 @@ class ApiKeyModel(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=func.now,
+        default=datetime_factory(),
     )
     last_used_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
