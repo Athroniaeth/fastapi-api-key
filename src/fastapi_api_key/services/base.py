@@ -8,7 +8,7 @@ from fastapi_api_key.utils import plain_key_factory, datetime_factory, prefix_fa
 
 DEFAULT_SEPARATOR = "."
 """
-Default separator between prefix and key in the API key string. 
+Default separator between key_id and key in the API key string. 
 Must be not in `token_urlsafe` alphabet. (like '.', ':', '~", '|')
 """
 
@@ -44,7 +44,7 @@ class KeyExpired(ApiKeyError):
 
 
 class InvalidKey(ApiKeyError):
-    """Raised when an API key is invalid (key prefix matches but hash does not)."""
+    """Raised when an API key is invalid (key key_id matches but hash does not)."""
 
     ...
 
@@ -53,7 +53,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
     """Generic service contract for a domain aggregate.
 
     Notes:
-        The global prefix is pure cosmetic, it is not used for anything else.
+        The global key_id is pure cosmetic, it is not used for anything else.
         It is useful to quickly identify the string as an API key, and not
         another kind of token (like JWT, OAuth token, etc).
     """
@@ -66,9 +66,9 @@ class AbstractApiKeyService(ABC, Generic[D]):
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
     ) -> None:
-        # Warning developer that separator is automatically added to the global prefix
+        # Warning developer that separator is automatically added to the global key_id
         if separator in global_prefix:
-            raise ValueError("Separator must not be in the global prefix")
+            raise ValueError("Separator must not be in the global key_id")
 
         self._repo = repo
         self._hasher = hasher
@@ -154,7 +154,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
         return entity
 
     async def get_by_prefix(self, prefix: str) -> D:
-        """Get the entity by its prefix, or raise if not found.
+        """Get the entity by its key_id, or raise if not found.
 
         Notes:
             Prefix is usefully because the full key is not stored in
@@ -162,23 +162,23 @@ class ApiKeyService(AbstractApiKeyService[D]):
             but with salt and hashing algorithm, we cannot retrieve the
             original key from the hash without brute-forcing.
 
-            So we add a prefix column to quickly find the model by prefix, then verify
+            So we add a key_id column to quickly find the model by key_id, then verify
             the hash. We use UUID for avoiding collisions.
 
         Args:
-            prefix: The prefix part of the API key.
+            prefix: The key_id part of the API key.
 
         Raises:
-            KeyNotProvided: If no prefix is provided (empty).
-            KeyNotFound: If no API key with the given prefix exists.
+            KeyNotProvided: If no key_id is provided (empty).
+            KeyNotFound: If no API key with the given key_id exists.
         """
         if not prefix.strip():
-            raise KeyNotProvided("No API key prefix provided (prefix cannot be empty)")
+            raise KeyNotProvided("No API key key_id provided (key_id cannot be empty)")
 
-        entity = await self._repo.get_by_prefix(prefix)
+        entity = await self._repo.get_by_key_id(prefix)
 
         if entity is None:
-            raise KeyNotFound(f"API key with prefix '{prefix}' not found")
+            raise KeyNotFound(f"API key with key_id '{prefix}' not found")
 
         return entity
 
@@ -188,7 +188,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
         description: str = "",
         is_active: bool = True,
         expires_at: Optional[datetime] = None,
-        prefix_key: Optional[str] = None,
+        key_id: Optional[str] = None,
         plain_key: Optional[str] = None,
     ) -> Tuple[D, str]:
         """Create and persist a new API key.
@@ -198,7 +198,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
             description: Optional description.
             is_active: Whether the key should be active.
             expires_at: Optional expiration datetime.
-            prefix_key: Optional prefix for the key, if not provided a new one will be generated.
+            key_id: Optional key_id for the key, if not provided a new one will be generated.
             plain_key: Optional plain key, if not provided a new one will be generated.
 
         Notes:
@@ -212,7 +212,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
         if expires_at and expires_at < datetime_factory():
             raise ValueError("Expiration date must be in the future")
 
-        prefix_key = prefix_key or prefix_factory()
+        key_id = key_id or prefix_factory()
         plain_key = plain_key or plain_key_factory()
         hashed_key = self._hasher.hash(plain_key)
 
@@ -221,11 +221,13 @@ class ApiKeyService(AbstractApiKeyService[D]):
             description=description,
             is_active=is_active,
             expires_at=expires_at,
-            key_prefix=prefix_key,
+            key_id=key_id,
             key_hash=hashed_key,
         )
 
-        full_plain_key = f"{self.global_prefix}{self.separator}{prefix_key}{self.separator}{plain_key}"
+        full_plain_key = (
+            f"{self.global_prefix}{self.separator}{key_id}{self.separator}{plain_key}"
+        )
         return await self._repo.create(entity), full_plain_key
 
     async def update(self, entity: D) -> D:
@@ -263,15 +265,15 @@ class ApiKeyService(AbstractApiKeyService[D]):
         Returns:
             The corresponding entity if the key is valid, else None.
         Notes:
-            This method extracts the prefix from the provided plain key,
+            This method extracts the key_id from the provided plain key,
             retrieves the corresponding entity, and verifies the hash.
             If the entity is inactive or expired, None is returned.
         """
-        # Global prefix "ak" for "api key"
+        # Global key_id "ak" for "api key"
         if not plain_key.startswith(self.global_prefix):
-            raise InvalidKey("API key is invalid (missing global prefix)")
+            raise InvalidKey("API key is invalid (missing global key_id)")
 
-        # Get the prefix part from the plain key
+        # Get the key_id part from the plain key
         try:
             global_prefix, prefix, secret = plain_key.split(self.separator)
         except ValueError:
@@ -279,7 +281,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
                 "API key format is invalid (don't recognize full plain key)"
             )
 
-        # Search entity by a prefix (can't brute force hashes)
+        # Search entity by a key_id (can't brute force hashes)
         entity = await self.get_by_prefix(prefix)
 
         # Check if the entity can be used for authentication

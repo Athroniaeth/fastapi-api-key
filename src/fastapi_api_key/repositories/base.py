@@ -13,8 +13,8 @@ class ApiKeyRepository(ABC, Generic[D]):
         ...
 
     @abstractmethod
-    async def get_by_prefix(self, prefix: str) -> Optional[D]:
-        """Get the entity by its prefix, or None if not found.
+    async def get_by_key_id(self, key_id: str) -> Optional[D]:
+        """Get the entity by its key_id, or None if not found.
 
         Notes:
             Prefix is usefully because the full key is not stored in
@@ -22,7 +22,7 @@ class ApiKeyRepository(ABC, Generic[D]):
             but with salt and hashing algorithm, we cannot retrieve the
             original key from the hash without brute-forcing.
 
-            So we add a prefix column to quickly find the model by prefix, then verify
+            So we add a key_id column to quickly find the model by key_id, then verify
             the hash. We use UUID for avoiding collisions.
         """
         ...

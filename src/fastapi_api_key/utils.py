@@ -10,7 +10,7 @@ def uuid_factory() -> str:
 
 
 def prefix_factory() -> str:
-    """Helper function to create unique prefix for API keys."""
+    """Helper function to create unique key_id for API keys."""
     return uuid_factory()[:10]
 
 

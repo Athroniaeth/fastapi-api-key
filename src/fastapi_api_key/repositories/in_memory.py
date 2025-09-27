@@ -20,9 +20,9 @@ class InMemoryApiKeyRepository(ApiKeyRepository[D]):
     async def get_by_id(self, id_: str) -> Optional[D]:
         return self._store.get(id_)
 
-    async def get_by_prefix(self, prefix: str) -> Optional[D]:
+    async def get_by_key_id(self, key_id: str) -> Optional[D]:
         for v in self._store.values():
-            if v.key_prefix == prefix:
+            if v.key_id == key_id:
                 return v
 
         return None

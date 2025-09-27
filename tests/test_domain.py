@@ -27,7 +27,7 @@ from fastapi_api_key.utils import datetime_factory
         ("expires_at", (datetime, NoneType)),
         ("created_at", datetime),
         ("last_used_at", (datetime, NoneType)),
-        ("key_prefix", str),
+        ("key_id", str),
         ("key_hash", str),
     ],
 )

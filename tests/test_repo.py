@@ -12,14 +12,14 @@ from fastapi_api_key.utils import datetime_factory, prefix_factory, plain_key_fa
 
 
 def make_api_key() -> ApiKey:
-    """Create a fresh ApiKey domain entity with unique prefix/hash."""
+    """Create a fresh ApiKey domain entity with unique key_id/hash."""
     return ApiKey(
         name="test-key",
         description="A test API key",
         is_active=True,
         expires_at=datetime_factory() + timedelta(days=30),
         created_at=datetime_factory(),
-        key_prefix=prefix_factory(),
+        key_id=prefix_factory(),
         key_hash=plain_key_factory(),
     )
 
@@ -48,7 +48,7 @@ async def test_api_key_create(repository: ApiKeyRepository) -> None:
     assert created.description == api_key.description
     assert created.is_active == api_key.is_active
     assert created.expires_at == api_key.expires_at
-    assert created.key_prefix == api_key.key_prefix
+    assert created.key_id == api_key.key_id
     assert created.key_hash == api_key.key_hash
 
 
@@ -66,17 +66,17 @@ async def test_api_key_get_by_id(repository: ApiKeyRepository) -> None:
     assert retrieved.description == created.description
     assert retrieved.is_active == created.is_active
     assert retrieved.expires_at == created.expires_at
-    assert retrieved.key_prefix == created.key_prefix
+    assert retrieved.key_id == created.key_id
     assert retrieved.key_hash == created.key_hash
 
 
 @pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
 async def test_api_key_get_by_prefix(repository: ApiKeyRepository) -> None:
-    """Test retrieving an API key by prefix."""
+    """Test retrieving an API key by key_id."""
     api_key = make_api_key()
     created = await repository.create(entity=api_key)
-    retrieved = await repository.get_by_prefix(prefix=created.key_prefix)
+    retrieved = await repository.get_by_key_id(key_id=created.key_id)
 
     assert retrieved is not None
     assert retrieved.id_ == created.id_
@@ -84,7 +84,7 @@ async def test_api_key_get_by_prefix(repository: ApiKeyRepository) -> None:
     assert retrieved.description == created.description
     assert retrieved.is_active == created.is_active
     assert retrieved.expires_at == created.expires_at
-    assert retrieved.key_prefix == created.key_prefix
+    assert retrieved.key_id == created.key_id
     assert retrieved.key_hash == created.key_hash
 
 
@@ -104,7 +104,7 @@ async def test_api_key_update(repository: ApiKeyRepository) -> None:
     assert updated.is_active is False
     assert updated.description == created.description
     assert updated.expires_at == created.expires_at
-    assert updated.key_prefix == created.key_prefix
+    assert updated.key_id == created.key_id
     assert updated.key_hash == created.key_hash
 
 
@@ -162,8 +162,8 @@ async def test_api_key_get_by_id_not_found(repository: ApiKeyRepository) -> None
 @pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
 async def test_api_key_get_by_prefix_not_found(repository: ApiKeyRepository) -> None:
-    """Test retrieving a non-existent API key by prefix."""
-    retrieved = await repository.get_by_prefix(prefix="non-existent-prefix")
+    """Test retrieving a non-existent API key by key_id."""
+    retrieved = await repository.get_by_key_id(key_id="non-existent-key_id")
     assert retrieved is None
 
 

@@ -93,12 +93,12 @@ async def test_create_returns_entity_and_full_key(
         description="created via service",
         is_active=True,
         expires_at=expires_at,
-        prefix_key=prefix,
+        key_id=prefix,
         plain_key=secret,
     )
 
     assert full_key == _full_key(prefix, secret)
-    assert created_entity.key_prefix == prefix
+    assert created_entity.key_id == prefix
     assert created_entity.key_hash == f"hash::{secret}"  # hashed via mocked hasher
 
     # Double-check it was persisted
@@ -155,10 +155,10 @@ async def test_get_by_id_not_found_raises(hasher_mock: ApiKeyHasher) -> None:
 @pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
 async def test_get_by_prefix_success(service: ApiKeyService[ApiKey]) -> None:
-    """get_by_prefix(): should find by prefix."""
+    """get_by_prefix(): should find by key_id."""
     prefix = prefix_factory()
     secret = plain_key_factory()
-    ent, _ = await service.create(name="by-prefix", prefix_key=prefix, plain_key=secret)
+    ent, _ = await service.create(name="by-key_id", key_id=prefix, plain_key=secret)
     got = await service.get_by_prefix(prefix)
     assert got.id_ == ent.id_
 
@@ -174,7 +174,7 @@ async def test_get_by_prefix_empty_raises(service: ApiKeyService[ApiKey]) -> Non
 async def test_get_by_prefix_not_found_raises(hasher_mock: ApiKeyHasher) -> None:
     """get_by_prefix(): should raise KeyNotFound when not present."""
     repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
-    repo.get_by_prefix = AsyncMock(return_value=None)
+    repo.get_by_key_id = AsyncMock(return_value=None)
     svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
 
     with pytest.raises(KeyNotFound):
@@ -207,7 +207,7 @@ async def test_update_not_found_raises(hasher_mock: ApiKeyHasher) -> None:
         is_active=True,
         expires_at=None,
         created_at=datetime_factory(),
-        key_prefix=prefix_factory(),
+        key_id=prefix_factory(),
         key_hash="hash::whatever",
     )
     # Force an ID to look realistic
@@ -271,9 +271,7 @@ async def test_verify_key_success_calls_hasher_with_secret(
     """
     prefix = prefix_factory()
     secret = plain_key_factory()
-    ent, full = await service.create(
-        name="verify-ok", prefix_key=prefix, plain_key=secret
-    )
+    ent, full = await service.create(name="verify-ok", key_id=prefix, plain_key=secret)
 
     got = await service.verify_key(full)
     assert got.id_ == ent.id_
@@ -289,7 +287,7 @@ async def test_verify_key_success_calls_hasher_with_secret(
 async def test_verify_key_rejects_missing_global_prefix(
     service: ApiKeyService[ApiKey],
 ) -> None:
-    """verify_key(): should reject keys without the required global prefix."""
+    """verify_key(): should reject keys without the required global key_id."""
     bad = _full_key(prefix_factory(), plain_key_factory()).replace("ak.", "xx.")
     with pytest.raises(InvalidKey):
         await service.verify_key(bad)
@@ -307,10 +305,10 @@ async def test_verify_key_rejects_malformed_token(
 
 
 @pytest.mark.asyncio
-async def test_verify_key_prefix_not_found_raises(hasher_mock: ApiKeyHasher) -> None:
-    """verify_key(): should raise KeyNotFound if prefix lookup yields nothing."""
+async def test_verify_key_id_not_found_raises(hasher_mock: ApiKeyHasher) -> None:
+    """verify_key(): should raise KeyNotFound if key_id lookup yields nothing."""
     repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
-    repo.get_by_prefix = AsyncMock(return_value=None)
+    repo.get_by_key_id = AsyncMock(return_value=None)
 
     svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
     with pytest.raises(KeyNotFound):
@@ -326,7 +324,7 @@ async def test_verify_key_inactive_raises(hasher_mock: ApiKeyHasher) -> None:
 
     class _E:
         id_ = "id1"
-        key_prefix = prefix
+        key_id = prefix
         key_hash = f"hash::{secret}"
 
         @staticmethod
@@ -334,7 +332,7 @@ async def test_verify_key_inactive_raises(hasher_mock: ApiKeyHasher) -> None:
             raise KeyInactive("inactive")
 
     repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
-    repo.get_by_prefix = AsyncMock(return_value=_E())
+    repo.get_by_key_id = AsyncMock(return_value=_E())
 
     svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
 
@@ -350,7 +348,7 @@ async def test_verify_key_expired_raises(hasher_mock: ApiKeyHasher) -> None:
 
     class _E:
         id_ = "id1"
-        key_prefix = prefix
+        key_id = prefix
         key_hash = f"hash::{secret}"
 
         @staticmethod
@@ -358,7 +356,7 @@ async def test_verify_key_expired_raises(hasher_mock: ApiKeyHasher) -> None:
             raise KeyExpired("expired")
 
     repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
-    repo.get_by_prefix = AsyncMock(return_value=_E())
+    repo.get_by_key_id = AsyncMock(return_value=_E())
 
     svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
 
@@ -375,7 +373,7 @@ async def test_verify_key_hash_mismatch_raises(hasher_mock: ApiKeyHasher) -> Non
 
     class _E:
         id_ = "id1"
-        key_prefix = prefix
+        key_id = prefix
         key_hash = f"hash::{stored_secret}"
 
         @staticmethod
@@ -383,7 +381,7 @@ async def test_verify_key_hash_mismatch_raises(hasher_mock: ApiKeyHasher) -> Non
             return None
 
     repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
-    repo.get_by_prefix = AsyncMock(return_value=_E())
+    repo.get_by_key_id = AsyncMock(return_value=_E())
 
     svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
 
@@ -423,5 +421,5 @@ async def test_full_key_format_with_custom_separator_and_prefix(
     )
     prefix = prefix_factory()
     secret = plain_key_factory()
-    _, full = await svc.create(name="custom", prefix_key=prefix, plain_key=secret)
+    _, full = await svc.create(name="custom", key_id=prefix, plain_key=secret)
     assert full == f"APIKEY:{prefix}:{secret}"

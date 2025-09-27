@@ -20,7 +20,7 @@ class ApiKeyEntity(Protocol):
     expires_at: Optional[datetime]
     created_at: datetime
     last_used_at: Optional[datetime]
-    key_prefix: str
+    key_id: str
     key_hash: str
 
     def disable(self) -> None:
@@ -59,7 +59,7 @@ class ApiKey(ApiKeyEntity):
     expires_at: Optional[datetime] = None
     created_at: datetime = field(default_factory=datetime_factory)
     last_used_at: Optional[datetime] = None
-    key_prefix: str = field(default="")
+    key_id: str = field(default="")
     key_hash: str = field(default="")
 
     def disable(self) -> None:

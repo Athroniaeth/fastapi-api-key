@@ -58,7 +58,7 @@ class ApiKeyModel(Base):
     )
 
     # Authentication data
-    key_prefix: Mapped[str] = mapped_column(
+    key_id: Mapped[str] = mapped_column(
         String(16),
         nullable=False,
         index=True,
@@ -85,7 +85,7 @@ def to_model(entity: D, model_cls: Type[M]) -> M:
         expires_at=entity.expires_at,
         created_at=entity.created_at,
         last_used_at=entity.last_used_at,
-        key_prefix=entity.key_prefix,
+        key_id=entity.key_id,
         key_hash=entity.key_hash,
     )
 
@@ -103,7 +103,7 @@ def to_domain(model: Optional[M], model_cls: Type[D]) -> Optional[D]:
         expires_at=model.expires_at,
         created_at=model.created_at,
         last_used_at=model.last_used_at,
-        key_prefix=model.key_prefix,
+        key_id=model.key_id,
         key_hash=model.key_hash,
     )
 
@@ -130,8 +130,8 @@ class SqlAlchemyApiKeyRepository(ApiKeyRepository[D], Generic[D, M]):
         model = result.scalar_one_or_none()
         return self.to_domain(model, self.domain_cls)
 
-    async def get_by_prefix(self, prefix: str) -> Optional[D]:
-        stmt = select(self.model_cls).where(self.model_cls.key_prefix == prefix)
+    async def get_by_key_id(self, key_id: str) -> Optional[D]:
+        stmt = select(self.model_cls).where(self.model_cls.key_id == key_id)
         result = await self._async_session.execute(stmt)
         model = result.scalar_one_or_none()
         return self.to_domain(model, self.domain_cls)
@@ -155,7 +155,7 @@ class SqlAlchemyApiKeyRepository(ApiKeyRepository[D], Generic[D, M]):
         model.is_active = entity.is_active
         model.expires_at = entity.expires_at
         model.last_used_at = entity.last_used_at
-        model.key_prefix = entity.key_prefix
+        model.key_id = entity.key_id
         model.key_hash = entity.key_hash
 
         self._async_session.add(model)
