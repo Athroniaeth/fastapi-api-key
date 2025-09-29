@@ -1,6 +1,3 @@
-# tests/services/test_api_key_service.py
-from __future__ import annotations
-
 from datetime import timedelta
 from typing import Iterator
 from unittest.mock import AsyncMock, create_autospec
@@ -12,9 +9,6 @@ from fastapi_api_key.domain.entities import ApiKey, ApiKeyHasher
 from fastapi_api_key.repositories.base import ApiKeyRepository
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
-from fastapi_api_key.utils import datetime_factory, prefix_factory, key_secret_factory
-
-# Adaptez l'import ci-dessous à l'emplacement réel de votre service.
 from fastapi_api_key.services.base import (
     ApiKeyService,
     KeyNotFound,
@@ -23,11 +17,17 @@ from fastapi_api_key.services.base import (
     KeyInactive,
     KeyExpired,
 )
+from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
 
 
-def _full_key(prefix: str, secret: str, sep: str = ".", gp: str = "ak") -> str:
+def _full_key(
+    key_id: str,
+    secret: str,
+    separator: str,
+    global_prefix: str,
+) -> str:
     """Compose a full API key from parts."""
-    return f"{gp}{sep}{prefix}{sep}{secret}"
+    return f"{global_prefix}{separator}{key_id}{separator}{secret}"
 
 
 @pytest.fixture(params=["memory", "sqlalchemy"], scope="function")
@@ -46,12 +46,7 @@ def repository(
 
 @pytest.fixture(scope="function")
 def hasher_mock() -> ApiKeyHasher:
-    """Mocked hasher to keep tests fast and to assert protocol correctness.
-
-    Protocol expectation:
-      - hash(secret) -> "hash::" + secret
-      - verify(stored_hash, candidate_secret) -> stored_hash == "hash::" + candidate_secret
-    """
+    """Mocked hasher to keep tests fast and to assert protocol correctness."""
     h = create_autospec(ApiKeyHasher, instance=True)
     h.hash.side_effect = lambda secret: f"hash::{secret}"
     h.verify.side_effect = lambda stored, candidate: stored == f"hash::{candidate}"
@@ -73,18 +68,15 @@ def service(
     )
 
 
-# ---------- create ----------
-
-
 @pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_create_returns_entity_and_full_key(
+async def test_create_success(
     service: ApiKeyService[ApiKey],
     repository: ApiKeyRepository[ApiKey],
     hasher_mock: ApiKeyHasher,
 ) -> None:
     """create(): should persist entity and return full plain key with expected format."""
-    prefix = prefix_factory()
+    prefix = key_id_factory()
     secret = key_secret_factory()
     expires_at = datetime_factory() + timedelta(days=7)
 
@@ -97,7 +89,7 @@ async def test_create_returns_entity_and_full_key(
         key_secret=secret,
     )
 
-    assert full_key == _full_key(prefix, secret)
+    assert full_key == _full_key(prefix, secret, global_prefix="ak", separator=".")
     assert created_entity.key_id == prefix
     assert created_entity.key_hash == f"hash::{secret}"  # hashed via mocked hasher
 
@@ -108,16 +100,13 @@ async def test_create_returns_entity_and_full_key(
 
 
 @pytest.mark.asyncio
-async def test_create_rejects_past_expiration(service: ApiKeyService[ApiKey]) -> None:
+async def test_create_past_expiration(service: ApiKeyService[ApiKey]) -> None:
     """create(): should reject past expiration dates."""
     with pytest.raises(ValueError):
         await service.create(
             name="expired",
             expires_at=datetime_factory() - timedelta(seconds=1),
         )
-
-
-# ---------- get_by_id ----------
 
 
 @pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
@@ -134,40 +123,37 @@ async def test_get_by_id_success(service: ApiKeyService[ApiKey]) -> None:
 async def test_get_by_id_empty_raises(service: ApiKeyService[ApiKey]) -> None:
     """get_by_id(): should raise KeyNotProvided on empty input."""
     with pytest.raises(KeyNotProvided):
-        await service.get_by_id("")
+        await service.get_by_id("  ")
 
 
 @pytest.mark.asyncio
-async def test_get_by_id_not_found_raises(hasher_mock: ApiKeyHasher) -> None:
+async def test_get_by_id_not_found_raises(service: ApiKeyService[ApiKey]) -> None:
     """get_by_id(): should raise KeyNotFound when repository returns None."""
-    # Mock repository for the error path
-    repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
-    repo.get_by_id = AsyncMock(return_value=None)
-    svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
 
     with pytest.raises(KeyNotFound):
-        await svc.get_by_id("missing-id")
-
-
-# ---------- get_by_prefix ----------
+        await service.get_by_id("missing-id")
 
 
 @pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
 async def test_get_by_prefix_success(service: ApiKeyService[ApiKey]) -> None:
     """get_by_prefix(): should find by key_id."""
-    prefix = prefix_factory()
-    secret = key_secret_factory()
-    ent, _ = await service.create(name="by-key_id", key_id=prefix, key_secret=secret)
+    prefix = key_id_factory()
+    key_secret = key_secret_factory()
+    entity, _ = await service.create(
+        name="by-key_id",
+        key_id=prefix,
+        key_secret=key_secret,
+    )
     got = await service.get_by_key_id(prefix)
-    assert got.id_ == ent.id_
+    assert got.id_ == entity.id_
 
 
 @pytest.mark.asyncio
 async def test_get_by_prefix_empty_raises(service: ApiKeyService[ApiKey]) -> None:
     """get_by_prefix(): should raise KeyNotProvided on empty."""
     with pytest.raises(KeyNotProvided):
-        await service.get_by_key_id("   ")
+        await service.get_by_key_id("  ")
 
 
 @pytest.mark.asyncio
@@ -179,9 +165,6 @@ async def test_get_by_prefix_not_found_raises(hasher_mock: ApiKeyHasher) -> None
 
     with pytest.raises(KeyNotFound):
         await svc.get_by_key_id("nope")
-
-
-# ---------- update ----------
 
 
 @pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
@@ -207,7 +190,7 @@ async def test_update_not_found_raises(hasher_mock: ApiKeyHasher) -> None:
         is_active=True,
         expires_at=None,
         created_at=datetime_factory(),
-        key_id=prefix_factory(),
+        key_id=key_id_factory(),
         key_hash="hash::whatever",
     )
     # Force an ID to look realistic
@@ -215,9 +198,6 @@ async def test_update_not_found_raises(hasher_mock: ApiKeyHasher) -> None:
 
     with pytest.raises(KeyNotFound):
         await svc.update(dummy)
-
-
-# ---------- delete_by_id ----------
 
 
 @pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
@@ -242,9 +222,6 @@ async def test_delete_by_id_not_found_raises(hasher_mock: ApiKeyHasher) -> None:
         await svc.delete_by_id("missing")
 
 
-# ---------- list ----------
-
-
 @pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
 async def test_list_returns_entities(service: ApiKeyService[ApiKey]) -> None:
@@ -254,9 +231,6 @@ async def test_list_returns_entities(service: ApiKeyService[ApiKey]) -> None:
 
     items = await service.list(limit=10, offset=0)
     assert len(items) >= 2
-
-
-# ---------- verify_key ----------
 
 
 @pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
@@ -269,7 +243,7 @@ async def test_verify_key_success_calls_hasher_with_secret(
 
     This asserts protocol correctness: the *service* extracts the secret and passes it to hasher.verify.
     """
-    prefix = prefix_factory()
+    prefix = key_id_factory()
     secret = key_secret_factory()
     ent, full = await service.create(name="verify-ok", key_id=prefix, key_secret=secret)
 
@@ -277,10 +251,24 @@ async def test_verify_key_success_calls_hasher_with_secret(
     assert got.id_ == ent.id_
 
     # Ensure we passed the secret (not the full token) to the hasher
-    assert hasher_mock.verify.call_count == 1
-    args, _ = hasher_mock.verify.call_args
+    assert hasher_mock.verify.call_count == 1  # type: ignore
+    args, _ = hasher_mock.verify.call_args  # type: ignore
     assert args[0] == f"hash::{secret}"  # stored hash
     assert args[1] == secret  # candidate SECRET only
+
+
+@pytest.mark.asyncio
+async def test_verify_key_rejects_empty(service: ApiKeyService[ApiKey]) -> None:
+    """verify_key(): should reject empty keys."""
+    with pytest.raises(KeyNotProvided):
+        await service.verify_key("   ")
+
+
+@pytest.mark.asyncio
+async def test_verify_key_rejects_none(service: ApiKeyService[ApiKey]) -> None:
+    """verify_key(): should reject None as key."""
+    with pytest.raises(KeyNotProvided):
+        await service.verify_key(None)
 
 
 @pytest.mark.asyncio
@@ -288,7 +276,9 @@ async def test_verify_key_rejects_missing_global_prefix(
     service: ApiKeyService[ApiKey],
 ) -> None:
     """verify_key(): should reject keys without the required global key_id."""
-    bad = _full_key(prefix_factory(), key_secret_factory()).replace("ak.", "xx.")
+    key_id = key_id_factory()
+    key_secret = key_secret_factory()
+    bad = _full_key(key_id, key_secret, global_prefix="WRONG", separator=".")
     with pytest.raises(InvalidKey):
         await service.verify_key(bad)
 
@@ -299,7 +289,7 @@ async def test_verify_key_rejects_malformed_token(
 ) -> None:
     """verify_key(): should reject malformed tokens (bad separators/segments)."""
     # Missing one segment
-    malformed = "ak." + prefix_factory()
+    malformed = "ak." + key_id_factory()
     with pytest.raises(InvalidKey):
         await service.verify_key(malformed)
 
@@ -310,22 +300,26 @@ async def test_verify_key_id_not_found_raises(hasher_mock: ApiKeyHasher) -> None
     repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
     repo.get_by_key_id = AsyncMock(return_value=None)
 
+    key_id = key_id_factory()
+    key_secret = key_secret_factory()
+    bad = _full_key(key_id, key_secret, global_prefix="ak", separator=".")
+
     svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
     with pytest.raises(KeyNotFound):
-        await svc.verify_key(_full_key(prefix_factory(), key_secret_factory()))
+        await svc.verify_key(bad)
 
 
 @pytest.mark.asyncio
 async def test_verify_key_inactive_raises(hasher_mock: ApiKeyHasher) -> None:
     """verify_key(): should raise KeyInactive when entity cannot authenticate."""
     # Arrange a fake entity that raises on ensure_can_authenticate
-    prefix = prefix_factory()
-    secret = key_secret_factory()
+    prefix = key_id_factory()
+    key_secret = key_secret_factory()
 
     class _E:
         id_ = "id1"
         key_id = prefix
-        key_hash = f"hash::{secret}"
+        key_hash = f"hash::{key_secret}"
 
         @staticmethod
         def ensure_can_authenticate() -> None:
@@ -337,19 +331,19 @@ async def test_verify_key_inactive_raises(hasher_mock: ApiKeyHasher) -> None:
     svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
 
     with pytest.raises(KeyInactive):
-        await svc.verify_key(_full_key(prefix, secret))
+        await svc.verify_key(_full_key(prefix, key_secret, global_prefix="ak", separator="."))
 
 
 @pytest.mark.asyncio
 async def test_verify_key_expired_raises(hasher_mock: ApiKeyHasher) -> None:
     """verify_key(): should raise KeyExpired when entity is expired."""
-    prefix = prefix_factory()
-    secret = key_secret_factory()
+    prefix = key_id_factory()
+    key_secret = key_secret_factory()
 
     class _E:
         id_ = "id1"
         key_id = prefix
-        key_hash = f"hash::{secret}"
+        key_hash = f"hash::{key_secret}"
 
         @staticmethod
         def ensure_can_authenticate() -> None:
@@ -357,17 +351,17 @@ async def test_verify_key_expired_raises(hasher_mock: ApiKeyHasher) -> None:
 
     repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
     repo.get_by_key_id = AsyncMock(return_value=_E())
-
+    bad = _full_key(prefix, key_secret, global_prefix="ak", separator=".")
     svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
 
     with pytest.raises(KeyExpired):
-        await svc.verify_key(_full_key(prefix, secret))
+        await svc.verify_key(bad)
 
 
 @pytest.mark.asyncio
 async def test_verify_key_hash_mismatch_raises(hasher_mock: ApiKeyHasher) -> None:
     """verify_key(): should raise InvalidKey on hash mismatch."""
-    prefix = prefix_factory()
+    prefix = key_id_factory()
     stored_secret = "correct-secret"
     provided_secret = "wrong-secret"
 
@@ -382,14 +376,12 @@ async def test_verify_key_hash_mismatch_raises(hasher_mock: ApiKeyHasher) -> Non
 
     repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
     repo.get_by_key_id = AsyncMock(return_value=_E())
+    bad = _full_key(prefix, provided_secret, global_prefix="ak", separator=".")
 
     svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
 
     with pytest.raises(InvalidKey):
-        await svc.verify_key(_full_key(prefix, provided_secret))
-
-
-# ---------- construction / config ----------
+        await svc.verify_key(bad)
 
 
 def test_constructor_rejects_separator_in_global_prefix(
@@ -419,7 +411,130 @@ async def test_full_key_format_with_custom_separator_and_prefix(
         separator=":",
         global_prefix="APIKEY",
     )
-    prefix = prefix_factory()
-    secret = key_secret_factory()
-    _, full = await svc.create(name="custom", key_id=prefix, key_secret=secret)
-    assert full == f"APIKEY:{prefix}:{secret}"
+    prefix = key_id_factory()
+    key_secret = key_secret_factory()
+    _, full = await svc.create(name="custom", key_id=prefix, key_secret=key_secret)
+    assert full == f"APIKEY:{prefix}:{key_secret}"
+
+
+@pytest.mark.asyncio
+async def test_verify_key_rejects_extra_segments(service: ApiKeyService[ApiKey]) -> None:
+    """verify_key(): refuse un token avec des segments en trop."""
+    p, s = key_id_factory(), key_secret_factory()
+    bad = f"ak.{p}.{s}.extra"
+    with pytest.raises(InvalidKey):
+        await service.verify_key(bad)
+
+
+@pytest.mark.asyncio
+async def test_verify_key_rejects_wrong_separator(service: ApiKeyService[ApiKey]) -> None:
+    """verify_key(): refuse un token avec un séparateur inattendu."""
+    p, s = key_id_factory(), key_secret_factory()
+    bad = f"ak:{p}:{s}"  # service est configuré avec '.'
+    with pytest.raises(InvalidKey):
+        await service.verify_key(bad)
+
+
+@pytest.mark.asyncio
+async def test_verify_key_inactive_does_not_call_hasher(hasher_mock) -> None:
+    """verify_key(): si l'entité est inactive, ne doit PAS appeler hasher.verify."""
+    p, s = key_id_factory(), key_secret_factory()
+
+    class _E:
+        id_ = "id1"
+        key_id = p
+        key_hash = f"hash::{s}"
+        @staticmethod
+        def ensure_can_authenticate() -> None:
+            raise KeyInactive("inactive")
+
+    repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
+    repo.get_by_key_id = AsyncMock(return_value=_E())
+    svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
+
+    with pytest.raises(KeyInactive):
+        await svc.verify_key(f"ak.{p}.{s}")
+
+    hasher_mock.verify.assert_not_called()  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_verify_key_expired_does_not_call_hasher(hasher_mock) -> None:
+    """verify_key(): si l'entité est expirée, ne doit PAS appeler hasher.verify."""
+    p, s = key_id_factory(), key_secret_factory()
+
+    class _E:
+        id_ = "id1"
+        key_id = p
+        key_hash = f"hash::{s}"
+        @staticmethod
+        def ensure_can_authenticate() -> None:
+            raise KeyExpired("expired")
+
+    repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
+    repo.get_by_key_id = AsyncMock(return_value=_E())
+    svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
+
+    with pytest.raises(KeyExpired):
+        await svc.verify_key(f"ak.{p}.{s}")
+
+    hasher_mock.verify.assert_not_called()  # type: ignore
+
+
+@pytest.mark.asyncio
+async def test_verify_key_with_custom_prefix_and_separator(hasher_mock) -> None:
+    """verify_key(): supporte correctement un préfixe et séparateur personnalisés."""
+    repo = InMemoryApiKeyRepository()
+    svc = ApiKeyService(
+        repo=repo,
+        hasher=hasher_mock,
+        domain_cls=ApiKey,
+        separator=":",
+        global_prefix="APIKEY",
+    )
+    p, s = key_id_factory(), key_secret_factory()
+    ent, token = await svc.create(name="custom", key_id=p, key_secret=s)
+
+    got = await svc.verify_key(token)
+    assert got.id_ == ent.id_
+
+
+@pytest.mark.asyncio
+async def test_errors_do_not_leak_secret(hasher_mock) -> None:
+    """Les messages d'erreur ne doivent pas révéler le secret."""
+    p, provided = key_id_factory(), "supersecret"
+
+    class _E:
+        id_ = "id1"
+        key_id = p
+        key_hash = "hash::other"
+        @staticmethod
+        def ensure_can_authenticate() -> None:
+            return None
+
+    repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
+    repo.get_by_key_id = AsyncMock(return_value=_E())
+    svc = ApiKeyService(repo=repo, hasher=hasher_mock, domain_cls=ApiKey)
+
+    with pytest.raises(InvalidKey) as exc:
+        await svc.verify_key(f"ak.{p}.{provided}")
+    assert "supersecret" not in str(exc.value)
+
+
+@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
+@pytest.mark.asyncio
+async def test_create_can_be_inactive(service: ApiKeyService[ApiKey]) -> None:
+    """create(): doit accepter is_active=False."""
+    ent, _ = await service.create(name="inactive", is_active=False)
+    assert ent.is_active is False
+
+
+@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
+@pytest.mark.asyncio
+async def test_update_does_not_change_key_hash(service: ApiKeyService[ApiKey]) -> None:
+    """update(): modifier des champs non sensibles ne doit pas changer le hash."""
+    ent, _ = await service.create(name="x")
+    old_hash = ent.key_hash
+    ent.description = "new desc"
+    updated = await service.update(ent)
+    assert updated.key_hash == old_hash

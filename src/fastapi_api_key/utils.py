@@ -9,7 +9,7 @@ def uuid_factory() -> str:
     return uuid.uuid4().hex
 
 
-def prefix_factory() -> str:
+def key_id_factory() -> str:
     """Helper function to create unique key_id for API keys."""
     return uuid_factory()[:10]
 

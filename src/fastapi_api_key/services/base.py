@@ -4,7 +4,7 @@ from typing import Generic, Optional, Type, Tuple, List
 
 from fastapi_api_key.domain.entities import ApiKeyHasher, D, Argon2ApiKeyHasher, ApiKey
 from fastapi_api_key.repositories.base import ApiKeyRepository
-from fastapi_api_key.utils import key_secret_factory, datetime_factory, prefix_factory
+from fastapi_api_key.utils import key_secret_factory, datetime_factory, key_id_factory
 
 DEFAULT_SEPARATOR = "."
 """
@@ -209,7 +209,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
         )
 
     async def get_by_id(self, id_: str) -> D:
-        if (id_ is None) or (id_.strip() == ""):
+        if id_.strip() == "":
             raise KeyNotProvided("No API key provided")
 
         entity = await self._repo.get_by_id(id_)
@@ -220,7 +220,6 @@ class ApiKeyService(AbstractApiKeyService[D]):
         return entity
 
     async def get_by_key_id(self, key_id: str) -> D:
-
         if not key_id.strip():
             raise KeyNotProvided("No API key key_id provided (key_id cannot be empty)")
 
@@ -243,7 +242,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
         if expires_at and expires_at < datetime_factory():
             raise ValueError("Expiration date must be in the future")
 
-        key_id = key_id or prefix_factory()
+        key_id = key_id or key_id_factory()
         key_secret = key_secret or key_secret_factory()
         hashed_key = self._hasher.hash(key_secret)
 

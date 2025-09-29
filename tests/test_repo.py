@@ -8,7 +8,7 @@ from fastapi_api_key.domain.entities import ApiKey, D
 from fastapi_api_key.repositories.base import ApiKeyRepository
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
-from fastapi_api_key.utils import datetime_factory, prefix_factory, key_secret_factory
+from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
 
 
 def make_api_key() -> ApiKey:
@@ -19,7 +19,7 @@ def make_api_key() -> ApiKey:
         is_active=True,
         expires_at=datetime_factory() + timedelta(days=30),
         created_at=datetime_factory(),
-        key_id=prefix_factory(),
+        key_id=key_id_factory(),
         key_hash=key_secret_factory(),
     )
 
