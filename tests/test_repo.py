@@ -1,38 +1,8 @@
-from datetime import timedelta
-from typing import Iterator
-
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from fastapi_api_key.domain.entities import ApiKey, D
+from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import ApiKeyRepository
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
-from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
-
-
-def make_api_key() -> ApiKey:
-    """Create a fresh ApiKey domain entity with unique key_id/hash."""
-    return ApiKey(
-        name="test-key",
-        description="A test API key",
-        is_active=True,
-        expires_at=datetime_factory() + timedelta(days=30),
-        created_at=datetime_factory(),
-        key_id=key_id_factory(),
-        key_hash=key_secret_factory(),
-    )
-
-
-@pytest.fixture(params=["memory", "sqlalchemy"], scope="function")
-def repository(request, async_session: AsyncSession) -> Iterator[ApiKeyRepository[D]]:
-    """Fixture to provide different ApiKeyRepository implementations."""
-    if request.param == "memory":
-        yield InMemoryApiKeyRepository()
-    elif request.param == "sqlalchemy":
-        yield SqlAlchemyApiKeyRepository(async_session=async_session)
-    else:
-        raise ValueError(f"Unknown repository type: {request.param}")
+from tests.conftest import make_api_key
 
 
 @pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
