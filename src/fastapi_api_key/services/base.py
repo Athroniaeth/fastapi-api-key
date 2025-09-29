@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Generic, Optional, Type, Tuple, List
 
 from fastapi_api_key.domain.entities import ApiKeyHasher, D, Argon2ApiKeyHasher, ApiKey
+from fastapi_api_key.domain.errors import KeyNotFound, KeyNotProvided, InvalidKey
 from fastapi_api_key.repositories.base import ApiKeyRepository
 from fastapi_api_key.utils import key_secret_factory, datetime_factory, key_id_factory
 
@@ -11,42 +12,6 @@ DEFAULT_SEPARATOR = "."
 Default separator between key_type, key_id, key_secret in the API key string. 
 Must be not in `token_urlsafe` alphabet. (like '.', ':', '~", '|')
 """
-
-
-class ApiKeyError(Exception):
-    """Base class for all API key related errors."""
-
-    ...
-
-
-class KeyNotFound(ApiKeyError):
-    """Raised when no API key with the requested ID exists."""
-
-    ...
-
-
-class KeyNotProvided(ApiKeyError):
-    """Raised when an API key is required but not provided."""
-
-    ...
-
-
-class KeyInactive(ApiKeyError):
-    """Raised when an API key exists but is marked as inactive."""
-
-    ...
-
-
-class KeyExpired(ApiKeyError):
-    """Raised when an API key exists but is expired."""
-
-    ...
-
-
-class InvalidKey(ApiKeyError):
-    """Raised when an API key is invalid (key key_id matches but hash does not)."""
-
-    ...
 
 
 class AbstractApiKeyService(ABC, Generic[D]):
@@ -281,23 +246,27 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
     async def verify_key(self, api_key: Optional[str] = None) -> D:
         if api_key is None:
-            raise KeyNotProvided("No API key provided (not given)")
+            raise KeyNotProvided("Api key must be provided (not given)")
 
         if api_key.strip() == "":
-            raise KeyNotProvided("No API key provided (empty)")
+            raise KeyNotProvided("Api key must be provided (empty)")
 
         # Global key_id "ak" for "api key"
         if not api_key.startswith(self.global_prefix):
-            raise InvalidKey("API key is invalid (missing global key_id)")
+            raise InvalidKey("Api key is invalid (missing global key_id)")
 
         # Get the key_id part from the plain key
         try:
-            global_prefix, prefix, secret = api_key.split(self.separator)
-        except ValueError:
-            raise InvalidKey(
-                "API key format is invalid (don't recognize full plain key)"
-            )
+            parts = api_key.split(self.separator)
 
+            if len(parts) != 3:
+                raise InvalidKey(
+                    "API key format is invalid (wrong number of segments)."
+                )
+
+            global_prefix, prefix, secret = parts
+        except Exception as e:
+            raise InvalidKey(f"API key format is invalid: {str(e)}") from e
         # Search entity by a key_id (can't brute force hashes)
         entity = await self.get_by_key_id(prefix)
 

@@ -5,7 +5,7 @@ from typing import Type
 import pytest
 
 from fastapi_api_key.domain.entities import ApiKey, ApiKeyHasher, Argon2ApiKeyHasher
-from fastapi_api_key.domain.errors import ApiKeyDisabledError, ApiKeyExpiredError
+from fastapi_api_key.domain.errors import KeyInactive, KeyExpired
 
 from fastapi_api_key.utils import datetime_factory
 from tests.conftest import MockPasswordHasher
@@ -90,11 +90,11 @@ def test_touch_updates_last_used_at():
         # Key active and no expiration → OK
         (True, None, None),
         # Key not active but no expiration → error
-        (False, None, ApiKeyDisabledError),
+        (False, None, KeyInactive),
         # Key active and not expired → OK
         (True, datetime_factory() + timedelta(days=1), None),
         # Key active but expired → error
-        (True, datetime_factory() - timedelta(days=1), ApiKeyExpiredError),
+        (True, datetime_factory() - timedelta(days=1), KeyExpired),
     ],
 )
 def test_ensure_can_authenticate(

@@ -1,14 +1,34 @@
 class ApiKeyError(Exception):
-    """Base exception for API key domain errors."""
+    """Base class for all API key related errors."""
+
+    ...
 
 
-class ApiKeyExpiredError(ApiKeyError):
-    """Raised when an API key is expired."""
+class KeyNotFound(ApiKeyError):
+    """Raised when no API key with the requested ID exists."""
+
+    ...
 
 
-class ApiKeyDisabledError(ApiKeyError):
-    """Raised when an API key is disabled."""
+class KeyNotProvided(ApiKeyError):
+    """Raised when an API key is required but not provided."""
+
+    ...
 
 
-class ApiKeyInvalidError(ApiKeyError):
-    """Raised when an API key is invalid (e.g., hash mismatch)."""
+class KeyInactive(ApiKeyError):
+    """Raised when an API key exists but is marked as inactive."""
+
+    ...
+
+
+class KeyExpired(ApiKeyError):
+    """Raised when an API key exists but is expired."""
+
+    ...
+
+
+class InvalidKey(ApiKeyError):
+    """Raised when an API key is invalid (key key_id matches but hash does not)."""
+
+    ...

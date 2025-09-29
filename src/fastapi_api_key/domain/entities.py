@@ -5,7 +5,7 @@ from typing import Optional, runtime_checkable, Protocol, TypeVar
 
 from argon2 import PasswordHasher, exceptions
 
-from fastapi_api_key.domain.errors import ApiKeyDisabledError, ApiKeyExpiredError
+from fastapi_api_key.domain.errors import KeyExpired, KeyInactive
 from fastapi_api_key.utils import uuid_factory, datetime_factory
 
 
@@ -73,10 +73,10 @@ class ApiKey(ApiKeyEntity):
 
     def ensure_can_authenticate(self) -> None:
         if not self.is_active:
-            raise ApiKeyDisabledError("API key is disabled.")
+            raise KeyInactive("API key is disabled.")
 
         if self.expires_at and self.expires_at < datetime_factory():
-            raise ApiKeyExpiredError("API key is expired.")
+            raise KeyExpired("API key is expired.")
 
 
 class ApiKeyHasher(Protocol):
