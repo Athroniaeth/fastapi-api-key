@@ -4,7 +4,7 @@ from typing import Generic, Optional, Type, Tuple, List
 
 from fastapi_api_key.domain.entities import ApiKeyHasher, D, Argon2ApiKeyHasher, ApiKey
 from fastapi_api_key.domain.errors import KeyNotFound, KeyNotProvided, InvalidKey
-from fastapi_api_key.repositories.base import ApiKeyRepository
+from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.utils import key_secret_factory, datetime_factory, key_id_factory
 
 DEFAULT_SEPARATOR = "."
@@ -25,7 +25,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
 
     def __init__(
         self,
-        repo: ApiKeyRepository[D],
+        repo: AbstractApiKeyRepository[D],
         hasher: ApiKeyHasher,
         domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,
@@ -157,7 +157,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
     def __init__(
         self,
-        repo: ApiKeyRepository[D],
+        repo: AbstractApiKeyRepository[D],
         hasher: Optional[ApiKeyHasher] = None,
         domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,

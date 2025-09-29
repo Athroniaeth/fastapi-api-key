@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import (
 
 from fastapi_api_key import InMemoryApiKeyRepository, SqlAlchemyApiKeyRepository
 from fastapi_api_key.domain.entities import ApiKey, D, Argon2ApiKeyHasher, ApiKeyHasher
-from fastapi_api_key.repositories.base import ApiKeyRepository
+from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.repositories.sql import Base
 
 
@@ -28,17 +28,17 @@ from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_f
 @pytest_asyncio.fixture(scope="function")
 async def async_engine() -> AsyncIterator[AsyncEngine]:
     """Create an in-memory SQLite async engine."""
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+    async_engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
 
-    async with engine.begin() as conn:
+    async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
     try:
-        yield engine
+        yield async_engine
     finally:
-        async with engine.begin() as conn:
+        async with async_engine.begin() as conn:
             await conn.run_sync(Base.metadata.drop_all)
-        await engine.dispose()
+        await async_engine.dispose()
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -68,8 +68,10 @@ def make_api_key() -> ApiKey:
 
 
 @pytest.fixture(params=["memory", "sqlalchemy"], scope="function")
-def repository(request, async_session: AsyncSession) -> Iterator[ApiKeyRepository[D]]:
-    """Fixture to provide different ApiKeyRepository implementations."""
+def repository(
+    request, async_session: AsyncSession
+) -> Iterator[AbstractApiKeyRepository[D]]:
+    """Fixture to provide different AbstractApiKeyRepository implementations."""
     if request.param == "memory":
         yield InMemoryApiKeyRepository()
     elif request.param == "sqlalchemy":

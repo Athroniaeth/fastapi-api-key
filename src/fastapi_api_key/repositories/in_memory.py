@@ -1,11 +1,11 @@
 from typing import Optional, List
 
-from fastapi_api_key.repositories.base import ApiKeyRepository
+from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.domain.entities import D
 
 
-class InMemoryApiKeyRepository(ApiKeyRepository[D]):
-    """In-memory implementation of the ApiKeyRepository.
+class InMemoryApiKeyRepository(AbstractApiKeyRepository[D]):
+    """In-memory implementation of the AbstractApiKeyRepository.
 
     Notes:
         This implementation is not thread-safe, don't use

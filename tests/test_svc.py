@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, create_autospec
 import pytest
 
 from fastapi_api_key.domain.entities import ApiKey, ApiKeyHasher
-from fastapi_api_key.repositories.base import ApiKeyRepository
+from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.services.base import (
     ApiKeyService,
@@ -31,7 +31,7 @@ def _full_key(
 
 @pytest.fixture(scope="function")
 def service(
-    repository: ApiKeyRepository[ApiKey],
+    repository: AbstractApiKeyRepository[ApiKey],
     api_key_hasher: ApiKeyHasher,
 ) -> ApiKeyService[ApiKey]:
     """Service under test with mocked hasher and parametrized repository."""
@@ -47,7 +47,7 @@ def service(
 @pytest.mark.asyncio
 async def test_create_success(
     service: ApiKeyService[ApiKey],
-    repository: ApiKeyRepository[ApiKey],
+    repository: AbstractApiKeyRepository[ApiKey],
     api_key_hasher: ApiKeyHasher,
 ) -> None:
     """create(): should persist entity and return full plain key with expected format."""
@@ -406,7 +406,7 @@ async def test_errors_do_not_leak_secret(api_key_hasher) -> None:
         def ensure_can_authenticate() -> None:
             return None
 
-    repo = create_autospec(ApiKeyRepository[ApiKey], instance=True)
+    repo = create_autospec(AbstractApiKeyRepository[ApiKey], instance=True)
     repo.get_by_key_id = AsyncMock(return_value=_E())
     svc = ApiKeyService(repo=repo, hasher=api_key_hasher, domain_cls=ApiKey)
 

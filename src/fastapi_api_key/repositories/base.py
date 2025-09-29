@@ -4,7 +4,7 @@ from typing import Generic, Optional, List
 from fastapi_api_key.domain.entities import D
 
 
-class ApiKeyRepository(ABC, Generic[D]):
+class AbstractApiKeyRepository(ABC, Generic[D]):
     """Generic repository contract for a domain aggregate."""
 
     @abstractmethod

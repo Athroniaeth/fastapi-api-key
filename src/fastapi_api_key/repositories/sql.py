@@ -8,26 +8,26 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
 from fastapi_api_key.domain.entities import ApiKey, D
-from fastapi_api_key.repositories.base import ApiKeyRepository
+from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.utils import datetime_factory
 
 
 class Base(DeclarativeBase): ...
 
 
-class ApiKeyModel(Base):
-    """SQLAlchemy ORM model for API keys."""
+class ApiKeyModelMixin:
+    """SQLAlchemy ORM model mixin for API keys.
+
+    Notes:
+        This is a mixin to allow easy extension of the model with additional fields.
+    """
 
     __tablename__ = "api_keys"
-
-    # Identifiers
     id_: Mapped[str] = mapped_column(
         String(36),
         name="id",
         primary_key=True,
     )
-
-    # Optional metadata
     name: Mapped[Optional[str]] = mapped_column(
         String(128),
         nullable=True,
@@ -36,8 +36,6 @@ class ApiKeyModel(Base):
         Text(),
         nullable=True,
     )
-
-    # State & timestamps
     is_active: Mapped[bool] = mapped_column(
         Boolean(),
         nullable=False,
@@ -56,8 +54,6 @@ class ApiKeyModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
-
-    # Authentication data
     key_id: Mapped[str] = mapped_column(
         String(16),
         nullable=False,
@@ -70,7 +66,13 @@ class ApiKeyModel(Base):
     )
 
 
-M = TypeVar("M", bound=ApiKeyModel)  # SQLAlchemy row type
+class ApiKeyModel(Base, ApiKeyModelMixin):
+    """Concrete SQLAlchemy ORM model for API keys."""
+
+    ...
+
+
+M = TypeVar("M", bound=ApiKeyModelMixin)  # SQLAlchemy row type
 ToModel = Callable[[D, Type[M]], M]
 ToDomain = Callable[[Optional[M], Type[D]], Optional[D]]
 
@@ -108,7 +110,7 @@ def to_domain(model: Optional[M], model_cls: Type[D]) -> Optional[D]:
     )
 
 
-class SqlAlchemyApiKeyRepository(ApiKeyRepository[D], Generic[D, M]):
+class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
     def __init__(
         self,
         async_session: AsyncSession,

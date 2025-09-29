@@ -1,13 +1,12 @@
 import pytest
 
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.repositories.base import ApiKeyRepository
+from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from tests.conftest import make_api_key
 
 
-@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_api_key_create(repository: ApiKeyRepository) -> None:
+async def test_api_key_create(repository: AbstractApiKeyRepository) -> None:
     """Test creating an API key."""
     api_key = make_api_key()
     assert api_key.id_ is not None  # Ensure ID is set before creation
@@ -22,9 +21,8 @@ async def test_api_key_create(repository: ApiKeyRepository) -> None:
     assert created.key_hash == api_key.key_hash
 
 
-@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_api_key_get_by_id(repository: ApiKeyRepository) -> None:
+async def test_api_key_get_by_id(repository: AbstractApiKeyRepository) -> None:
     """Test retrieving an API key by ID."""
     api_key = make_api_key()
     created = await repository.create(entity=api_key)
@@ -40,9 +38,8 @@ async def test_api_key_get_by_id(repository: ApiKeyRepository) -> None:
     assert retrieved.key_hash == created.key_hash
 
 
-@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_api_key_get_by_prefix(repository: ApiKeyRepository) -> None:
+async def test_api_key_get_by_prefix(repository: AbstractApiKeyRepository) -> None:
     """Test retrieving an API key by key_id."""
     api_key = make_api_key()
     created = await repository.create(entity=api_key)
@@ -58,9 +55,8 @@ async def test_api_key_get_by_prefix(repository: ApiKeyRepository) -> None:
     assert retrieved.key_hash == created.key_hash
 
 
-@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_api_key_update(repository: ApiKeyRepository) -> None:
+async def test_api_key_update(repository: AbstractApiKeyRepository) -> None:
     """Test updating an existing API key."""
     api_key = make_api_key()
     created = await repository.create(entity=api_key)
@@ -78,9 +74,8 @@ async def test_api_key_update(repository: ApiKeyRepository) -> None:
     assert updated.key_hash == created.key_hash
 
 
-@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_api_key_delete(repository: ApiKeyRepository) -> None:
+async def test_api_key_delete(repository: AbstractApiKeyRepository) -> None:
     """Test deleting an API key."""
     api_key = make_api_key()
 
@@ -94,9 +89,8 @@ async def test_api_key_delete(repository: ApiKeyRepository) -> None:
     assert deleted is None
 
 
-@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_api_key_list(repository: ApiKeyRepository) -> None:
+async def test_api_key_list(repository: AbstractApiKeyRepository) -> None:
     """Test listing API keys with pagination."""
     # Create multiple API keys
     keys = [make_api_key() for _ in range(5)]
@@ -121,25 +115,26 @@ async def test_api_key_list(repository: ApiKeyRepository) -> None:
     assert listed[1].created_at >= listed[2].created_at
 
 
-@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_api_key_get_by_id_not_found(repository: ApiKeyRepository) -> None:
+async def test_api_key_get_by_id_not_found(
+    repository: AbstractApiKeyRepository,
+) -> None:
     """Test retrieving a non-existent API key by ID."""
     retrieved = await repository.get_by_id(id_="non-existent-id")
     assert retrieved is None
 
 
-@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_api_key_get_by_prefix_not_found(repository: ApiKeyRepository) -> None:
+async def test_api_key_get_by_prefix_not_found(
+    repository: AbstractApiKeyRepository,
+) -> None:
     """Test retrieving a non-existent API key by key_id."""
     retrieved = await repository.get_by_key_id(key_id="non-existent-key_id")
     assert retrieved is None
 
 
-@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_api_key_update_not_found(repository: ApiKeyRepository) -> None:
+async def test_api_key_update_not_found(repository: AbstractApiKeyRepository) -> None:
     """Test updating a non-existent API key."""
     api_key = make_api_key()
     api_key.id_ = "non-existent-id"
@@ -147,17 +142,15 @@ async def test_api_key_update_not_found(repository: ApiKeyRepository) -> None:
     assert updated is None
 
 
-@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_api_key_delete_not_found(repository: ApiKeyRepository) -> None:
+async def test_api_key_delete_not_found(repository: AbstractApiKeyRepository) -> None:
     """Test deleting a non-existent API key."""
     deleted = await repository.delete_by_id(id_="non-existent-id")
     assert deleted is False
 
 
-@pytest.mark.parametrize("repository", ["memory", "sqlalchemy"], indirect=True)
 @pytest.mark.asyncio
-async def test_api_key_list_empty(repository: ApiKeyRepository) -> None:
+async def test_api_key_list_empty(repository: AbstractApiKeyRepository) -> None:
     """Test listing API keys when none exist."""
     listed = await repository.list(limit=10, offset=0)
     assert listed == []
