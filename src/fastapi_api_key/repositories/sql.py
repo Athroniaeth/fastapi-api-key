@@ -23,6 +23,7 @@ class ApiKeyModelMixin:
     """
 
     __tablename__ = "api_keys"
+
     id_: Mapped[str] = mapped_column(
         String(36),
         name="id",
@@ -77,54 +78,47 @@ ToModel = Callable[[D, Type[M]], M]
 ToDomain = Callable[[Optional[M], Type[D]], Optional[D]]
 
 
-def to_model(entity: D, model_cls: Type[M]) -> M:
-    """Convert a domain entity to a SQLAlchemy model instance."""
-    return model_cls(
-        id_=entity.id_,
-        name=entity.name,
-        description=entity.description,
-        is_active=entity.is_active,
-        expires_at=entity.expires_at,
-        created_at=entity.created_at,
-        last_used_at=entity.last_used_at,
-        key_id=entity.key_id,
-        key_hash=entity.key_hash,
-    )
-
-
-def to_domain(model: Optional[M], model_cls: Type[D]) -> Optional[D]:
-    """Convert a SQLAlchemy model instance to a domain entity."""
-    if model is None:
-        return None
-
-    return model_cls(
-        id_=model.id_,
-        name=model.name,
-        description=model.description,
-        is_active=model.is_active,
-        expires_at=model.expires_at,
-        created_at=model.created_at,
-        last_used_at=model.last_used_at,
-        key_id=model.key_id,
-        key_hash=model.key_hash,
-    )
-
-
 class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
     def __init__(
         self,
         async_session: AsyncSession,
         model_cls: Optional[Type[M]] = None,
         domain_cls: Optional[Type[D]] = None,
-        to_model_fn: Optional[ToModel] = None,
-        to_domain_fn: Optional[ToDomain] = None,
     ) -> None:
         self._async_session = async_session
         self.model_cls = model_cls or ApiKeyModel
         self.domain_cls = domain_cls or ApiKey
 
-        self.to_model = to_model_fn or to_model
-        self.to_domain = to_domain_fn or to_domain
+    @staticmethod
+    def to_model(entity: D, model_cls: Type[M]) -> M:
+        return model_cls(
+            id_=entity.id_,
+            name=entity.name,
+            description=entity.description,
+            is_active=entity.is_active,
+            expires_at=entity.expires_at,
+            created_at=entity.created_at,
+            last_used_at=entity.last_used_at,
+            key_id=entity.key_id,
+            key_hash=entity.key_hash,
+        )
+
+    @staticmethod
+    def to_domain(model: Optional[M], model_cls: Type[D]) -> Optional[D]:
+        if model is None:
+            return None
+
+        return model_cls(
+            id_=model.id_,
+            name=model.name,
+            description=model.description,
+            is_active=model.is_active,
+            expires_at=model.expires_at,
+            created_at=model.created_at,
+            last_used_at=model.last_used_at,
+            key_id=model.key_id,
+            key_hash=model.key_hash,
+        )
 
     async def get_by_id(self, id_: str) -> Optional[D]:
         stmt = select(self.model_cls).where(self.model_cls.id_ == id_)

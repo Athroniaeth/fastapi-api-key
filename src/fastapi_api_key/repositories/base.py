@@ -1,11 +1,25 @@
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, List
+from typing import Generic, Optional, List, Any, Type
 
 from fastapi_api_key.domain.entities import D
 
 
 class AbstractApiKeyRepository(ABC, Generic[D]):
     """Generic repository contract for a domain aggregate."""
+
+    @staticmethod
+    def to_model(entity: D, model_cls: Type[Any]) -> Any:
+        """Convert a domain entity to a persistence model instance."""
+        ...
+
+    @staticmethod
+    def to_domain(model: Optional[Any], model_cls: Type[D]) -> Optional[D]:
+        """Convert a persistence model instance to a domain entity.
+
+        Notes:
+            If model is None, return None.
+        """
+        ...
 
     @abstractmethod
     async def get_by_id(self, id_: str) -> Optional[D]:
