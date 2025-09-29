@@ -19,6 +19,7 @@ def test_version():
         "ApiKeyService",
         "InMemoryApiKeyRepository",
         "SqlAlchemyApiKeyRepository",
+        "ApiKeyModelMixin",
     ],
 )
 def test_import_lib_public_api(attr: str):

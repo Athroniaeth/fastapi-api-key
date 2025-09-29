@@ -1,8 +1,35 @@
 import pytest
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
+from fastapi_api_key import SqlAlchemyApiKeyRepository
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from tests.conftest import make_api_key
+
+
+@pytest.mark.asyncio
+async def test_ensure_table() -> None:
+    """Test that the database table for API keys exists."""
+    async_engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+
+    async_session_maker = async_sessionmaker(
+        async_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+    )
+
+    async with async_session_maker() as async_session:
+        repo = SqlAlchemyApiKeyRepository(async_session=async_session)
+
+        with pytest.raises(Exception):
+            # Attempt to query the table before ensuring it exists
+            await repo.create(entity=make_api_key())
+
+        # Rollback transaction to clear any partial state
+        await async_session.rollback()
+
+        await repo.ensure_table()
+        await repo.create(entity=make_api_key())  # Should not raise now
 
 
 @pytest.mark.asyncio

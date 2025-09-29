@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, List, Any, Type
+from typing import Generic, Optional, List, Type, Any
 
 from fastapi_api_key.domain.entities import D
 
@@ -8,18 +8,58 @@ class AbstractApiKeyRepository(ABC, Generic[D]):
     """Generic repository contract for a domain aggregate."""
 
     @staticmethod
-    def to_model(entity: D, model_cls: Type[Any]) -> Any:
-        """Convert a domain entity to a persistence model instance."""
-        ...
+    def to_model(
+        entity: D,
+        model_cls: Type[Any],
+        target: Optional[Any] = None,
+    ) -> Any:
+        """Convert a domain entity to a SQLAlchemy model instance.
+
+        Notes:
+            If `target` is provided, it will be updated with the entity's data.
+            Otherwise, a new model instance will be created.
+        """
+        if target is None:
+            return model_cls(
+                id_=entity.id_,
+                name=entity.name,
+                description=entity.description,
+                is_active=entity.is_active,
+                expires_at=entity.expires_at,
+                created_at=entity.created_at,
+                last_used_at=entity.last_used_at,
+                key_id=entity.key_id,
+                key_hash=entity.key_hash,
+            )
+
+        # Update existing model
+        target.name = entity.name
+        target.description = entity.description
+        target.is_active = entity.is_active
+        target.expires_at = entity.expires_at
+        target.last_used_at = entity.last_used_at
+        target.key_id = entity.key_id
+        target.key_hash = entity.key_hash
+
+        return target
 
     @staticmethod
     def to_domain(model: Optional[Any], model_cls: Type[D]) -> Optional[D]:
-        """Convert a persistence model instance to a domain entity.
+        """Convert a SQLAlchemy model instance to a domain entity."""
+        if model is None:
+            return None
 
-        Notes:
-            If model is None, return None.
-        """
-        ...
+        return model_cls(
+            id_=model.id_,
+            name=model.name,
+            description=model.description,
+            is_active=model.is_active,
+            expires_at=model.expires_at,
+            created_at=model.created_at,
+            last_used_at=model.last_used_at,
+            key_id=model.key_id,
+            key_hash=model.key_hash,
+        )
 
     @abstractmethod
     async def get_by_id(self, id_: str) -> Optional[D]:

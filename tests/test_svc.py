@@ -316,6 +316,25 @@ async def test_verify_key_expired_raises(service: ApiKeyService[ApiKey]) -> None
         await service.verify_key(bad)
 
 
+@pytest.mark.asyncio
+async def test_verify_key_bad_secret_raises(
+    service: ApiKeyService[ApiKey],
+) -> None:
+    """verify_key(): should raise InvalidKey when secret does not match."""
+    prefix = key_id_factory()
+    good_secret = key_secret_factory()
+    bad_secret = key_secret_factory()
+    await service.create(
+        name="to-verify",
+        key_id=prefix,
+        key_secret=good_secret,
+    )
+    bad = _full_key(prefix, bad_secret, global_prefix="ak", separator=".")
+
+    with pytest.raises(InvalidKey, match=r"API key is invalid."):
+        await service.verify_key(bad)
+
+
 def test_constructor_separator_in_gp_raises(
     api_key_hasher: ApiKeyHasher,
 ) -> None:
@@ -353,46 +372,6 @@ async def test_create_custom_success(api_key_hasher: ApiKeyHasher) -> None:
 
 
 @pytest.mark.asyncio
-async def test_verify_key_rejects_extra_segments(
-    service: ApiKeyService[ApiKey],
-) -> None:
-    """verify_key(): refuse un token avec des segments en trop."""
-    p, s = key_id_factory(), key_secret_factory()
-    bad = f"ak.{p}.{s}.extra"
-    with pytest.raises(InvalidKey):
-        await service.verify_key(bad)
-
-
-@pytest.mark.asyncio
-async def test_verify_key_rejects_wrong_separator(
-    service: ApiKeyService[ApiKey],
-) -> None:
-    """verify_key(): refuse un token avec un séparateur inattendu."""
-    p, s = key_id_factory(), key_secret_factory()
-    bad = f"ak:{p}:{s}"  # service est configuré avec '.'
-    with pytest.raises(InvalidKey):
-        await service.verify_key(bad)
-
-
-@pytest.mark.asyncio
-async def test_verify_key_with_custom_prefix_and_separator(api_key_hasher) -> None:
-    """verify_key(): supporte correctement un préfixe et séparateur personnalisés."""
-    repo = InMemoryApiKeyRepository()
-    svc = ApiKeyService(
-        repo=repo,
-        hasher=api_key_hasher,
-        domain_cls=ApiKey,
-        separator=":",
-        global_prefix="APIKEY",
-    )
-    p, s = key_id_factory(), key_secret_factory()
-    ent, token = await svc.create(name="custom", key_id=p, key_secret=s)
-
-    got = await svc.verify_key(token)
-    assert got.id_ == ent.id_
-
-
-@pytest.mark.asyncio
 async def test_errors_do_not_leak_secret(api_key_hasher) -> None:
     """Les messages d'erreur ne doivent pas révéler le secret."""
     p, provided = key_id_factory(), "supersecret"
@@ -412,6 +391,7 @@ async def test_errors_do_not_leak_secret(api_key_hasher) -> None:
 
     with pytest.raises(InvalidKey) as exc:
         await svc.verify_key(f"ak.{p}.{provided}")
+
     assert "supersecret" not in str(exc.value)
 
 

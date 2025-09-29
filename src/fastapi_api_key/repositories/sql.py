@@ -89,19 +89,51 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
         self.model_cls = model_cls or ApiKeyModel
         self.domain_cls = domain_cls or ApiKey
 
+    async def ensure_table(self) -> None:
+        """Ensure the database table for API keys exists.
+
+        Notes:
+            This method creates the table if it does not exist.
+            Only useful if using ApiKeyModel directly without use mixins.
+        """
+        async with self._async_session.bind.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
     @staticmethod
-    def to_model(entity: D, model_cls: Type[M]) -> M:
-        return model_cls(
-            id_=entity.id_,
-            name=entity.name,
-            description=entity.description,
-            is_active=entity.is_active,
-            expires_at=entity.expires_at,
-            created_at=entity.created_at,
-            last_used_at=entity.last_used_at,
-            key_id=entity.key_id,
-            key_hash=entity.key_hash,
-        )
+    def to_model(
+        entity: D,
+        model_cls: Type[M],
+        target: Optional[M] = None,
+    ) -> M:
+        """Convert a domain entity to a SQLAlchemy model instance.
+
+        Notes:
+            If `target` is provided, it will be updated with the entity's data.
+            Otherwise, a new model instance will be created.
+        """
+        if target is None:
+            return model_cls(
+                id_=entity.id_,
+                name=entity.name,
+                description=entity.description,
+                is_active=entity.is_active,
+                expires_at=entity.expires_at,
+                created_at=entity.created_at,
+                last_used_at=entity.last_used_at,
+                key_id=entity.key_id,
+                key_hash=entity.key_hash,
+            )
+
+        # Update existing model
+        target.name = entity.name
+        target.description = entity.description
+        target.is_active = entity.is_active
+        target.expires_at = entity.expires_at
+        target.last_used_at = entity.last_used_at
+        target.key_id = entity.key_id
+        target.key_hash = entity.key_hash
+
+        return target
 
     @staticmethod
     def to_domain(model: Optional[M], model_cls: Type[D]) -> Optional[D]:
@@ -142,17 +174,12 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
         stmt = select(self.model_cls).where(self.model_cls.id_ == entity.id_)
         result = await self._async_session.execute(stmt)
         model = result.scalar_one_or_none()
+
         if model is None:
             return None
 
         # update fields...
-        model.name = entity.name
-        model.description = entity.description
-        model.is_active = entity.is_active
-        model.expires_at = entity.expires_at
-        model.last_used_at = entity.last_used_at
-        model.key_id = entity.key_id
-        model.key_hash = entity.key_hash
+        model = self.to_model(entity, self.model_cls, target=model)
 
         self._async_session.add(model)
         await self._async_session.flush()

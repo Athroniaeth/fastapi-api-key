@@ -11,7 +11,7 @@ def uuid_factory() -> str:
 
 def key_id_factory() -> str:
     """Helper function to create unique key_id for API keys."""
-    return uuid_factory()[:10]
+    return uuid_factory()[:16]
 
 
 def key_secret_factory(length: int = 64) -> str:

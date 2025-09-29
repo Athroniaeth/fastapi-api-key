@@ -7,7 +7,7 @@ from fastapi_api_key.domain.errors import KeyNotFound, KeyNotProvided, InvalidKe
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.utils import key_secret_factory, datetime_factory, key_id_factory
 
-DEFAULT_SEPARATOR = "."
+DEFAULT_SEPARATOR = "-"
 """
 Default separator between key_type, key_id, key_secret in the API key string. 
 Must be not in `token_urlsafe` alphabet. (like '.', ':', '~", '|')
