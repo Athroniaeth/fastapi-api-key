@@ -54,16 +54,16 @@ async def test_create_success(
     prefix = key_id_factory()
     secret = key_secret_factory()
     expires_at = datetime_factory() + timedelta(days=7)
-
-    created_entity, full_key = await service.create(
+    entity = ApiKey(
         name="svc-key",
         description="created via service",
         is_active=True,
         expires_at=expires_at,
         key_id=prefix,
-        key_secret=secret,
     )
+    created_entity, full_key = await service.create(entity, secret)
     expected_hash = api_key_hasher.hash(secret)
+
     assert full_key == _full_key(prefix, secret, global_prefix="ak", separator=".")
     assert created_entity.key_id == prefix
     assert created_entity.key_hash == expected_hash
@@ -78,19 +78,20 @@ async def test_create_success(
 async def test_create_bad_expired_at_raises(service: ApiKeyService[ApiKey]) -> None:
     """create(): should reject past expiration dates."""
     with pytest.raises(ValueError):
-        await service.create(
-            name="expired",
-            expires_at=datetime_factory() - timedelta(seconds=1),
-        )
+        expired_at = datetime_factory() - timedelta(seconds=1)
+        entity = ApiKey(name="expired", expires_at=expired_at)
+        await service.create(entity)
 
 
 @pytest.mark.asyncio
 async def test_get_by_id_success(service: ApiKeyService[ApiKey]) -> None:
     """get_by_id(): should return entity when it exists."""
-    # Create one to fetch
-    ent, _ = await service.create(name="to-fetch")
-    got = await service.get_by_id(ent.id_)
-    assert got.id_ == ent.id_
+    entity = ApiKey(name="expired")
+    assert entity.id_ is not None
+
+    entity, _ = await service.create(entity)
+    got = await service.get_by_id(entity.id_)
+    assert got.id_ == entity.id_
 
 
 @pytest.mark.asyncio
@@ -113,9 +114,10 @@ async def test_get_by_key_id_success(service: ApiKeyService[ApiKey]) -> None:
     """get_by_prefix(): should find by key_id."""
     key_id = key_id_factory()
     key_secret = key_secret_factory()
+
+    entity = ApiKey(name="by-key_id", key_id=key_id)
     entity, _ = await service.create(
-        name="by-key_id",
-        key_id=key_id,
+        entity=entity,
         key_secret=key_secret,
     )
     got = await service.get_by_key_id(key_id)
@@ -147,7 +149,8 @@ async def test_get_by_prefix_not_found_raises(service: ApiKeyService[ApiKey]) ->
 @pytest.mark.asyncio
 async def test_update_success(service: ApiKeyService[ApiKey]) -> None:
     """update(): should persist modifications."""
-    entity, _ = await service.create(name="to-update")
+    entity = ApiKey(name="to-update")
+    entity, _ = await service.create(entity)
     entity.name = "updated-name"
     updated = await service.update(entity)
     assert updated.name == "updated-name"
@@ -177,7 +180,8 @@ async def test_update_not_found_raises(service: ApiKeyService[ApiKey]) -> None:
 @pytest.mark.asyncio
 async def test_delete_by_id_success(service: ApiKeyService[ApiKey]) -> None:
     """delete_by_id(): should delete and then get_by_id should fail."""
-    entity, _ = await service.create(name="to-delete")
+    entity = ApiKey(name="to-delete")
+    entity, _ = await service.create(entity)
     assert await service.delete_by_id(entity.id_) is True
 
     with pytest.raises(KeyNotFound):
@@ -195,8 +199,10 @@ async def test_delete_by_id_not_found_raises(service: ApiKeyService[ApiKey]) -> 
 @pytest.mark.asyncio
 async def test_list_success(service: ApiKeyService[ApiKey]) -> None:
     """list(): should return created entities."""
-    await service.create(name="k1")
-    await service.create(name="k2")
+    entity_1 = ApiKey(name="k1")
+    entity_2 = ApiKey(name="k2")
+    await service.create(entity_1)
+    await service.create(entity_2)
 
     items = await service.list(limit=10, offset=0)
     assert len(items) >= 2
@@ -214,9 +220,10 @@ async def test_verify_key_success(service: ApiKeyService[ApiKey]) -> None:
     """verify_key(): should return entity when key is valid."""
     key_id = key_id_factory()
     key_secret = key_secret_factory()
+
+    entity = ApiKey(name="to-verify", key_id=key_id)
     entity, full = await service.create(
-        name="to-verify",
-        key_id=key_id,
+        entity=entity,
         key_secret=key_secret,
     )
     got = await service.verify_key(full)
@@ -285,12 +292,11 @@ async def test_verify_key_inactive_raises(service: ApiKeyService[ApiKey]) -> Non
     # Arrange a fake entity that raises on ensure_can_authenticate
     prefix = key_id_factory()
     key_secret = key_secret_factory()
+
+    entity = ApiKey(name="inactive", key_id=prefix, is_active=False)
     await service.create(
-        name="inactive",
-        key_id=prefix,
+        entity=entity,
         key_secret=key_secret,
-        is_active=False,
-        expires_at=None,
     )
     bad = _full_key(prefix, key_secret, global_prefix="ak", separator=".")
 
@@ -303,12 +309,16 @@ async def test_verify_key_expired_raises(service: ApiKeyService[ApiKey]) -> None
     """verify_key(): should raise KeyExpired when entity is expired."""
     prefix = key_id_factory()
     key_secret = key_secret_factory()
+    expires_at = datetime_factory() + timedelta(microseconds=40)
 
-    await service.create(
+    entity = ApiKey(
         name="expired",
         key_id=prefix,
+        expires_at=expires_at,
+    )
+    await service.create(
+        entity=entity,
         key_secret=key_secret,
-        expires_at=datetime_factory() + timedelta(microseconds=20),
     )
     bad = _full_key(prefix, key_secret, global_prefix="ak", separator=".")
 
@@ -324,9 +334,10 @@ async def test_verify_key_bad_secret_raises(
     prefix = key_id_factory()
     good_secret = key_secret_factory()
     bad_secret = key_secret_factory()
+
+    entity = ApiKey(name="to-verify", key_id=prefix)
     await service.create(
-        name="to-verify",
-        key_id=prefix,
+        entity=entity,
         key_secret=good_secret,
     )
     bad = _full_key(prefix, bad_secret, global_prefix="ak", separator=".")
@@ -362,7 +373,12 @@ async def test_create_custom_success(api_key_hasher: ApiKeyHasher) -> None:
     )
     prefix = key_id_factory()
     key_secret = key_secret_factory()
-    _, full = await svc.create(name="custom", key_id=prefix, key_secret=key_secret)
+
+    entity = ApiKey(name="custom", key_id=prefix)
+    _, full = await svc.create(
+        entity=entity,
+        key_secret=key_secret,
+    )
     assert full == _full_key(
         prefix,
         key_secret,
@@ -397,16 +413,18 @@ async def test_errors_do_not_leak_secret(api_key_hasher) -> None:
 
 @pytest.mark.asyncio
 async def test_create_can_be_inactive(service: ApiKeyService[ApiKey]) -> None:
-    """create(): doit accepter is_active=False."""
-    ent, _ = await service.create(name="inactive", is_active=False)
-    assert ent.is_active is False
+    """create(): must don't raise when creating an inactive key."""
+    entity = ApiKey(name="inactive", is_active=False)
+    entity, _ = await service.create(entity=entity)
+    assert entity.is_active is False
 
 
 @pytest.mark.asyncio
 async def test_update_does_not_change_key_hash(service: ApiKeyService[ApiKey]) -> None:
-    """update(): modifier des champs non sensibles ne doit pas changer le hash."""
-    ent, _ = await service.create(name="x")
-    old_hash = ent.key_hash
-    ent.description = "new desc"
-    updated = await service.update(ent)
+    """update(): must not change key_hash."""
+    entity = ApiKey(name="to-update")
+    entity, _ = await service.create(entity=entity)
+    old_hash = entity.key_hash
+    entity.description = "new desc"
+    updated = await service.update(entity)
     assert updated.key_hash == old_hash

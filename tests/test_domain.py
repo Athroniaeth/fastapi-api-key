@@ -25,7 +25,7 @@ from tests.conftest import MockPasswordHasher
         ("expires_at", (datetime, NoneType)),
         ("last_used_at", (datetime, NoneType)),
         ("key_id", str),
-        ("key_hash", str),
+        ("key_hash", (str, NoneType)),
     ],
 )
 def test_apikey_entity_structure(

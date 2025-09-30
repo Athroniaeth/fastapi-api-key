@@ -49,7 +49,7 @@ class ApiKeyModelMixin:
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime_factory(),
+        default=datetime_factory,
     )
     last_used_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True),
@@ -131,7 +131,7 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
         target.expires_at = entity.expires_at
         target.last_used_at = entity.last_used_at
         target.key_id = entity.key_id
-        target.key_hash = entity.key_hash
+        target.key_hash = entity.key_hash  # type: ignore[invalid-assignment]
 
         return target
 

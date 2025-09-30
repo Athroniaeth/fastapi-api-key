@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from datetime import datetime
 from typing import Generic, Optional, Type, Tuple, List
 
 from fastapi_api_key.domain.entities import ApiKeyHasher, D, Argon2ApiKeyHasher, ApiKey
 from fastapi_api_key.domain.errors import KeyNotFound, KeyNotProvided, InvalidKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
-from fastapi_api_key.utils import key_secret_factory, datetime_factory, key_id_factory
+from fastapi_api_key.utils import datetime_factory, key_secret_factory
 
 DEFAULT_SEPARATOR = "-"
 """
@@ -76,24 +75,11 @@ class AbstractApiKeyService(ABC, Generic[D]):
         """
 
     @abstractmethod
-    async def create(
-        self,
-        name: str,
-        description: str = "",
-        is_active: bool = True,
-        expires_at: Optional[datetime] = None,
-        key_id: Optional[str] = None,
-        key_secret: Optional[str] = None,
-    ) -> D:
+    async def create(self, entity: D) -> D:
         """Create and persist a new API key.
 
         Args:
-            name: Desired unique name.
-            description: Optional description.
-            is_active: Whether the key should be active.
-            expires_at: Optional expiration datetime.
-            key_id: Optional custom id key (lookup), otherwise generated.
-            key_secret: Optional custom secret key, otherwise generated.
+            entity: The entity api to create.
 
         Notes:
             The api_key is the only time the raw key is available, it will be hashed
@@ -196,33 +182,19 @@ class ApiKeyService(AbstractApiKeyService[D]):
         return entity
 
     async def create(
-        self,
-        name: str,
-        description: str = "",
-        is_active: bool = True,
-        expires_at: Optional[datetime] = None,
-        key_id: Optional[str] = None,
-        key_secret: Optional[str] = None,
+        self, entity: D, key_secret: Optional[str] = None
     ) -> Tuple[D, str]:
-        if expires_at and expires_at < datetime_factory():
+        if entity.expires_at and entity.expires_at < datetime_factory():
             raise ValueError("Expiration date must be in the future")
 
-        key_id = key_id or key_id_factory()
         key_secret = key_secret or key_secret_factory()
-        hashed_key = self._hasher.hash(key_secret)
 
-        entity = self.domain_cls(
-            name=name,
-            description=description,
-            is_active=is_active,
-            expires_at=expires_at,
-            key_id=key_id,
-            key_hash=hashed_key,
+        full_key_secret = entity.full_key_secret(
+            self.global_prefix,
+            self.separator,
+            key_secret=key_secret,
         )
-
-        full_key_secret = (
-            f"{self.global_prefix}{self.separator}{key_id}{self.separator}{key_secret}"
-        )
+        entity.key_hash = self._hasher.hash(key_secret)
         return await self._repo.create(entity), full_key_secret
 
     async def update(self, entity: D) -> D:
