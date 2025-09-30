@@ -1,3 +1,12 @@
+try:
+    import sqlalchemy  # noqa: F401
+except ModuleNotFoundError as e:
+    raise ImportError(
+        "SQLAlchemy backend requires 'sqlalchemy'. "
+        "Install it with: uv add fastapi_api_key[sqlalchemy]"
+    ) from e
+
+
 from datetime import datetime
 from typing import Callable, Generic, Type, TypeVar, List
 from typing import Optional

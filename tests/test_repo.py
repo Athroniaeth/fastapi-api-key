@@ -1,9 +1,10 @@
 import pytest
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from fastapi_api_key import SqlAlchemyApiKeyRepository
+
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
+from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 from tests.conftest import make_api_key
 
 

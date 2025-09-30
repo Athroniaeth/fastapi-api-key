@@ -14,10 +14,10 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from fastapi_api_key import InMemoryApiKeyRepository, SqlAlchemyApiKeyRepository
+from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
+from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, Base
 from fastapi_api_key.domain.entities import ApiKey, D, Argon2ApiKeyHasher, ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
-from fastapi_api_key.repositories.sql import Base
 
 
 import pytest_asyncio

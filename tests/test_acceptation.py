@@ -1,4 +1,6 @@
 import importlib
+import sys
+from typing import Optional
 
 import pytest
 from fastapi_api_key.domain.entities import Argon2ApiKeyHasher
@@ -14,17 +16,35 @@ def test_version():
 
 
 @pytest.mark.parametrize(
-    "attr",
     [
-        "ApiKeyService",
-        "InMemoryApiKeyRepository",
-        "SqlAlchemyApiKeyRepository",
-        "ApiKeyModelMixin",
+        "module_path",
+        "attr",
+    ],
+    [
+        [
+            None,
+            "ApiKeyService",
+        ],
+        [
+            "repositories.sql",
+            "ApiKeyModelMixin",
+        ],
+        [
+            "repositories.sql",
+            "SqlAlchemyApiKeyRepository",
+        ],
+        [
+            "repositories.in_memory",
+            "InMemoryApiKeyRepository",
+        ],
     ],
 )
-def test_import_lib_public_api(attr: str):
+def test_import_lib_public_api(module_path: Optional[None], attr: str):
     """Ensure importing lib works and exposes the public API."""
-    module = importlib.import_module("fastapi_api_key")
+    module_name = (
+        "fastapi_api_key" if module_path is None else f"fastapi_api_key.{module_path}"
+    )
+    module = importlib.import_module(module_name)
     assert hasattr(module, attr)
 
 
@@ -35,3 +55,15 @@ def test_warning_default_pepper():
         match="Using default pepper is insecure. Please provide a strong pepper.",
     ):
         Argon2ApiKeyHasher()
+
+
+def test_sqlalchemy_backend_import_error(monkeypatch):
+    """Simulate absence of SQLAlchemy and check for ImportError."""
+    monkeypatch.setitem(sys.modules, "sqlalchemy", None)
+
+    with pytest.raises(ImportError) as exc_info:
+        module = importlib.import_module("fastapi_api_key.repositories.sql")
+        importlib.reload(module)
+
+    expected = "SQLAlchemy backend requires 'sqlalchemy'. Install it with: uv add fastapi_api_key[sqlalchemy]"
+    assert expected in f"{exc_info.value}"

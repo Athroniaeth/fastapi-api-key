@@ -9,9 +9,11 @@ authors = [
 requires-python = ">=3.13"
 dependencies = [
     "argon2-cffi>=25.1.0",
-    "sqlalchemy>=2.0.43",
 ]
 
+[project.optional-dependencies]
+sqlalchemy = ["sqlalchemy>=2.0.43"]
+all = ["sqlalchemy"]
 
 [build-system]
 requires = ["hatchling"]
@@ -28,9 +30,9 @@ dev = [
     "bandit>=1.8.6",
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0",
-    "commitizen>=4.9.1",
-    "pre-commit>=4.3.0",
     "pytest-asyncio>=1.2.0",
+    "pre-commit>=4.3.0",
+    "commitizen>=4.9.1",
     "aiosqlite>=0.21.0",
 ]
 
