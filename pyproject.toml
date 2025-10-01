@@ -13,6 +13,7 @@ dependencies = [
 
 [project.optional-dependencies]
 sqlalchemy = ["sqlalchemy>=2.0.43"]
+fastapi = ["sqlalchemy", "fastapi>=0.118.0",]
 all = ["sqlalchemy"]
 
 [build-system]
@@ -34,6 +35,7 @@ dev = [
     "pre-commit>=4.3.0",
     "commitizen>=4.9.1",
     "aiosqlite>=0.21.0",
+    "uvicorn>=0.37.0",
 ]
 
 [tool.commitizen]
