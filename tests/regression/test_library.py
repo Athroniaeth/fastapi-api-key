@@ -25,6 +25,10 @@ def test_version():
     [
         [
             None,
+            "ApiKey",
+        ],
+        [
+            None,
             "ApiKeyService",
         ],
         [

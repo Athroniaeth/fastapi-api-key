@@ -29,9 +29,8 @@ uv sync --extra standard --group dev
 
 ```python
 import asyncio
-from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.services.base import ApiKeyService
+from fastapi_api_key import ApiKeyService, ApiKey
 
 async def main():
     repo = InMemoryApiKeyRepository()
@@ -50,8 +49,11 @@ asyncio.run(main())
 Override the default pepper in production:
 
 ```python
-from fastapi_api_key.domain.hasher import Argon2ApiKeyHasher
+import os
+from fastapi_api_key import Argon2ApiKeyHasher, ApiKeyService
+from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 
+repo = InMemoryApiKeyRepository()
 service = ApiKeyService(
     repo=repo,
     hasher=Argon2ApiKeyHasher(pepper=os.environ["API_KEY_PEPPER"]),
@@ -62,26 +64,37 @@ service = ApiKeyService(
 
 ```python
 import os
+
+import uvicorn
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from fastapi_api_key.repositories.sql import Base
 from fastapi_api_key.router import create_api_keys_router
 
-engine = create_async_engine("sqlite+aiosqlite:///./keys.db", future=True)
-SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-async with engine.begin() as conn:
-    await conn.run_sync(Base.metadata.create_all)
+async def main():
+    engine = create_async_engine("sqlite+aiosqlite:///./keys.db", future=True)
+    SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
-app = FastAPI()
-app.include_router(
-    create_api_keys_router(
-        async_session_maker=SessionLocal,
-        pepper=os.environ["API_KEY_PEPPER"],
-        prefix="/api-keys",
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    app = FastAPI()
+    app.include_router(
+        create_api_keys_router(
+            async_session_maker=SessionLocal,
+            pepper=os.environ["API_KEY_PEPPER"],
+            prefix="/api-keys",
+        )
     )
-)
+    uvicorn.run(app, host="localhost", port=8000)
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(main())
 ```
 
 The router exposes:
