@@ -3,7 +3,8 @@ from unittest.mock import AsyncMock, create_autospec
 
 import pytest
 
-from fastapi_api_key.domain.entities import ApiKey, ApiKeyHasher
+from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key.domain.hasher import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.services.base import (
@@ -32,12 +33,12 @@ def _full_key(
 @pytest.fixture(scope="function")
 def service(
     repository: AbstractApiKeyRepository[ApiKey],
-    api_key_hasher: ApiKeyHasher,
+    fixed_salt_hasher: ApiKeyHasher,
 ) -> ApiKeyService[ApiKey]:
     """Service under test with mocked hasher and parametrized repository."""
     return ApiKeyService(
         repo=repository,
-        hasher=api_key_hasher,
+        hasher=fixed_salt_hasher,
         domain_cls=ApiKey,
         separator=".",
         global_prefix="ak",
@@ -48,7 +49,7 @@ def service(
 async def test_create_success(
     service: ApiKeyService[ApiKey],
     repository: AbstractApiKeyRepository[ApiKey],
-    api_key_hasher: ApiKeyHasher,
+    fixed_salt_hasher: ApiKeyHasher,
 ) -> None:
     """create(): should persist entity and return full plain key with expected format."""
     prefix = key_id_factory()
@@ -62,7 +63,7 @@ async def test_create_success(
         key_id=prefix,
     )
     created_entity, full_key = await service.create(entity, secret)
-    expected_hash = api_key_hasher.hash(secret)
+    expected_hash = fixed_salt_hasher.hash(secret)
 
     assert full_key == _full_key(prefix, secret, global_prefix="ak", separator=".")
     assert created_entity.key_id == prefix
@@ -347,13 +348,13 @@ async def test_verify_key_bad_secret_raises(
 
 
 def test_constructor_separator_in_gp_raises(
-    api_key_hasher: ApiKeyHasher,
+    hasher: ApiKeyHasher,
 ) -> None:
     """Service constructor: should reject a global_prefix that contains the separator."""
     with pytest.raises(ValueError):
         ApiKeyService(
             repo=InMemoryApiKeyRepository(),
-            hasher=api_key_hasher,
+            hasher=hasher,
             domain_cls=ApiKey,
             separator=".",
             global_prefix="ak.",  # invalid: contains separator ('.' sep in 'ak.')
@@ -361,12 +362,12 @@ def test_constructor_separator_in_gp_raises(
 
 
 @pytest.mark.asyncio
-async def test_create_custom_success(api_key_hasher: ApiKeyHasher) -> None:
+async def test_create_custom_success(hasher: ApiKeyHasher) -> None:
     """Full key format should respect custom global_prefix and separator."""
     repo = InMemoryApiKeyRepository()
     svc = ApiKeyService(
         repo=repo,
-        hasher=api_key_hasher,
+        hasher=hasher,
         domain_cls=ApiKey,
         separator=":",
         global_prefix="APIKEY",
@@ -388,7 +389,7 @@ async def test_create_custom_success(api_key_hasher: ApiKeyHasher) -> None:
 
 
 @pytest.mark.asyncio
-async def test_errors_do_not_leak_secret(api_key_hasher) -> None:
+async def test_errors_do_not_leak_secret(hasher) -> None:
     """Les messages d'erreur ne doivent pas révéler le secret."""
     p, provided = key_id_factory(), "supersecret"
 
@@ -403,7 +404,7 @@ async def test_errors_do_not_leak_secret(api_key_hasher) -> None:
 
     repo = create_autospec(AbstractApiKeyRepository[ApiKey], instance=True)
     repo.get_by_key_id = AsyncMock(return_value=_E())
-    svc = ApiKeyService(repo=repo, hasher=api_key_hasher, domain_cls=ApiKey)
+    svc = ApiKeyService(repo=repo, hasher=hasher, domain_cls=ApiKey)
 
     with pytest.raises(InvalidKey) as exc:
         await svc.verify_key(f"ak.{p}.{provided}")

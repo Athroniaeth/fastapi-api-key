@@ -2,7 +2,7 @@ import hashlib
 import os
 from collections.abc import AsyncIterator
 from datetime import timedelta
-from typing import Iterator
+from typing import Iterator, Type
 
 import pytest
 from argon2 import PasswordHasher
@@ -14,70 +14,20 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from fastapi_api_key.domain.hasher import BcryptApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, Base
-from fastapi_api_key.domain.entities import ApiKey, D, Argon2ApiKeyHasher, ApiKeyHasher
+from fastapi_api_key.domain.entities import ApiKey, D
+from fastapi_api_key.domain.hasher import (
+    ApiKeyHasher,
+    Argon2ApiKeyHasher,
+)
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 
 
 import pytest_asyncio
 
 from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
-
-
-@pytest_asyncio.fixture(scope="function")
-async def async_engine() -> AsyncIterator[AsyncEngine]:
-    """Create an in-memory SQLite async engine."""
-    async_engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
-
-    async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    try:
-        yield async_engine
-    finally:
-        async with async_engine.begin() as conn:
-            await conn.run_sync(Base.metadata.drop_all)
-        await async_engine.dispose()
-
-
-@pytest_asyncio.fixture(scope="function")
-async def async_session(async_engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
-    """Provide an AsyncSession bound to the in-memory engine."""
-    async_session_maker = async_sessionmaker(
-        async_engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
-
-    async with async_session_maker() as session:
-        yield session
-
-
-def make_api_key() -> ApiKey:
-    """Create a fresh ApiKey domain entity with unique key_id/hash."""
-    return ApiKey(
-        name="test-key",
-        description="A test API key",
-        is_active=True,
-        expires_at=datetime_factory() + timedelta(days=30),
-        created_at=datetime_factory(),
-        key_id=key_id_factory(),
-        key_hash=key_secret_factory(),
-    )
-
-
-@pytest.fixture(params=["memory", "sqlalchemy"], scope="function")
-def repository(
-    request, async_session: AsyncSession
-) -> Iterator[AbstractApiKeyRepository[D]]:
-    """Fixture to provide different AbstractApiKeyRepository implementations."""
-    if request.param == "memory":
-        yield InMemoryApiKeyRepository()
-    elif request.param == "sqlalchemy":
-        yield SqlAlchemyApiKeyRepository(async_session=async_session)
-    else:
-        raise ValueError(f"Unknown repository type: {request.param}")
 
 
 class MockPasswordHasher(PasswordHasher):
@@ -122,10 +72,98 @@ class MockPasswordHasher(PasswordHasher):
         raise VerifyMismatchError("Mock mismatch")
 
 
-@pytest.fixture(scope="function")
-def api_key_hasher() -> ApiKeyHasher:
-    """Factory for mock api key hasher."""
-    return Argon2ApiKeyHasher(
-        pepper="unit-test-pepper",
-        password_hasher=MockPasswordHasher(),
+@pytest_asyncio.fixture(scope="function")
+async def async_engine() -> AsyncIterator[AsyncEngine]:
+    """Create an in-memory SQLite async engine."""
+    async_engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
+    try:
+        yield async_engine
+    finally:
+        async with async_engine.begin() as conn:
+            await conn.run_sync(Base.metadata.drop_all)
+        await async_engine.dispose()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def async_session(async_engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
+    """Provide an AsyncSession bound to the in-memory engine."""
+    async_session_maker = async_sessionmaker(
+        async_engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
     )
+
+    async with async_session_maker() as session:
+        yield session
+
+
+def make_api_key() -> ApiKey:
+    """Create a fresh ApiKey domain entity with unique key_id/hash."""
+    return ApiKey(
+        name="test-key",
+        description="A test API key",
+        is_active=True,
+        expires_at=datetime_factory() + timedelta(days=30),
+        created_at=datetime_factory(),
+        key_id=key_id_factory(),
+        key_hash=key_secret_factory(),
+    )
+
+
+@pytest.fixture(params=["argon2", "bcrypt"], scope="function")
+def hasher_class(request: pytest.FixtureRequest) -> Type[ApiKeyHasher]:
+    """Helper to get the hasher class from the request parameter."""
+    if request.param == "argon2":
+        return Argon2ApiKeyHasher
+    elif request.param == "bcrypt":
+        return BcryptApiKeyHasher
+    else:
+        raise ValueError(f"Unknown hasher type: {request.param}")
+
+
+@pytest.fixture()
+def hasher(hasher_class: Type[ApiKeyHasher]) -> Iterator[ApiKeyHasher]:
+    """Fixture providing different ApiKeyHasher implementations."""
+    pepper = "unit-test-pepper"
+
+    if issubclass(hasher_class, Argon2ApiKeyHasher):
+        hasher_class: Type[Argon2ApiKeyHasher]
+        ph = MockPasswordHasher(fixed_salt=False)
+        yield hasher_class(pepper=pepper, password_hasher=ph)
+    elif issubclass(hasher_class, BcryptApiKeyHasher):
+        hasher_class: Type[BcryptApiKeyHasher]
+        yield hasher_class(pepper=pepper, rounds=4)
+    else:
+        raise ValueError(f"Unknown hasher type: {hasher_class}")
+
+
+@pytest.fixture()
+def fixed_salt_hasher(request: pytest.FixtureRequest) -> ApiKeyHasher:
+    """Fixture providing different ApiKeyHasher implementations.
+
+    Args:
+        request: Pytest internal fixture providing the parameter.
+
+    Yields:
+        ApiKeyHasher: A concrete implementation of the hashing protocol.
+    """
+    pepper = "unit-test-pepper"
+    ph = MockPasswordHasher(fixed_salt=True)
+    return Argon2ApiKeyHasher(pepper=pepper, password_hasher=ph)
+
+
+@pytest.fixture(params=["memory", "sqlalchemy"], scope="function")
+def repository(
+    request: pytest.FixtureRequest, async_session: AsyncSession
+) -> Iterator[AbstractApiKeyRepository[D]]:
+    """Fixture to provide different AbstractApiKeyRepository implementations."""
+    if request.param == "memory":
+        yield InMemoryApiKeyRepository()
+    elif request.param == "sqlalchemy":
+        yield SqlAlchemyApiKeyRepository(async_session=async_session)
+    else:
+        raise ValueError(f"Unknown repository type: {request.param}")

@@ -1,9 +1,6 @@
-import warnings
 from dataclasses import field, dataclass
 from datetime import datetime
 from typing import Optional, runtime_checkable, Protocol, TypeVar
-
-from argon2 import PasswordHasher, exceptions
 
 from fastapi_api_key.domain.errors import KeyExpired, KeyInactive
 from fastapi_api_key.utils import (
@@ -11,66 +8,6 @@ from fastapi_api_key.utils import (
     datetime_factory,
     key_id_factory,
 )
-
-
-class ApiKeyHasher(Protocol):
-    """Protocol for API key hashing and verification.
-
-    Notes:
-        Implementations should use a pepper for added security. Ensure that
-        pepper is kept secret and not hard-coded in production code.
-
-    Attributes:
-        pepper (str): A secret string added to the API key before hashing.
-    """
-
-    pepper: str
-
-    def hash(self, api_key: str) -> str:
-        """Hash an API key into a storable string representation."""
-        ...
-
-    def verify(self, stored_hash: str, supplied_key: str) -> bool:
-        """Verify the supplied API key against the stored hash."""
-        ...
-
-
-class Argon2ApiKeyHasher(ApiKeyHasher):
-    """Argon2-based API key hasher and verifier with pepper."""
-
-    pepper: str
-    _ph: PasswordHasher
-
-    def __init__(
-        self,
-        pepper: str = "super-secret-pepper",
-        password_hasher: Optional[PasswordHasher] = None,
-    ) -> None:
-        if pepper == "super-secret-pepper":
-            warnings.warn(
-                "Using default pepper is insecure. Please provide a strong pepper.",
-                UserWarning,
-            )
-
-        # Parameters by default are secure and recommended by Argon2 authors.
-        # See https://argon2-cffi.readthedocs.io/en/stable/api.html
-        self._ph = password_hasher or PasswordHasher()
-        self._pepper = pepper
-
-    def _apply_pepper(self, api_key: str) -> str:
-        return f"{api_key}{self._pepper}"
-
-    def hash(self, api_key: str) -> str:
-        return self._ph.hash(self._apply_pepper(api_key))
-
-    def verify(self, stored_hash: str, supplied_key: str) -> bool:
-        try:
-            return self._ph.verify(
-                stored_hash,
-                self._apply_pepper(supplied_key),
-            )
-        except (exceptions.VerifyMismatchError, exceptions.VerificationError):
-            return False
 
 
 @runtime_checkable

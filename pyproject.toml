@@ -10,26 +10,30 @@ requires-python = ">=3.13"
 dependencies = []
 
 [project.optional-dependencies]
-# Only install dependencies for service/repository
-core=[
-    "sqlalchemy>=2.0.43",
+bcrypt = [
+    "bcrypt>=5.0.0",
+]
+argon = [
     "argon2-cffi>=25.1.0",
 ]
-argon=[
-    "argon2-cffi>=25.1.0",
-]
-sqlalchemy=[
+sqlalchemy = [
     "sqlalchemy>=2.0.43",
 ]
-fastapi=[
+core = [
+    "sqlalchemy>=2.0.43",
+    "argon2-cffi>=25.1.0",
+    "bcrypt>=5.0.0",
+]
+fastapi = [
     "fastapi>=0.118.0",
 ]
-# Install everything
-standard=[
+standard = [
     "fastapi>=0.118.0",
     "sqlalchemy>=2.0.43",
     "argon2-cffi>=25.1.0",
+    "bcrypt>=5.0.0",
 ]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

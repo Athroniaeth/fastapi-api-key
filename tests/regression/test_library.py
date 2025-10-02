@@ -1,9 +1,11 @@
 import importlib
 import sys
-from typing import Optional
+from typing import Optional, Type
 
 import pytest
-from fastapi_api_key.domain.entities import Argon2ApiKeyHasher
+from fastapi_api_key.domain.hasher import (
+    Argon2ApiKeyHasher,
+)
 
 
 def test_version():
@@ -24,6 +26,14 @@ def test_version():
         [
             None,
             "ApiKeyService",
+        ],
+        [
+            None,
+            "BcryptApiKeyHasher",
+        ],
+        [
+            None,
+            "Argon2ApiKeyHasher",
         ],
         [
             "repositories.sql",
@@ -48,13 +58,13 @@ def test_import_lib_public_api(module_path: Optional[None], attr: str):
     assert hasattr(module, attr)
 
 
-def test_warning_default_pepper():
+def test_warning_default_pepper(hasher_class: Type[Argon2ApiKeyHasher]):
     """Ensure that ApiKeyHasher throw warning when default pepper isn't change."""
     with pytest.warns(
         UserWarning,
         match="Using default pepper is insecure. Please provide a strong pepper.",
     ):
-        Argon2ApiKeyHasher()
+        hasher_class()
 
 
 def test_sqlalchemy_backend_import_error(monkeypatch):
