@@ -346,17 +346,13 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "argon2-cffi" },
-]
-
-[package.optional-dependencies]
-all = [
-    { name = "sqlalchemy" },
-]
-fastapi = [
     { name = "fastapi" },
     { name = "sqlalchemy" },
 ]
-sqlalchemy = [
+
+[package.optional-dependencies]
+core = [
+    { name = "argon2-cffi" },
     { name = "sqlalchemy" },
 ]
 
@@ -377,10 +373,10 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "argon2-cffi", specifier = ">=25.1.0" },
-    { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.118.0" },
-    { name = "sqlalchemy", marker = "extra == 'all'" },
-    { name = "sqlalchemy", marker = "extra == 'fastapi'" },
-    { name = "sqlalchemy", marker = "extra == 'sqlalchemy'", specifier = ">=2.0.43" },
+    { name = "argon2-cffi", marker = "extra == 'core'", specifier = ">=25.1.0" },
+    { name = "fastapi", specifier = ">=0.118.0" },
+    { name = "sqlalchemy", specifier = ">=2.0.43" },
+    { name = "sqlalchemy", marker = "extra == 'core'", specifier = ">=2.0.43" },
 ]
 
 [package.metadata.requires-dev]
