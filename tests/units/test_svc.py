@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, datetime, timezone
 from unittest.mock import AsyncMock, create_autospec
 
 import pytest
@@ -227,9 +227,17 @@ async def test_verify_key_success(service: ApiKeyService[ApiKey]) -> None:
         entity=entity,
         key_secret=key_secret,
     )
+    today = datetime.now(timezone.utc)
+    last_used_before = entity.last_used_at
+    assert last_used_before is None
+
     got = await service.verify_key(full)
     assert got.id_ == entity.id_
     assert got.name == entity.name
+    assert got.last_used_at is not None
+    assert got.last_used_at != last_used_before
+    # Check that api key was "touched" recently
+    assert (got.last_used_at - today) < timedelta(seconds=5)
 
 
 @pytest.mark.asyncio
@@ -328,6 +336,26 @@ async def test_verify_key_expired_raises(service: ApiKeyService[ApiKey]) -> None
 
 
 @pytest.mark.asyncio
+async def test_verify_key_empty_secret_raises(
+    service: ApiKeyService[ApiKey],
+) -> None:
+    """verify_key(): should raise InvalidKey when secret does not match."""
+    prefix = key_id_factory()
+    good_secret = key_secret_factory()
+    bad_secret = ""
+
+    entity = ApiKey(name="to-verify", key_id=prefix)
+    await service.create(
+        entity=entity,
+        key_secret=good_secret,
+    )
+    bad = _full_key(prefix, bad_secret, global_prefix="ak", separator=".")
+
+    with pytest.raises(InvalidKey, match=r"API key is invalid \(empty secret\)"):
+        await service.verify_key(bad)
+
+
+@pytest.mark.asyncio
 async def test_verify_key_bad_secret_raises(
     service: ApiKeyService[ApiKey],
 ) -> None:
@@ -343,7 +371,7 @@ async def test_verify_key_bad_secret_raises(
     )
     bad = _full_key(prefix, bad_secret, global_prefix="ak", separator=".")
 
-    with pytest.raises(InvalidKey, match=r"API key is invalid."):
+    with pytest.raises(InvalidKey, match=r"API key is invalid \(hash mismatch\)"):
         await service.verify_key(bad)
 
 

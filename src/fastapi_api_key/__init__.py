@@ -1,12 +1,14 @@
 import importlib.metadata
 
 from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key.repositories.sql import ApiKeyModelMixin
 from fastapi_api_key.domain.hasher import Argon2ApiKeyHasher, BcryptApiKeyHasher
 from fastapi_api_key.services.base import ApiKeyService
 
 __all__ = [
     "ApiKey",
     "ApiKeyService",
+    "ApiKeyModelMixin",
     "Argon2ApiKeyHasher",
     "BcryptApiKeyHasher",
 ]

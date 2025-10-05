@@ -240,6 +240,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
             global_prefix, prefix, secret = parts
         except Exception as e:
             raise InvalidKey(f"API key format is invalid: {str(e)}") from e
+
         # Search entity by a key_id (can't brute force hashes)
         entity = await self.get_by_key_id(prefix)
 
@@ -248,16 +249,13 @@ class ApiKeyService(AbstractApiKeyService[D]):
         entity.ensure_can_authenticate()
 
         key_hash = entity.key_hash
-        if not key_hash:
-            raise InvalidKey("API key is invalid (hash missing)")
+
+        if not secret:
+            raise InvalidKey("API key is invalid (empty secret)")
 
         if not self._hasher.verify(key_hash, secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
         entity.touch()
         updated = await self._repo.update(entity)
-
-        if updated is None:
-            raise KeyNotFound(f"API key with ID '{entity.id_}' not found")
-
         return updated

@@ -120,7 +120,5 @@ class ApiKey(ApiKeyEntity):
         if not self.is_active:
             raise KeyInactive("API key is disabled.")
 
-        expires_at = self.expires_at
-
-        if expires_at and expires_at < datetime_factory():
+        if self.expires_at and self.expires_at < datetime_factory():
             raise KeyExpired("API key is expired.")

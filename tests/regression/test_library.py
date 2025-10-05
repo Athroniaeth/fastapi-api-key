@@ -33,6 +33,10 @@ def test_version():
         ],
         [
             None,
+            "ApiKeyModelMixin",
+        ],
+        [
+            None,
             "BcryptApiKeyHasher",
         ],
         [
