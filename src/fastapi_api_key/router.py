@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key.domain.errors import KeyNotFound
 from fastapi_api_key.domain.hasher import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 
@@ -195,12 +196,12 @@ def create_api_keys_router(
         Raises:
             HTTPException: 404 if the key does not exist.
         """
-        entity = await svc.get_by_id(api_key_id)
-
-        if entity is None:
+        try:
+            entity = await svc.get_by_id(api_key_id)
+        except KeyNotFound as exc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
-            )
+            ) from exc
 
         return _to_out(entity)
 
@@ -225,21 +226,24 @@ def create_api_keys_router(
         Raises:
             HTTPException: 404 if the key does not exist.
         """
-
-        current = await svc.get_by_id(api_key_id)  # type: ignore[attr-defined]
-
-        if current is None:
+        try:
+            current = await svc.get_by_id(api_key_id)
+        except KeyNotFound as exc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
-            )
+            ) from exc
 
         current.name = payload.name or current.name
         current.description = payload.description or current.description
         current.is_active = (
             payload.is_active if payload.is_active is not None else current.is_active
         )
-
-        updated = await svc.update(current)
+        try:
+            updated = await svc.update(current)
+        except KeyNotFound as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
+            ) from exc
         return _to_out(updated)
 
     @router.delete(
@@ -260,12 +264,12 @@ def create_api_keys_router(
         Raises:
             HTTPException: 404 if the key does not exist.
         """
-        result = await svc.delete_by_id(api_key_id)
-
-        if not result:
+        try:
+            await svc.delete_by_id(api_key_id)
+        except KeyNotFound as exc:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
-            )
+            ) from exc
 
         return {"status": "deleted"}
 
