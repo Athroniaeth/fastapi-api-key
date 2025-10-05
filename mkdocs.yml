@@ -1,0 +1,56 @@
+site_name: fastapi-api-key
+site_description: "Fast API key management primitives for FastAPI applications"
+site_url: ""
+repo_url: https://github.com/Athroniaeth/fastapi-api-key
+repo_name: Athroniaeth/fastapi-api-key
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.top
+    - navigation.sections
+    - navigation.expand
+    - toc.integrate
+    - content.code.copy
+    - content.code.annotate
+    - content.action.edit
+  palette:
+    - scheme: default
+      primary: blue
+      accent: deep orange
+markdown_extensions:
+  - admonition
+  - def_list
+  - footnotes
+  - attr_list
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets:
+      base_path:
+        - docs
+        - .
+plugins:
+  - search
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Usage:
+      - In-memory Prototype: usage/inmemory.md
+      - Async SQLAlchemy: usage/sqlalchemy.md
+      - FastAPI Router: usage/router.md
+  - Advanced:
+      - Custom Domain Model: advanced/custom-model.md
+  - Reference:
+      - Service API: reference/service.md
+      - Repository Contracts: reference/repositories.md
+      - Router Endpoints: reference/router.md
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Athroniaeth/fastapi-api-key
