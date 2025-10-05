@@ -76,7 +76,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
         """
 
     @abstractmethod
-    async def create(self, entity: D) -> D:
+    async def create(self, entity: D) -> Tuple[D, str]:
         """Create and persist a new API key.
 
         Args:
@@ -88,7 +88,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
             as it will not be retrievable later.
 
         Returns:
-            A tuple of the created entity and the full plain key string to be given to the user
+            A tuple of the created entity and the full plain key string to be given to the user.
         """
         ...
 
@@ -247,7 +247,17 @@ class ApiKeyService(AbstractApiKeyService[D]):
         # and refresh last_used_at if verified
         entity.ensure_can_authenticate()
 
-        if not self._hasher.verify(entity.key_hash, secret):
+        key_hash = entity.key_hash
+        if not key_hash:
+            raise InvalidKey("API key is invalid (hash missing)")
+
+        if not self._hasher.verify(key_hash, secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
-        return entity
+        entity.touch()
+        updated = await self._repo.update(entity)
+
+        if updated is None:
+            raise KeyNotFound(f"API key with ID '{entity.id_}' not found")
+
+        return updated
