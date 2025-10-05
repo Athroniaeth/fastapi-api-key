@@ -1,0 +1,46 @@
+name: Development Workflow
+
+on:
+  pull_request:
+    branches: [ development ]
+  push:
+    branches: [ development ]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  test-and-lint:
+    name: Test & Lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [ "3.9", "3.10", "3.11", "3.12", "3.13" ]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Cache UV
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-${{ matrix.python-version }}-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-${{ matrix.python-version }}-
+
+      - name: Sync dev dependencies
+        run: uv sync --locked --all-extras --dev --no-progress -q
+
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Lint / Format / Type-check
+        run: uv run lint

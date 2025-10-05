@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
-from types import NoneType
-from typing import Type
+from typing import Type, Union
 
 import pytest
 
@@ -10,6 +9,9 @@ from fastapi_api_key.domain.errors import KeyInactive, KeyExpired
 
 from fastapi_api_key.utils import datetime_factory
 from tests.conftest import MockPasswordHasher
+
+# Python <3.10 compatibility
+NoneType = type(None)
 
 
 @pytest.mark.parametrize(
@@ -31,7 +33,7 @@ from tests.conftest import MockPasswordHasher
 )
 def test_apikey_entity_structure(
     field_name: str,
-    expected_type: type | tuple[type, ...],
+    expected_type: Union[type, tuple[type, ...]],
 ):
     instance = ApiKey()
     assert hasattr(instance, field_name), f"Missing field '{field_name}'"
@@ -100,8 +102,8 @@ def test_touch_updates_last_used_at():
 )
 def test_ensure_can_authenticate(
     is_active: bool,
-    expires_at: datetime | None,
-    should_raise: Type[Exception] | None,
+    expires_at: Union[datetime, None],
+    should_raise: Union[Type[Exception], None],
 ):
     """Test the ensure_can_authenticate method of ApiKey."""
     api_key = ApiKey(is_active=is_active, expires_at=expires_at)

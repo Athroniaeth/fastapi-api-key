@@ -2,7 +2,7 @@ import hashlib
 import os
 from collections.abc import AsyncIterator
 from datetime import timedelta
-from typing import Iterator, Type
+from typing import Iterator, Type, Union, Optional
 
 import pytest
 from argon2 import PasswordHasher
@@ -45,7 +45,7 @@ class MockPasswordHasher(PasswordHasher):
         self._fixed_salt = fixed_salt
         self._salt = os.urandom(8).hex()
 
-    def hash(self, password: str | bytes, *, salt: bytes | None = None) -> str:
+    def hash(self, password: Union[str, bytes], salt: Optional[bytes] = None) -> str:
         if not self._fixed_salt:
             self._salt = os.urandom(8).hex()
         if isinstance(password, bytes):
@@ -55,7 +55,7 @@ class MockPasswordHasher(PasswordHasher):
         digest = hashlib.sha256(password_bytes + self._salt.encode()).hexdigest()
         return f"hashed-{digest}:{self._salt}"
 
-    def verify(self, hash: str, password: str | bytes) -> bool:
+    def verify(self, hash: str, password: Union[str, bytes]) -> bool:
         try:
             digest, salt = hash.replace("hashed-", "").split(":")
         except ValueError:
