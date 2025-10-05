@@ -1,5 +1,5 @@
 from dataclasses import field, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, runtime_checkable, Protocol, TypeVar
 
 from fastapi_api_key.domain.errors import KeyExpired, KeyInactive
@@ -58,6 +58,17 @@ class ApiKeyEntity(Protocol):
 D = TypeVar("D", bound=ApiKeyEntity)
 
 
+def _normalize_datetime(value: Optional[datetime]) -> Optional[datetime]:
+    """Ensure datetimes are timezone-aware (UTC)."""
+    if value is None:
+        return None
+
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+
+    return value
+
+
 @dataclass
 class ApiKey(ApiKeyEntity):
     """Domain entity representing an API key.
@@ -82,6 +93,11 @@ class ApiKey(ApiKeyEntity):
     key_id: str = field(default_factory=key_id_factory)
     key_hash: Optional[str] = None
 
+    def __post_init__(self) -> None:
+        self.created_at = _normalize_datetime(self.created_at) or datetime_factory()
+        self.expires_at = _normalize_datetime(self.expires_at)
+        self.last_used_at = _normalize_datetime(self.last_used_at)
+
     def full_key_secret(
         self,
         global_prefix: str,
@@ -104,5 +120,7 @@ class ApiKey(ApiKeyEntity):
         if not self.is_active:
             raise KeyInactive("API key is disabled.")
 
-        if self.expires_at and self.expires_at < datetime_factory():
+        expires_at = self.expires_at
+
+        if expires_at and expires_at < datetime_factory():
             raise KeyExpired("API key is expired.")

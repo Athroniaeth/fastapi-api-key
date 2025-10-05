@@ -1,7 +1,7 @@
 import secrets
 import string
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 def uuid_factory() -> str:
@@ -22,4 +22,4 @@ def key_secret_factory(length: int = 64) -> str:
 
 def datetime_factory() -> datetime:
     """Helper function to create a timezone-aware datetime object."""
-    return datetime.now()  # timezone.utc)
+    return datetime.now(timezone.utc)
