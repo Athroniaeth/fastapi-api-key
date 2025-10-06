@@ -31,7 +31,7 @@ Thanks for helping improve `fastapi-api-key`! This guide walks you through the t
 
 ```bash
 # install runtime + dev dependencies
-uv sync --extra standard --group dev
+uv sync --extra all --group dev
 
 # activate the virtual environment for your shell session
 source .venv/bin/activate  # or .venv\Scripts\Activate.ps1 on Windows

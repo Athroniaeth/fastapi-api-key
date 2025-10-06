@@ -14,13 +14,13 @@
 Clone the repository and install the project with the extras that fit your stack. Examples below use `uv`, but `pip` works the same.
 
 ```bash
-uv sync --extra standard  # fastapi + sqlalchemy + argon2 + bcrypt
+uv sync --extra all  # fastapi + sqlalchemy + argon2 + bcrypt
 ```
 
 For lighter setups you can choose individual extras such as `argon`, `bcrypt`, or `sqlalchemy`. Development dependencies (pytest, ruff, etc.) are available under the `dev` group:
 
 ```bash
-uv sync --extra standard --group dev
+uv sync --extra all --group dev
 ```
 
 ## Quick start

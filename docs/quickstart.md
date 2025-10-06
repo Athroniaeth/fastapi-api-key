@@ -7,7 +7,7 @@ This walk-through mirrors the flow covered in the benchmarks folder and gets you
 Choose an extras group that matches the repository backend you plan to use. The examples below rely on the full async stack (FastAPI + SQLAlchemy + Argon2 + BCrypt).
 
 ```bash
-uv sync --extra standard --group dev
+uv sync --extra all --group dev
 ```
 
 For quick experiments (or CI), the `argon` extra plus the in-memory repository is enough:

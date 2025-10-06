@@ -4,7 +4,7 @@ from typing import Optional, Type
 
 import pytest
 from fastapi_api_key.domain.hasher import (
-    Argon2ApiKeyHasher,
+    Argon2ApiKeyHasher, ApiKeyHasher,
 )
 
 
@@ -57,7 +57,7 @@ def test_version():
         ],
     ],
 )
-def test_import_lib_public_api(module_path: Optional[None], attr: str):
+def test_import_lib_public_api(module_path: Optional[str], attr: str):
     """Ensure importing lib works and exposes the public API."""
     module_name = (
         "fastapi_api_key" if module_path is None else f"fastapi_api_key.{module_path}"
@@ -66,7 +66,7 @@ def test_import_lib_public_api(module_path: Optional[None], attr: str):
     assert hasattr(module, attr)
 
 
-def test_warning_default_pepper(hasher_class: Type[Argon2ApiKeyHasher]):
+def test_warning_default_pepper(hasher_class: Type[ApiKeyHasher]):
     """Ensure that ApiKeyHasher throw warning when default pepper isn't change."""
     with pytest.warns(
         UserWarning,
@@ -75,7 +75,7 @@ def test_warning_default_pepper(hasher_class: Type[Argon2ApiKeyHasher]):
         hasher_class()
 
 
-def test_sqlalchemy_backend_import_error(monkeypatch):
+def test_sqlalchemy_backend_import_error(monkeypatch: pytest.MonkeyPatch):
     """Simulate absence of SQLAlchemy and check for ImportError."""
     monkeypatch.setitem(sys.modules, "sqlalchemy", None)
 

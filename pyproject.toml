@@ -7,17 +7,14 @@ authors = [
     { name = "Athroniaeth", email = "pierre.chaumont@hotmail.fr" }
 ]
 requires-python = ">=3.9"
-dependencies = []
+dependencies = [
+    "sqlalchemy>=2.0.43",
+    "argon2-cffi>=25.1.0",
+]
 
 [project.optional-dependencies]
 bcrypt = [
     "bcrypt>=5.0.0",
-]
-argon = [
-    "argon2-cffi>=25.1.0",
-]
-sqlalchemy = [
-    "sqlalchemy>=2.0.43",
 ]
 core = [
     "sqlalchemy>=2.0.43",
@@ -27,7 +24,7 @@ core = [
 fastapi = [
     "fastapi>=0.118.0",
 ]
-standard = [
+all = [
     "fastapi>=0.118.0",
     "sqlalchemy>=2.0.43",
     "argon2-cffi>=25.1.0",

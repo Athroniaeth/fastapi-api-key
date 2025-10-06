@@ -25,10 +25,10 @@ Material for MkDocs powers this site, so everything is organised into quick star
 Choose the extras that match your stack. The examples on this site assume you are using `uv`, but `pip` or `rye` work as well.
 
 ```bash
-uv sync --extra standard --group dev
+uv sync --extra all --group dev
 ```
 
-The `standard` extra installs FastAPI, SQLAlchemy, Argon2, and BCrypt. For minimal deployments, pick the individual extras (`argon`, `bcrypt`, `sqlalchemy`).
+The `all` extra installs FastAPI, SQLAlchemy, Argon2, and BCrypt. For minimal deployments, pick the individual extras (`argon`, `bcrypt`, `sqlalchemy`).
 
 !!! tip "Always set a pepper"
     The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
