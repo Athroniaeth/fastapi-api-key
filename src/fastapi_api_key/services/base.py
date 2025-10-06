@@ -77,11 +77,12 @@ class AbstractApiKeyService(ABC, Generic[D]):
         """
 
     @abstractmethod
-    async def create(self, entity: D) -> Tuple[D, str]:
+    async def create(self, entity: D, key_secret: Optional[str] = None) -> Tuple[D, str]:
         """Create and persist a new API key.
 
         Args:
             entity: The entity api to create.
+            key_secret: Optional raw key secret to use. If None, a new random one will be generated.
 
         Notes:
             The api_key is the only time the raw key is available, it will be hashed
