@@ -2,8 +2,7 @@ try:
     import sqlalchemy  # noqa: F401
 except ModuleNotFoundError as e:
     raise ImportError(
-        "SQLAlchemy backend requires 'sqlalchemy'. "
-        "Install it with: uv add fastapi_api_key[sqlalchemy]"
+        "SQLAlchemy backend requires 'sqlalchemy'. Install it with: uv add fastapi_api_key[sqlalchemy]"
     ) from e
 
 

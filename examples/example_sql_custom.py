@@ -77,7 +77,7 @@ class ApiKeyRepository(SqlAlchemyApiKeyRepository[ApiKey, ApiKeyModel]):
         target.expires_at = entity.expires_at
         target.last_used_at = entity.last_used_at
         target.key_id = entity.key_id
-        target.key_hash = entity.key_hash
+        target.key_hash = entity.key_hash  # type: ignore[invalid-assignment]
         target.notes = entity.notes
 
         return target
@@ -133,7 +133,7 @@ async def main():
 
         entity, api_key = await svc.create(entity)
         entity.notes = "These are some notes about the API key"
-        entity = await repo.update(entity)
+        entity = await svc.update(entity)
         print(f"Notes : {entity.notes}")
         print(f"Created entity: {entity}")
         print(f"Created api_key: {api_key}")

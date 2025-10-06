@@ -1,9 +1,10 @@
+from typing import Optional
+
 try:
     import bcrypt  # noqa: F401
 except ModuleNotFoundError as e:
     raise ImportError(
-        "SQLAlchemy backend requires 'bcrypt'. "
-        "Install it with: uv add fastapi_api_key[bcrypt]"
+        "SQLAlchemy backend requires 'bcrypt'. Install it with: uv add fastapi_api_key[bcrypt]"
     ) from e
 import bcrypt
 
@@ -18,7 +19,7 @@ class BcryptApiKeyHasher(BaseApiKeyHasher):
 
     def __init__(
         self,
-        pepper: str = DEFAULT_PEPPER,
+        pepper: Optional[str] = None,
         rounds: int = 12,
     ) -> None:
         if rounds < 4 or rounds > 31:

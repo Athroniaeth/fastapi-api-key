@@ -2,8 +2,7 @@ try:
     import argon2  # noqa: F401
 except ModuleNotFoundError as e:
     raise ImportError(
-        "SQLAlchemy backend requires 'argon2'. "
-        "Install it with: uv add fastapi_api_key[argon2]"
+        "SQLAlchemy backend requires 'argon2'. Install it with: uv add fastapi_api_key[argon2]"
     ) from e
 
 from typing import Optional
@@ -22,13 +21,12 @@ class Argon2ApiKeyHasher(BaseApiKeyHasher):
 
     def __init__(
         self,
-        pepper: str = DEFAULT_PEPPER,
+        pepper: Optional[str] = None,
         password_hasher: Optional[PasswordHasher] = None,
     ) -> None:
         # Parameters by default are secure and recommended by Argon2 authors.
         # See https://argon2-cffi.readthedocs.io/en/stable/api.html
         self._ph = password_hasher or PasswordHasher()
-
         super().__init__(pepper=pepper)
 
     def _apply_pepper(self, api_key: str) -> str:

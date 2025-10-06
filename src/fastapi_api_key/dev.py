@@ -12,8 +12,7 @@ def _run_command(command: str) -> None:  # pragma: no cover
 
     if path_program is None:
         raise RuntimeError(
-            f"Program '{program}' not found in PATH. "
-            f"Please use `uv sync --dev` to install development dependencies."
+            f"Program '{program}' not found in PATH. Please use `uv sync --dev` to install development dependencies."
         )
 
     list_command[0] = path_program

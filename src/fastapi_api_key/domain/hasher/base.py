@@ -1,6 +1,6 @@
 import warnings
 from abc import ABC, abstractmethod
-from typing import Protocol
+from typing import Protocol, Optional
 
 DEFAULT_PEPPER = "super-secret-pepper"
 
@@ -32,7 +32,8 @@ class BaseApiKeyHasher(ApiKeyHasher, ABC):
 
     _pepper: str
 
-    def __init__(self, pepper: str = DEFAULT_PEPPER) -> None:
+    def __init__(self, pepper: Optional[str] = None) -> None:
+        pepper = pepper or DEFAULT_PEPPER
         if pepper == DEFAULT_PEPPER:
             warnings.warn(
                 "Using default pepper is insecure. Please provide a strong pepper.",
