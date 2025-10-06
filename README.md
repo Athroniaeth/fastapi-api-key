@@ -62,10 +62,12 @@ import os
 from fastapi_api_key import Argon2ApiKeyHasher, ApiKeyService
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 
+pepper = os.environ["API_KEY_PEPPER"]
+hasher = Argon2ApiKeyHasher(pepper=pepper)
 repo = InMemoryApiKeyRepository()
 service = ApiKeyService(
     repo=repo,
-    hasher=Argon2ApiKeyHasher(pepper=os.environ["API_KEY_PEPPER"]),
+    hasher=hasher,
 )
 ```
 
