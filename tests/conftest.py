@@ -14,14 +14,14 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from fastapi_api_key.domain.hasher import BcryptApiKeyHasher
+from fastapi_api_key import BcryptApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, Base
 from fastapi_api_key.domain.entities import ApiKey, D
-from fastapi_api_key.domain.hasher import (
-    ApiKeyHasher,
+from fastapi_api_key.domain.hasher.argon2 import (
     Argon2ApiKeyHasher,
 )
+from fastapi_api_key.domain.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 
 

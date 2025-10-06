@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, create_autospec
 import pytest
 
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.hasher import ApiKeyHasher
+from fastapi_api_key.domain.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.services.base import (

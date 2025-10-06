@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 from typing import Generic, Optional, Type, Tuple, List
 
 from fastapi_api_key.domain.entities import D, ApiKey
-from fastapi_api_key.domain.hasher import ApiKeyHasher, Argon2ApiKeyHasher
+from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
+from fastapi_api_key.domain.hasher.base import ApiKeyHasher
 from fastapi_api_key.domain.errors import KeyNotFound, KeyNotProvided, InvalidKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.utils import datetime_factory, key_secret_factory

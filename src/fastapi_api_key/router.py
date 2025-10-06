@@ -17,7 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.errors import KeyNotFound
-from fastapi_api_key.domain.hasher import Argon2ApiKeyHasher
+from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 
 

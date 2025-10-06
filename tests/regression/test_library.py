@@ -3,9 +3,7 @@ import sys
 from typing import Optional, Type
 
 import pytest
-from fastapi_api_key.domain.hasher import (
-    Argon2ApiKeyHasher, ApiKeyHasher,
-)
+from fastapi_api_key.domain.hasher.base import ApiKeyHasher
 
 
 def test_version():
@@ -75,13 +73,23 @@ def test_warning_default_pepper(hasher_class: Type[ApiKeyHasher]):
         hasher_class()
 
 
-def test_sqlalchemy_backend_import_error(monkeypatch: pytest.MonkeyPatch):
+@pytest.mark.parametrize(
+    ["library", "module_path"],
+    [
+        ["sqlalchemy", "fastapi_api_key.repositories.sql"],
+        ["bcrypt", "fastapi_api_key.domain.hasher.bcrypt"],
+        ["argon2", "fastapi_api_key.domain.hasher.argon2"],
+    ],
+)
+def test_sqlalchemy_backend_import_error(
+    monkeypatch: pytest.MonkeyPatch, library: str, module_path: str
+):
     """Simulate absence of SQLAlchemy and check for ImportError."""
-    monkeypatch.setitem(sys.modules, "sqlalchemy", None)
+    monkeypatch.setitem(sys.modules, library, None)
 
     with pytest.raises(ImportError) as exc_info:
-        module = importlib.import_module("fastapi_api_key.repositories.sql")
+        module = importlib.import_module(module_path)
         importlib.reload(module)
 
-    expected = "SQLAlchemy backend requires 'sqlalchemy'. Install it with: uv add fastapi_api_key[sqlalchemy]"
+    expected = f"backend requires '{library}'. Install it with: uv add fastapi_api_key[{library}]"
     assert expected in f"{exc_info.value}"

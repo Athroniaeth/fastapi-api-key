@@ -612,7 +612,13 @@ version = "0.1.0"
 source = { editable = "." }
 
 [package.optional-dependencies]
-argon = [
+all = [
+    { name = "argon2-cffi" },
+    { name = "bcrypt" },
+    { name = "fastapi" },
+    { name = "sqlalchemy" },
+]
+argon2 = [
     { name = "argon2-cffi" },
 ]
 bcrypt = [
@@ -627,12 +633,6 @@ fastapi = [
     { name = "fastapi" },
 ]
 sqlalchemy = [
-    { name = "sqlalchemy" },
-]
-standard = [
-    { name = "argon2-cffi" },
-    { name = "bcrypt" },
-    { name = "fastapi" },
     { name = "sqlalchemy" },
 ]
 
@@ -652,17 +652,17 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "argon2-cffi", marker = "extra == 'argon'", specifier = ">=25.1.0" },
+    { name = "argon2-cffi", marker = "extra == 'all'", specifier = ">=25.1.0" },
+    { name = "argon2-cffi", marker = "extra == 'argon2'", specifier = ">=25.1.0" },
     { name = "argon2-cffi", marker = "extra == 'core'", specifier = ">=25.1.0" },
-    { name = "argon2-cffi", marker = "extra == 'standard'", specifier = ">=25.1.0" },
+    { name = "bcrypt", marker = "extra == 'all'", specifier = ">=5.0.0" },
     { name = "bcrypt", marker = "extra == 'bcrypt'", specifier = ">=5.0.0" },
     { name = "bcrypt", marker = "extra == 'core'", specifier = ">=5.0.0" },
-    { name = "bcrypt", marker = "extra == 'standard'", specifier = ">=5.0.0" },
+    { name = "fastapi", marker = "extra == 'all'", specifier = ">=0.118.0" },
     { name = "fastapi", marker = "extra == 'fastapi'", specifier = ">=0.118.0" },
-    { name = "fastapi", marker = "extra == 'standard'", specifier = ">=0.118.0" },
+    { name = "sqlalchemy", marker = "extra == 'all'", specifier = ">=2.0.43" },
     { name = "sqlalchemy", marker = "extra == 'core'", specifier = ">=2.0.43" },
     { name = "sqlalchemy", marker = "extra == 'sqlalchemy'", specifier = ">=2.0.43" },
-    { name = "sqlalchemy", marker = "extra == 'standard'", specifier = ">=2.0.43" },
 ]
 
 [package.metadata.requires-dev]
@@ -781,7 +781,7 @@ name = "importlib-metadata"
 version = "8.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zipp" },
+    { name = "zipp", marker = "python_full_version < '3.14'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/33/08/c1395a292bb23fd03bdf572a1357c5a733d3eecbab877641ceacab23db6e/importlib_metadata-8.6.1.tar.gz", hash = "sha256:310b41d755445d74569f993ccfc22838295d9fe005425094fad953d7f15c8580", size = 55767 }
 wheels = [

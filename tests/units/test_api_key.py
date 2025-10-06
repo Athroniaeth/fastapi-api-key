@@ -4,7 +4,8 @@ from typing import Type, Union
 import pytest
 
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.hasher import ApiKeyHasher, Argon2ApiKeyHasher
+from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
+from fastapi_api_key.domain.hasher.base import ApiKeyHasher
 from fastapi_api_key.domain.errors import KeyInactive, KeyExpired
 
 from fastapi_api_key.utils import datetime_factory

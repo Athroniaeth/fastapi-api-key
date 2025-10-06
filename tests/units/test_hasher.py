@@ -1,8 +1,6 @@
 import pytest
 
-from fastapi_api_key.domain.hasher import (
-    ApiKeyHasher,
-)
+from fastapi_api_key.domain.hasher.base import ApiKeyHasher
 
 
 def test_hash_and_verify_success(hasher: ApiKeyHasher) -> None:
@@ -44,7 +42,7 @@ def test_hasher_not_deterministic(hasher: ApiKeyHasher) -> None:
 
 def test_hasher_bcrypt_rounds_limit() -> None:
     """Test that BcryptApiKeyHasher raises ValueError for invalid rounds."""
-    from fastapi_api_key.domain.hasher import BcryptApiKeyHasher
+    from fastapi_api_key import BcryptApiKeyHasher
 
     with pytest.raises(ValueError):
         BcryptApiKeyHasher(rounds=3)  # Too low
