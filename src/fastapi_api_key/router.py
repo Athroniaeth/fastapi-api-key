@@ -8,15 +8,22 @@ except ModuleNotFoundError as e:
     ) from e
 
 from datetime import datetime
-from typing import Annotated, List, Optional, AsyncIterator
+from typing import Annotated, AsyncIterator, Awaitable, Callable, List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
+from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import KeyNotFound
+from fastapi_api_key.domain.errors import (
+    InvalidKey,
+    KeyExpired,
+    KeyInactive,
+    KeyNotFound,
+    KeyNotProvided,
+)
 from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 
@@ -69,7 +76,7 @@ class ApiKeyCreatedOut(BaseModel):
     """Response returned after creating a key.
 
     Attributes:
-        api_key: The *plaintext* API key value (only returned once!). Store it
+        api_key: The plaintext API key value (only returned once!). Store it
             securely client-side; it cannot be retrieved again.
         entity: Public representation of the stored entity.
     """
@@ -135,7 +142,7 @@ def create_api_keys_router(
         payload: ApiKeyCreateIn,
         svc: ApiKeyService = Depends(get_service),
     ) -> ApiKeyCreatedOut:
-        """Create an API key and return the plaintext secret *once*.
+        """Create an API key and return the plaintext secret once.
 
         Args:
             payload: Creation parameters.
@@ -292,3 +299,72 @@ def create_api_keys_router(
     #     return ApiKeyCreatedOut(api_key=api_key, entity=_to_out(entity))
 
     return router
+
+
+def create_api_key_security(
+    async_session_maker: async_sessionmaker[AsyncSession],
+    pepper: str,
+    header_name: str = "X-API-Key",
+    scheme_name: str = "API Key",
+    auto_error: bool = True,
+) -> Callable[[str], Awaitable[ApiKey]]:
+    """Create a FastAPI security dependency that verifies API keys.
+
+    Args:
+        async_session_maker: SQLAlchemy async session factory.
+        pepper: Secret pepper used by the Argon2 hasher.
+        header_name: HTTP header to read the API key from.
+        scheme_name: OpenAPI scheme name advertised in docs.
+        auto_error: Forward to :class:`fastapi.security.APIKeyHeader`.
+
+    Returns:
+        A dependency callable that yields a verified :class:`ApiKey` entity or
+        raises an :class:`fastapi.HTTPException` when verification fails.
+    """
+
+    api_key_header = APIKeyHeader(
+        name=header_name,
+        scheme_name=scheme_name,
+        auto_error=auto_error,
+    )
+    hasher = Argon2ApiKeyHasher(pepper=pepper)
+
+    async def dependency(api_key: str = Security(api_key_header)) -> ApiKey:
+        if not api_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API key missing",
+                headers={"WWW-Authenticate": scheme_name},
+            )
+
+        async with async_session_maker() as session:
+            async with session.begin():
+                repo = SqlAlchemyApiKeyRepository(session)
+                svc = ApiKeyService(repo=repo, hasher=hasher)
+
+                try:
+                    return await svc.verify_key(api_key)
+                except KeyNotProvided as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="API key missing",
+                        headers={"WWW-Authenticate": scheme_name},
+                    ) from exc
+                except (InvalidKey, KeyNotFound) as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="API key invalid",
+                        headers={"WWW-Authenticate": scheme_name},
+                    ) from exc
+                except KeyInactive as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="API key inactive",
+                    ) from exc
+                except KeyExpired as exc:
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail="API key expired",
+                    ) from exc
+
+    return dependency
