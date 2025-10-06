@@ -26,5 +26,22 @@ Drop the snippet from `benchmark/example_fastapi.py` into your project and set `
 | PATCH | /api-keys/{id} | Update name, description, or activation flag. |
 | DELETE | /api-keys/{id} | Remove a key. |
 
+### Authenticating requests
+
+Use `create_api_key_security` to produce a FastAPI dependency that validates API keys via the service and repository stack:
+
+```python
+from fastapi import Depends, FastAPI
+from fastapi_api_key.router import create_api_key_security
+
+security = create_api_key_security(async_session_maker=SessionLocal, pepper=PEPPER)
+
+app = FastAPI()
+
+@app.get("/protected")
+async def protected_route(key = Depends(security)):
+    return {"key_id": key.key_id}
+```
+
 !!! tip "Secure the pepper"
     Provide `API_KEY_PEPPER` through your secret manager or environment—never check it into source control.

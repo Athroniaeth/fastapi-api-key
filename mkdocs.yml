@@ -47,6 +47,7 @@ nav:
   - Advanced:
       - Custom Domain Model: advanced/custom-model.md
   - Reference:
+      - Overview: reference/index.md
       - Service API: reference/service.md
       - Repository Contracts: reference/repositories.md
       - Router Endpoints: reference/router.md

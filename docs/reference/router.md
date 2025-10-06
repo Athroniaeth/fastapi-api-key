@@ -24,5 +24,20 @@ The router returned by `create_api_keys_router` exposes a small CRUD surface bac
 - Invalid payloads raise FastAPI validation errors automatically.
 - The service raises `InvalidKey` during verification; map it to 401/403 if you expose an auth dependency.
 
+## Security dependency
+
+`create_api_key_security` builds an async dependency you can plug into endpoints to validate API keys using the same repository/service stack:
+
+```python
+from fastapi import Depends
+from fastapi_api_key.router import create_api_key_security
+
+require_api_key = create_api_key_security(async_session_maker=SessionLocal, pepper=PEPPER)
+
+@app.get("/protected")
+async def protected(key = Depends(require_api_key)):
+    return {"entity": key.id_}
+```
+
 !!! example "Mounting the router"
     See the [FastAPI Router guide](../usage/router.md) for the full wiring sample.
