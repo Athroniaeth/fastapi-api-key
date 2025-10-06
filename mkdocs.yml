@@ -41,16 +41,10 @@ nav:
   - Home: index.md
   - Quickstart: quickstart.md
   - Usage:
-      - In-memory Prototype: usage/inmemory.md
-      - Async SQLAlchemy: usage/sqlalchemy.md
-      - FastAPI Router: usage/router.md
-  - Advanced:
-      - Custom Domain Model: advanced/custom-model.md
-  - Reference:
-      - Overview: reference/index.md
-      - Service API: reference/service.md
-      - Repository Contracts: reference/repositories.md
-      - Router Endpoints: reference/router.md
+      - In-memory: usage/inmemory.md
+      - SQLAlchemy: usage/sqlalchemy.md
+      - FastAPI: usage/router.md
+      - SQLAlchemy (custom): usage/custom-model.md
 extra:
   social:
     - icon: fontawesome/brands/github

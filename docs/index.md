@@ -27,8 +27,18 @@ Choose the extras that match your stack. The examples on this site assume you ar
 ```bash
 uv sync --extra all --group dev
 ```
-
 The `all` extra installs FastAPI, SQLAlchemy, Argon2, and BCrypt. For minimal deployments, pick the individual extras (`argon`, `bcrypt`, `sqlalchemy`).
+
+| Installation mode           | Command                                   | Description                                                                      |
+| --------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------- |
+| **Base installation**       | `fastapi-api-key`             | Installs the core package without any optional dependencies.                     |
+| **With bcrypt support**     | `fastapi-api-key[bcrypt]`     | Adds support for password hashing using **bcrypt** (`bcrypt>=5.0.0`).            |
+| **With Argon2 support**     | `fastapi-api-key[argon2]`     | Adds support for password hashing using **Argon2** (`argon2-cffi>=25.1.0`).      |
+| **With SQLAlchemy support** | `fastapi-api-key[sqlalchemy]` | Adds database integration via **SQLAlchemy** (`sqlalchemy>=2.0.43`).             |
+| **Core setup**              | `fastapi-api-key[core]`       | Installs the **core dependencies** (SQLAlchemy + Argon2 + bcrypt).               |
+| **FastAPI only**            | `fastapi-api-key[fastapi]`    | Installs **FastAPI** as an optional dependency (`fastapi>=0.118.0`).             |
+| **Full installation**       | `fastapi-api-key[all]`        | Installs **all optional dependencies**: FastAPI, SQLAlchemy, Argon2, and bcrypt. |
+
 
 !!! tip "Always set a pepper"
     The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.

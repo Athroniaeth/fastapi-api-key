@@ -1,4 +1,4 @@
-# Async SQLAlchemy
+# SQLAlchemy (async)
 
 Persist API keys in a relational database using SQLAlchemy's async ORM integration. This is the most common production scenario.
 
@@ -11,10 +11,10 @@ Persist API keys in a relational database using SQLAlchemy's async ORM integrati
 
 ## Example
 
-This is the canonical example from `benchmark/example_sql.py`:
+This is the canonical example from `examples/example_sql.py`:
 
 ```python
---8<-- "benchmark/example_sql.py"
+--8<-- "examples/example_sql.py"
 ```
 
 ### Tips

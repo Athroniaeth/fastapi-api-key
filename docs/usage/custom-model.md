@@ -10,10 +10,10 @@ Extend the default dataclass and SQLAlchemy model to capture application-specifi
 
 ## Full example
 
-Pulled straight from `benchmark/example_sql_custom.py`:
+Pulled straight from `examples/example_sql_custom.py`:
 
 ```python
---8<-- "benchmark/example_sql_custom.py"
+--8<-- "examples/example_sql_custom.py"
 ```
 
 ### Key takeaways

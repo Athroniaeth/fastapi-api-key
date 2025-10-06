@@ -1,4 +1,4 @@
-# FastAPI Router
+# FastAPI
 
 Mount CRUD endpoints that expose your key store over HTTP. The router wires the service, repository, and hashers together using FastAPI dependency injection.
 
@@ -6,14 +6,17 @@ Mount CRUD endpoints that expose your key store over HTTP. The router wires the 
 
 - One call to `create_api_keys_router` registers create/list/get/update/delete routes.
 - Depends on an async session factory (see `async_sessionmaker`).
-- Shares a single `Argon2ApiKeyHasher` instance across requests.
+- Shares a single `ApiKeyHasher` instance across requests.
 
 ## Example
 
-Drop the snippet from `benchmark/example_fastapi.py` into your project and set `API_KEY_PEPPER` via environment variable:
+Drop the snippet from `examples/example_fastapi.py` into your project and set `API_KEY_PEPPER` via environment variable:
+
+!!! tip "Always set a pepper"
+    The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
 
 ```python
---8<-- "benchmark/example_fastapi.py"
+--8<-- "examples/example_fastapi.py"
 ```
 
 ### Endpoints exposed
@@ -26,22 +29,3 @@ Drop the snippet from `benchmark/example_fastapi.py` into your project and set `
 | PATCH | /api-keys/{id} | Update name, description, or activation flag. |
 | DELETE | /api-keys/{id} | Remove a key. |
 
-### Authenticating requests
-
-Use `create_api_key_security` to produce a FastAPI dependency that validates API keys via the service and repository stack:
-
-```python
-from fastapi import Depends, FastAPI
-from fastapi_api_key.router import create_api_key_security
-
-security = create_api_key_security(async_session_maker=SessionLocal, pepper=PEPPER)
-
-app = FastAPI()
-
-@app.get("/protected")
-async def protected_route(key = Depends(security)):
-    return {"key_id": key.key_id}
-```
-
-!!! tip "Secure the pepper"
-    Provide `API_KEY_PEPPER` through your secret manager or environment—never check it into source control.

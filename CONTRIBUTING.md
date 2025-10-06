@@ -99,7 +99,7 @@ git rebase development
 ## Tips
 
 - The library emits a warning when the default pepper is used; tests rely on this. Mind warning handling when touching hashers.
-- Example apps live under `benchmark/` and are embedded directly into the documentation. Keep them runnable.
+- Example apps live under `examples/` and are embedded directly into the documentation. Keep them runnable.
 - New persistence layers should implement `AbstractApiKeyRepository` and receive corresponding docs/tests updates.
 
 Happy hacking!

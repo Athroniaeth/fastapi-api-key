@@ -1,4 +1,4 @@
-# In-memory Prototype
+# In-memory
 
 Use this variant when you want to exercise the domain and service layers without touching a database. Everything lives in a dictionary behind the repository interface.
 
@@ -10,10 +10,10 @@ Use this variant when you want to exercise the domain and service layers without
 
 ## Example
 
-The script below is the same file shipped under `benchmark/example_inmemory.py`. It creates a key, prints the secret once, then verifies it.
+The script below is the same file shipped under `examples/example_inmemory.py`. It creates a key, prints the secret once, then verifies it.
 
 ```python
---8<-- "benchmark/example_inmemory.py"
+--8<-- "examples/example_inmemory.py"
 ```
 
 ### What happens

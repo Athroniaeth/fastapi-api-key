@@ -10,7 +10,7 @@ Choose an extras group that matches the repository backend you plan to use. The 
 uv sync --extra all --group dev
 ```
 
-For quick experiments (or CI), the `argon` extra plus the in-memory repository is enough:
+For quick experiments, the `argon` extra plus the in-memory repository is enough:
 
 ```bash
 uv sync --extra argon --group dev
@@ -18,7 +18,7 @@ uv sync --extra argon --group dev
 
 ## 2. Create your first key
 
-Spin up the service with the in-memory repository. The script mirrors `benchmark/example_inmemory.py`.
+Spin up the service with the in-memory repository. The script mirrors `examples/example_inmemory.py`.
 
 ```python
 import asyncio
@@ -39,7 +39,7 @@ asyncio.run(main())
 
 ## 3. Persist keys with SQLAlchemy
 
-Swap the repository for the SQL implementation and connect it to an async engine. This mirrors `benchmark/example_sql.py`.
+Swap the repository for the SQL implementation and connect it to an async engine. This mirrors `examples/example_sql.py`.
 
 ```python
 import asyncio
@@ -53,6 +53,7 @@ async def main():
     path = Path('db.sqlite3')
     engine = create_async_engine(f"sqlite+aiosqlite:///{path}", future=True)
     Session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+    
     async with Session() as session:
         repo = SqlAlchemyApiKeyRepository(session)
         await repo.ensure_table()
