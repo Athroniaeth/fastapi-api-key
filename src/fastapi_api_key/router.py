@@ -1,3 +1,5 @@
+from fastapi_api_key.domain.hasher.base import ApiKeyHasher
+
 try:
     import fastapi  # noqa: F401
     import sqlalchemy  # noqa: F401
@@ -99,25 +101,21 @@ def _to_out(entity: ApiKey) -> ApiKeyOut:
 
 def create_api_keys_router(
     async_session_maker: async_sessionmaker[AsyncSession],
-    pepper: str,
-    prefix: str = "/api-keys",
-    tag: str = "API Keys",
+    hasher: Optional[ApiKeyHasher] = None,
+    router: Optional[APIRouter] = None,
 ) -> APIRouter:
     """Create and configure the API Keys router.
 
     Args:
         async_session_maker: SQLAlchemy async session factory.
-        pepper: Secret pepper used by the Argon2 hasher. Use a strong, unique
-            value from configuration or environment.
-        prefix: Route prefix to mount the router under.
-        tag: Tag label for OpenAPI grouping.
+        hasher: Optional hasher instance. Defaults to `Argon2ApiKeyHasher`.
+        router: Optional `APIRouter` instance. If not provided, a new one is created.
 
     Returns:
         Configured `APIRouter` ready to be included into a FastAPI app.
     """
-
-    router = APIRouter(prefix=prefix, tags=[tag])
-    hasher = Argon2ApiKeyHasher(pepper=pepper)
+    hasher = hasher or Argon2ApiKeyHasher()
+    router = router or APIRouter(prefix="/api-keys", tags=["API Keys"])
 
     async def get_db() -> AsyncIterator[AsyncSession]:
         """Provide a transactional scope around a series of operations."""
@@ -133,7 +131,7 @@ def create_api_keys_router(
         return ApiKeyService(repo=repo, hasher=hasher)
 
     @router.post(
-        "",
+        path="/",
         response_model=ApiKeyCreatedOut,
         status_code=status.HTTP_201_CREATED,
         summary="Create a new API key",
@@ -161,7 +159,7 @@ def create_api_keys_router(
         return ApiKeyCreatedOut(api_key=api_key, entity=_to_out(entity))
 
     @router.get(
-        "",
+        path="/",
         response_model=List[ApiKeyOut],
         status_code=status.HTTP_200_OK,
         summary="List API keys",
@@ -280,30 +278,72 @@ def create_api_keys_router(
 
         return {"status": "deleted"}
 
-    # Optional: activation helpers (commented by default)
-    # Uncomment if your `ApiKeyService` exposes these methods.
-    #
-    # @router.post("/{api_key_id}/activate", response_model=ApiKeyOut)
-    # async def activate_api_key(api_key_id: str, svc: ApiKeyService = Depends(get_service)) -> ApiKeyOut:
-    #     entity = await svc.activate(api_key_id)
-    #     return _to_out(entity)
-    #
-    # @router.post("/{api_key_id}/deactivate", response_model=ApiKeyOut)
-    # async def deactivate_api_key(api_key_id: str, svc: ApiKeyService = Depends(get_service)) -> ApiKeyOut:
-    #     entity = await svc.deactivate(api_key_id)
-    #     return _to_out(entity)
-    #
+    @router.post("/{api_key_id}/activate", response_model=ApiKeyOut)
+    async def activate_api_key(
+        api_key_id: str,
+        svc: ApiKeyService = Depends(get_service),
+    ) -> ApiKeyOut:
+        """Activate an API key by ID.
+
+        Args:
+            api_key_id: Unique identifier of the API key to activate.
+            svc: Injected `ApiKeyService`.
+
+        Raises:
+            HTTPException: 404 if the key does not exist.
+        """
+        try:
+            entity = await svc.get_by_id(api_key_id)
+        except KeyNotFound as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
+            ) from exc
+
+        if entity.is_active:
+            return _to_out(entity)  # Already active
+
+        entity.is_active = True
+        updated = await svc.update(entity)
+        return _to_out(updated)
+
+    @router.post("/{api_key_id}/deactivate", response_model=ApiKeyOut)
+    async def deactivate_api_key(
+        api_key_id: str,
+        svc: ApiKeyService = Depends(get_service),
+    ) -> ApiKeyOut:
+        """Deactivate an API key by ID.
+
+        Args:
+            api_key_id: Unique identifier of the API key to deactivate.
+            svc: Injected `ApiKeyService`.
+
+        Raises:
+            HTTPException: 404 if the key does not exist.
+        """
+        try:
+            entity = await svc.get_by_id(api_key_id)
+        except KeyNotFound as exc:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
+            ) from exc
+
+        if not entity.is_active:
+            return _to_out(entity)  # Already inactive
+
+        entity.is_active = False
+        updated = await svc.update(entity)
+        return _to_out(updated)
+
     # @router.post("/{api_key_id}/rotate", response_model=ApiKeyCreatedOut)
     # async def rotate_api_key(api_key_id: str, svc: ApiKeyService = Depends(get_service)) -> ApiKeyCreatedOut:
-    #     entity, api_key = await svc.rotate(api_key_id)
-    #     return ApiKeyCreatedOut(api_key=api_key, entity=_to_out(entity))
+    #     ...
 
     return router
 
 
 def create_api_key_security(
     async_session_maker: async_sessionmaker[AsyncSession],
-    pepper: str,
+    hasher: Optional[ApiKeyHasher] = None,
     header_name: str = "X-API-Key",
     scheme_name: str = "API Key",
     auto_error: bool = True,
@@ -312,7 +352,7 @@ def create_api_key_security(
 
     Args:
         async_session_maker: SQLAlchemy async session factory.
-        pepper: Secret pepper used by the Argon2 hasher.
+        hasher: Optional hasher instance. Defaults to `Argon2ApiKeyHasher`.
         header_name: HTTP header to read the API key from.
         scheme_name: OpenAPI scheme name advertised in docs.
         auto_error: Forward to :class:`fastapi.security.APIKeyHeader`.
@@ -321,13 +361,12 @@ def create_api_key_security(
         A dependency callable that yields a verified :class:`ApiKey` entity or
         raises an :class:`fastapi.HTTPException` when verification fails.
     """
-
+    hasher = hasher or Argon2ApiKeyHasher()
     api_key_header = APIKeyHeader(
         name=header_name,
         scheme_name=scheme_name,
         auto_error=auto_error,
     )
-    hasher = Argon2ApiKeyHasher(pepper=pepper)
 
     async def dependency(api_key: str = Security(api_key_header)) -> ApiKey:
         if not api_key:
@@ -337,9 +376,9 @@ def create_api_key_security(
                 headers={"WWW-Authenticate": scheme_name},
             )
 
-        async with async_session_maker() as session:
-            async with session.begin():
-                repo = SqlAlchemyApiKeyRepository(session)
+        async with async_session_maker() as async_session:
+            async with async_session.begin():
+                repo = SqlAlchemyApiKeyRepository(async_session)
                 svc = ApiKeyService(repo=repo, hasher=hasher)
 
                 try:
