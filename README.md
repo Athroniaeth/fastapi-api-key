@@ -1,4 +1,13 @@
-﻿# fastapi-api-key
+﻿# Fastapi Api Key
+
+  [![Python](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+  [![Tested with pytest](https://img.shields.io/badge/tests-pytest-informational.svg)](https://pytest.org/)
+  [![Coverage](https://img.shields.io/badge/coverage-89%25-brightgreen.svg)](#)  <!-- remplace 100% par ta valeur -->
+  [![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-4B32C3.svg)](https://docs.astral.sh/ruff/)
+  [![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://bandit.readthedocs.io/)
+  [![Deps: uv](https://img.shields.io/badge/deps-managed%20with%20uv-3E4DD8.svg)](https://docs.astral.sh/uv/)
+  [![Docs](https://img.shields.io/badge/docs-mkdocs%20material-00A4CC.svg)](https://athroniaeth.github.io/fastapi-api-key/)  <!-- adapte l’URL si besoin -->
+  [![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](https://commitizen-tools.github.io/commitizen/)
 
 `fastapi-api-key` provides reusable building blocks to issue, persist, and verify API keys in FastAPI applications. It ships with a domain model, hashing helpers, repository contracts, and an optional FastAPI router for CRUD management of keys.
 
