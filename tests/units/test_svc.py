@@ -270,9 +270,7 @@ async def test_verify_key_empty_raises(service: ApiKeyService[ApiKey]) -> None:
     ],
 )
 @pytest.mark.asyncio
-async def test_verify_key_split_invalid(
-    service: ApiKeyService[ApiKey], api_key: str
-) -> None:
+async def test_verify_key_split_invalid(service: ApiKeyService[ApiKey], api_key: str) -> None:
     """verify_key(): should raise InvalidKey when key format is invalid."""
     with pytest.raises((InvalidKey, KeyNotProvided)):  # type: ignore
         await service.verify_key(api_key)

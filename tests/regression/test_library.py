@@ -57,9 +57,7 @@ def test_version():
 )
 def test_import_lib_public_api(module_path: Optional[str], attr: str):
     """Ensure importing lib works and exposes the public API."""
-    module_name = (
-        "fastapi_api_key" if module_path is None else f"fastapi_api_key.{module_path}"
-    )
+    module_name = "fastapi_api_key" if module_path is None else f"fastapi_api_key.{module_path}"
     module = importlib.import_module(module_name)
     assert hasattr(module, attr)
 
@@ -81,9 +79,7 @@ def test_warning_default_pepper(hasher_class: Type[ApiKeyHasher]):
         ["argon2", "fastapi_api_key.domain.hasher.argon2"],
     ],
 )
-def test_sqlalchemy_backend_import_error(
-    monkeypatch: pytest.MonkeyPatch, library: str, module_path: str
-):
+def test_sqlalchemy_backend_import_error(monkeypatch: pytest.MonkeyPatch, library: str, module_path: str):
     """Simulate absence of SQLAlchemy and check for ImportError."""
     monkeypatch.setitem(sys.modules, library, None)
 

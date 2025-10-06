@@ -183,9 +183,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
         return entity
 
-    async def create(
-        self, entity: D, key_secret: Optional[str] = None
-    ) -> Tuple[D, str]:
+    async def create(self, entity: D, key_secret: Optional[str] = None) -> Tuple[D, str]:
         if entity.expires_at and entity.expires_at < datetime_factory():
             raise ValueError("Expiration date must be in the future")
 
@@ -234,9 +232,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
             parts = api_key.split(self.separator)
 
             if len(parts) != 3:
-                raise InvalidKey(
-                    "API key format is invalid (wrong number of segments)."
-                )
+                raise InvalidKey("API key format is invalid (wrong number of segments).")
 
             global_prefix, prefix, secret = parts
         except Exception as e:

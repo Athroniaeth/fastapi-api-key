@@ -157,9 +157,7 @@ def fixed_salt_hasher(request: pytest.FixtureRequest) -> ApiKeyHasher:
 
 
 @pytest.fixture(params=["memory", "sqlalchemy"], scope="function")
-def repository(
-    request: pytest.FixtureRequest, async_session: AsyncSession
-) -> Iterator[AbstractApiKeyRepository[D]]:
+def repository(request: pytest.FixtureRequest, async_session: AsyncSession) -> Iterator[AbstractApiKeyRepository[D]]:
     """Fixture to provide different AbstractApiKeyRepository implementations."""
     if request.param == "memory":
         yield InMemoryApiKeyRepository()

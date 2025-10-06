@@ -137,9 +137,7 @@ async def test_api_key_list(repository: AbstractApiKeyRepository) -> None:
 
     listed = await repository.list(limit=3, offset=1)
     assert all(isinstance(key, ApiKey) for key in listed)
-    assert (
-        listed[0].created_at >= listed[1].created_at
-    )  # Ensure ordering by created_at desc
+    assert listed[0].created_at >= listed[1].created_at  # Ensure ordering by created_at desc
     assert listed[1].created_at >= listed[2].created_at
 
 

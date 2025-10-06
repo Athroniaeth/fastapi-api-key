@@ -3,12 +3,10 @@ from typing import Optional
 try:
     import bcrypt  # noqa: F401
 except ModuleNotFoundError as e:
-    raise ImportError(
-        "SQLAlchemy backend requires 'bcrypt'. Install it with: uv add fastapi_api_key[bcrypt]"
-    ) from e
+    raise ImportError("SQLAlchemy backend requires 'bcrypt'. Install it with: uv add fastapi_api_key[bcrypt]") from e
 import bcrypt
 
-from fastapi_api_key.domain.hasher.base import DEFAULT_PEPPER, BaseApiKeyHasher
+from fastapi_api_key.domain.hasher.base import BaseApiKeyHasher
 
 
 class BcryptApiKeyHasher(BaseApiKeyHasher):

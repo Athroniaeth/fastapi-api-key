@@ -204,9 +204,7 @@ def create_api_keys_router(
         try:
             entity = await svc.get_by_id(api_key_id)
         except KeyNotFound as exc:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
-            ) from exc
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found") from exc
 
         return _to_out(entity)
 
@@ -234,21 +232,15 @@ def create_api_keys_router(
         try:
             current = await svc.get_by_id(api_key_id)
         except KeyNotFound as exc:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
-            ) from exc
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found") from exc
 
         current.name = payload.name or current.name
         current.description = payload.description or current.description
-        current.is_active = (
-            payload.is_active if payload.is_active is not None else current.is_active
-        )
+        current.is_active = payload.is_active if payload.is_active is not None else current.is_active
         try:
             updated = await svc.update(current)
         except KeyNotFound as exc:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
-            ) from exc
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found") from exc
         return _to_out(updated)
 
     @router.delete(
@@ -272,9 +264,7 @@ def create_api_keys_router(
         try:
             await svc.delete_by_id(api_key_id)
         except KeyNotFound as exc:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
-            ) from exc
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found") from exc
 
         return {"status": "deleted"}
 
@@ -295,9 +285,7 @@ def create_api_keys_router(
         try:
             entity = await svc.get_by_id(api_key_id)
         except KeyNotFound as exc:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
-            ) from exc
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found") from exc
 
         if entity.is_active:
             return _to_out(entity)  # Already active
@@ -323,9 +311,7 @@ def create_api_keys_router(
         try:
             entity = await svc.get_by_id(api_key_id)
         except KeyNotFound as exc:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND, detail="API key not found"
-            ) from exc
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found") from exc
 
         if not entity.is_active:
             return _to_out(entity)  # Already inactive

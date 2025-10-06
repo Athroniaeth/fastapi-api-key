@@ -11,9 +11,7 @@ def test_hash_and_verify_success(hasher: ApiKeyHasher) -> None:
     """
     api_key = "my-secret-api-key"
     hashed = hasher.hash(api_key)
-    assert hasher.verify(hashed, api_key) is True, (
-        "The API key should verify successfully."
-    )
+    assert hasher.verify(hashed, api_key) is True, "The API key should verify successfully."
 
 
 def test_verify_fail_with_wrong_key(hasher: ApiKeyHasher) -> None:

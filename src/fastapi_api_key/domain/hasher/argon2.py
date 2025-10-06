@@ -1,16 +1,14 @@
 try:
     import argon2  # noqa: F401
 except ModuleNotFoundError as e:
-    raise ImportError(
-        "SQLAlchemy backend requires 'argon2'. Install it with: uv add fastapi_api_key[argon2]"
-    ) from e
+    raise ImportError("SQLAlchemy backend requires 'argon2'. Install it with: uv add fastapi_api_key[argon2]") from e
 
 from typing import Optional
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
 
-from fastapi_api_key.domain.hasher.base import DEFAULT_PEPPER, BaseApiKeyHasher
+from fastapi_api_key.domain.hasher.base import BaseApiKeyHasher
 
 
 class Argon2ApiKeyHasher(BaseApiKeyHasher):
