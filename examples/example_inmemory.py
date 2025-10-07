@@ -1,5 +1,4 @@
 import os
-from uuid import uuid4
 
 from argon2 import PasswordHasher
 
@@ -11,7 +10,7 @@ from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security
 # Default pepper is insecure and should not be used in production
-pepper = os.environ.get("API_KEY_PEPPER", uuid4().hex)
+pepper = os.environ.get("API_KEY_PEPPER")
 
 
 async def main():
