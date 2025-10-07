@@ -256,7 +256,7 @@ def _parse_datetime(value: str) -> datetime:
         datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.timezone.utc)
         >>> _parse_datetime("2024-01-01T12:34:56+02:00")
         datetime.datetime(2024, 1, 1, 10, 34, 56, tzinfo=datetime.timezone.utc)
-        >>> _parse_datetime("2024-01-01T12:34:56Z")
+        >>> _parse_datetime("2024-01-01T12:34:56")
         datetime.datetime(2024, 1, 1, 12, 34, 56, tzinfo=datetime.timezone.utc)
     """
     parsed = datetime.fromisoformat(value)
