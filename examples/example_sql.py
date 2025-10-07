@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from uuid import uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
@@ -12,14 +11,15 @@ from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security
 # Default pepper is insecure and should not be used in production
-pepper = os.environ.get("API_KEY_PEPPER", uuid4().hex)
+pepper = os.environ.get("API_KEY_PEPPER")
+db_path = Path(__file__).parent / "db.sqlite3"
+database_url = os.environ.get("DATABASE_URL", f"sqlite+aiosqlite:///{db_path}")
 
 
 async def main():
-    db_path = Path(__file__).parent / "db.sqlite3"
-    database_url = f"sqlite+aiosqlite:///{db_path}"
+    print(f"Using database URL: {database_url}")
 
-    async_engine = create_async_engine(database_url, future=True)
+    async_engine = create_async_engine(database_url)
     async_session_maker = async_sessionmaker(
         async_engine,
         class_=AsyncSession,

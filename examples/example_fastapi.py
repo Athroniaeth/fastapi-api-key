@@ -8,8 +8,12 @@ from fastapi_api_key.router import create_api_keys_router, create_api_key_securi
 
 # Create the async engine and session maker
 DATABASE_URL = "sqlite+aiosqlite:///./db.sqlite3"
-async_engine = create_async_engine(DATABASE_URL, future=True)
-async_session_maker = async_sessionmaker(async_engine, expire_on_commit=False, class_=AsyncSession)
+async_engine = create_async_engine(DATABASE_URL)
+async_session_maker = async_sessionmaker(
+    async_engine,
+    expire_on_commit=False,
+    class_=AsyncSession,
+)
 
 pepper = os.environ.get("API_KEY_PEPPER")
 
