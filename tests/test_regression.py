@@ -34,14 +34,6 @@ def test_version():
             "ApiKeyModelMixin",
         ],
         [
-            None,
-            "BcryptApiKeyHasher",
-        ],
-        [
-            None,
-            "Argon2ApiKeyHasher",
-        ],
-        [
             "repositories.sql",
             "ApiKeyModelMixin",
         ],

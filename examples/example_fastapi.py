@@ -4,9 +4,10 @@ from typing import AsyncIterator
 from fastapi import FastAPI, Depends, APIRouter
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from fastapi_api_key import Argon2ApiKeyHasher, ApiKey, ApiKeyService
+from fastapi_api_key import ApiKey, ApiKeyService
+from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
-from fastapi_api_key.router import create_api_keys_router, create_depends_api_key
+from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
 
 # Create the async engine and session maker
 DATABASE_URL = "sqlite+aiosqlite:///./db.sqlite3"
@@ -33,10 +34,7 @@ async def get_db() -> AsyncIterator[AsyncSession]:
 async def inject_svc_api_keys(async_session: AsyncSession = Depends(get_db)) -> ApiKeyService:
     """Dependency to inject the API key service with an active SQLAlchemy async session."""
     repo = SqlAlchemyApiKeyRepository(async_session)
-    return ApiKeyService(
-        repo=repo,
-        hasher=hasher,
-    )
+    return ApiKeyService(repo=repo, hasher=hasher)
 
 
 security = create_depends_api_key(inject_svc_api_keys)

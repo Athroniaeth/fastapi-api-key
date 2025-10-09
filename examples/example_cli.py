@@ -5,7 +5,9 @@ from typing import AsyncIterator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from fastapi_api_key import Argon2ApiKeyHasher, ApiKeyService, create_api_keys_cli
+from fastapi_api_key import ApiKeyService
+from fastapi_api_key.cli import create_api_keys_cli
+from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 
 pepper = os.environ.get("API_KEY_PEPPER")

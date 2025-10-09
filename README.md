@@ -1,8 +1,7 @@
 ﻿# Fastapi Api Key
-
-  [![Python](https://img.shields.io/badge/python-3.13+-blue.svg)](https://www.python.org/downloads/)
+  ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FAthroniaeth%2Ffastapi-api-key%2Fmain%2Fpyproject.toml)
   [![Tested with pytest](https://img.shields.io/badge/tests-pytest-informational.svg)](https://pytest.org/)
-  [![Coverage](https://img.shields.io/badge/coverage-89%25-brightgreen.svg)](#)  <!-- remplace 100% par ta valeur -->
+  [![Coverage](https://img.shields.io/badge/coverage-67%25-brightgreen.svg)](#)
   [![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-4B32C3.svg)](https://docs.astral.sh/ruff/)
   [![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://bandit.readthedocs.io/)
   [![Deps: uv](https://img.shields.io/badge/deps-managed%20with%20uv-3E4DD8.svg)](https://docs.astral.sh/uv/)
@@ -59,7 +58,8 @@ Override the default pepper in production:
 
 ```python
 import os
-from fastapi_api_key import Argon2ApiKeyHasher, ApiKeyService
+from fastapi_api_key import ApiKeyService
+from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 
 pepper = os.environ["API_KEY_PEPPER"]
@@ -80,10 +80,12 @@ import uvicorn
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+from fastapi_api_key.api import create_api_keys_router
+from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import Base
-from fastapi_api_key.router import create_api_keys_router
 
 pepper = os.getenv("API_KEY_PEPPER")
+hasher = Argon2ApiKeyHasher(pepper=pepper)
 
 engine = create_async_engine("sqlite+aiosqlite:///./keys.db", future=True)
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -99,8 +101,7 @@ app = FastAPI(lifespan=lifespan)
 app.include_router(
     create_api_keys_router(
         async_session_maker=SessionLocal,
-        pepper=pepper,
-        prefix="/api-keys",
+        hasher=hasher,
     )
 )
 uvicorn.run(app, host="localhost", port=8000)

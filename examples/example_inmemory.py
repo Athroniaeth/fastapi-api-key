@@ -3,7 +3,7 @@ import os
 from argon2 import PasswordHasher
 
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.services.base import ApiKeyService
+from fastapi_api_key.service import ApiKeyService
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
 

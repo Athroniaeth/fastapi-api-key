@@ -1,7 +1,7 @@
 from typing_extensions import deprecated
 
 from fastapi_api_key.domain.hasher.base import ApiKeyHasher
-from fastapi_api_key.services.base import AbstractApiKeyService
+from fastapi_api_key.service import AbstractApiKeyService
 
 try:
     import fastapi  # noqa: F401

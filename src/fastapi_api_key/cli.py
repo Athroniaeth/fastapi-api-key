@@ -13,7 +13,7 @@ from fastapi_api_key.domain.errors import (
     KeyNotFound,
     KeyNotProvided,
 )
-from fastapi_api_key.services.base import AbstractApiKeyService
+from fastapi_api_key.service import AbstractApiKeyService
 
 if TYPE_CHECKING:
     pass
