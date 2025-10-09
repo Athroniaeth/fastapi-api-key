@@ -27,7 +27,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
     def __init__(
         self,
         repo: AbstractApiKeyRepository[D],
-        hasher: ApiKeyHasher,
+        hasher: Optional[ApiKeyHasher] = None,
         domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
@@ -37,7 +37,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
             raise ValueError("Separator must not be in the global key_id")
 
         self._repo = repo
-        self._hasher = hasher
+        self._hasher = hasher or Argon2ApiKeyHasher()
         self.domain_cls = domain_cls or D
         self.separator = separator
         self.global_prefix = global_prefix
@@ -152,7 +152,6 @@ class ApiKeyService(AbstractApiKeyService[D]):
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
     ) -> None:
-        hasher = hasher or Argon2ApiKeyHasher()
         domain_cls = domain_cls or ApiKey
         super().__init__(
             repo=repo,

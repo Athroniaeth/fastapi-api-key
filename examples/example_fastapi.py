@@ -1,10 +1,12 @@
 import os
+from typing import AsyncIterator
 
 from fastapi import FastAPI, Depends, APIRouter
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from fastapi_api_key import Argon2ApiKeyHasher, ApiKey
-from fastapi_api_key.router import create_api_keys_router, create_api_key_security
+from fastapi_api_key import Argon2ApiKeyHasher, ApiKey, ApiKeyService
+from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
+from fastapi_api_key.router import create_api_keys_router, create_depends_api_key
 
 # Create the async engine and session maker
 DATABASE_URL = "sqlite+aiosqlite:///./db.sqlite3"
@@ -19,8 +21,25 @@ pepper = os.environ.get("API_KEY_PEPPER")
 
 app = FastAPI(title="API with API Key Management")
 hasher = Argon2ApiKeyHasher(pepper=pepper)
-security = create_api_key_security(async_session_maker, hasher=hasher)
 
+
+async def get_db() -> AsyncIterator[AsyncSession]:
+    """Dependency to provide an active SQLAlchemy async session."""
+    async with async_session_maker() as session:
+        async with session.begin():
+            yield session
+
+
+async def inject_svc_api_keys(async_session: AsyncSession = Depends(get_db)) -> ApiKeyService:
+    """Dependency to inject the API key service with an active SQLAlchemy async session."""
+    repo = SqlAlchemyApiKeyRepository(async_session)
+    return ApiKeyService(
+        repo=repo,
+        hasher=hasher,
+    )
+
+
+security = create_depends_api_key(inject_svc_api_keys)
 router = APIRouter(prefix="/api-keys", tags=["API Keys"])
 router_protected = APIRouter(prefix="/protected", tags=["Protected"])
 

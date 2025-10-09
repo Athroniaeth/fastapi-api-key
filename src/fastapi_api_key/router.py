@@ -1,4 +1,7 @@
+from typing_extensions import deprecated
+
 from fastapi_api_key.domain.hasher.base import ApiKeyHasher
+from fastapi_api_key.services.base import AbstractApiKeyService
 
 try:
     import fastapi  # noqa: F401
@@ -10,7 +13,7 @@ except ModuleNotFoundError as e:
     ) from e
 
 from datetime import datetime
-from typing import Annotated, AsyncIterator, Awaitable, Callable, List, Optional
+from typing import Annotated, AsyncIterator, Awaitable, Callable, List, Optional, TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 from fastapi.security import APIKeyHeader
@@ -18,7 +21,7 @@ from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from fastapi_api_key import ApiKeyService
-from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key.domain.entities import ApiKey, ApiKeyEntity
 from fastapi_api_key.domain.errors import (
     InvalidKey,
     KeyExpired,
@@ -28,6 +31,8 @@ from fastapi_api_key.domain.errors import (
 )
 from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
+
+D = TypeVar("D", bound=ApiKeyEntity)
 
 
 class ApiKeyCreateIn(BaseModel):
@@ -327,6 +332,9 @@ def create_api_keys_router(
     return router
 
 
+@deprecated(
+    "`create_api_key_security` is deprecated and will be removed in a future release. Use `create_depends_api_key` instead."
+)
 def create_api_key_security(
     async_session_maker: async_sessionmaker[AsyncSession],
     hasher: Optional[ApiKeyHasher] = None,
@@ -393,3 +401,69 @@ def create_api_key_security(
                     ) from exc
 
     return dependency
+
+
+async def _handle_verify_key(
+    svc: AbstractApiKeyService[D],
+    api_key: str,
+) -> D:
+    """Async context manager to handle key verification errors."""
+    try:
+        return await svc.verify_key(api_key)
+    except KeyNotProvided as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key missing",
+        ) from exc
+    except (InvalidKey, KeyNotFound) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="API key invalid",
+        ) from exc
+    except KeyInactive as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="API key inactive",
+        ) from exc
+    except KeyExpired as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="API key expired",
+        ) from exc
+
+
+def create_depends_api_key(
+    depends_svc_api_keys: Callable[[...], Awaitable[AbstractApiKeyService[D]]],
+    header_scheme: Optional[APIKeyHeader] = None,
+) -> Callable[[str], Awaitable[D]]:
+    """Create a FastAPI security dependency that verifies API keys.
+
+    Args:
+        header_scheme: Pre-configured `APIKeyHeader` instance.
+        depends_svc_api_keys: Dependency callable that provides an `ApiKeyService`.
+
+    Returns:
+        A dependency callable that yields a verified :class:`ApiKey` entity or
+        raises an :class:`fastapi.HTTPException` when verification fails.
+    """
+    header_scheme = header_scheme or APIKeyHeader(
+        name="X-API-Key",
+        scheme_name="API Key",
+        auto_error=False,
+    )
+
+    async def _valid_api_key(
+        api_key: str = Security(header_scheme),
+        svc: AbstractApiKeyService[D] = Depends(depends_svc_api_keys),
+    ) -> D:
+        # Faster check for missing key (avoid prepare transaction etc)
+        if not api_key:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API key missing",
+                headers={"WWW-Authenticate": header_scheme.scheme_name},
+            )
+
+        return await _handle_verify_key(svc, api_key)
+
+    return _valid_api_key
