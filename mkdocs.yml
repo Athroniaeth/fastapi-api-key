@@ -5,19 +5,40 @@ repo_url: https://github.com/Athroniaeth/fastapi-api-key
 repo_name: Athroniaeth/fastapi-api-key
 theme:
   name: material
+  language: en
+  font:
+    text: "Inter"
+    code: "Fira Code"
+  icon:
+    logo: material/key-variant
+    repo: fontawesome/brands/github
   features:
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.top
     - navigation.sections
     - navigation.expand
+    - navigation.footer
     - toc.integrate
+    - toc.follow
+    - search.highlight
+    - search.suggest
     - content.code.copy
     - content.code.annotate
     - content.action.edit
   palette:
     - scheme: default
-      primary: blue
-      accent: deep orange
+      primary: indigo
+      accent: deep purple
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: deep purple
+      accent: indigo
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
 markdown_extensions:
   - admonition
   - def_list

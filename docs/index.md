@@ -1,4 +1,4 @@
-# fastapi-api-key
+# Fastapi Api Key
 
 `fastapi-api-key` provides reusable building blocks to issue, persist, and verify API keys in FastAPI applications. It
 ships with a domain model, hashing helpers, repository contracts, and an optional FastAPI router for CRUD management of
