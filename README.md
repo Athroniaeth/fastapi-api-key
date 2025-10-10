@@ -96,7 +96,7 @@ Override the default pepper in production:
 ```python
 import os
 from fastapi_api_key import ApiKeyService
-from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
+from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 
 pepper = os.environ["API_KEY_PEPPER"]
@@ -122,13 +122,14 @@ from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from fastapi_api_key.api import create_api_keys_router
-from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
+from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from sqlalchemy.orm import DeclarativeBase
 from fastapi_api_key.repositories.sql import ApiKeyModelMixin
 
 
 class Base(DeclarativeBase):
     ...
+
 
 class ApiKey(Base, ApiKeyModelMixin):
     ...

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.entities import ApiKey as OldApiKey
-from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
+from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import (
     SqlAlchemyApiKeyRepository,
     ApiKeyModelMixin,

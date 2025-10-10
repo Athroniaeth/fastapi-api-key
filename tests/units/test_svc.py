@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, create_autospec
 import pytest
 
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.hasher.base import ApiKeyHasher
+from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.service import (
@@ -317,7 +317,7 @@ async def test_verify_key_expired_raises(service: ApiKeyService[ApiKey]) -> None
     """verify_key(): should raise KeyExpired when entity is expired."""
     prefix = key_id_factory()
     key_secret = key_secret_factory()
-    expires_at = datetime_factory() + timedelta(microseconds=100)
+    expires_at = datetime_factory() + timedelta(microseconds=300)
 
     entity = ApiKey(
         name="expired",
@@ -330,7 +330,7 @@ async def test_verify_key_expired_raises(service: ApiKeyService[ApiKey]) -> None
     )
     bad = _full_key(prefix, key_secret, global_prefix="ak", separator=".")
 
-    await asyncio.sleep(0.1)  # Wait to ensure the key is expired
+    await asyncio.sleep(0.3)  # Wait to ensure the key is expired
     with pytest.raises(KeyExpired, match=r"API key is expired."):
         await service.verify_key(bad)
 

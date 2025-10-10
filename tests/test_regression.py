@@ -3,7 +3,7 @@ import sys
 from typing import Optional, Type
 
 import pytest
-from fastapi_api_key.domain.hasher.base import ApiKeyHasher
+from fastapi_api_key.hasher.base import ApiKeyHasher
 
 
 def test_version():
@@ -30,8 +30,16 @@ def test_version():
             "ApiKeyService",
         ],
         [
-            None,
-            "ApiKeyModelMixin",
+            "api",
+            "create_api_keys_router",
+        ],
+        [
+            "api",
+            "create_depends_api_key",
+        ],
+        [
+            "cli",
+            "create_api_keys_cli",
         ],
         [
             "repositories.sql",
@@ -44,6 +52,14 @@ def test_version():
         [
             "repositories.in_memory",
             "InMemoryApiKeyRepository",
+        ],
+        [
+            "hasher.bcrypt",
+            "BcryptApiKeyHasher",
+        ],
+        [
+            "hasher.argon2",
+            "Argon2ApiKeyHasher",
         ],
     ],
 )
@@ -67,8 +83,8 @@ def test_warning_default_pepper(hasher_class: Type[ApiKeyHasher]):
     ["library", "module_path"],
     [
         ["sqlalchemy", "fastapi_api_key.repositories.sql"],
-        ["bcrypt", "fastapi_api_key.domain.hasher.bcrypt"],
-        ["argon2", "fastapi_api_key.domain.hasher.argon2"],
+        ["bcrypt", "fastapi_api_key.hasher.bcrypt"],
+        ["argon2", "fastapi_api_key.hasher.argon2"],
     ],
 )
 def test_sqlalchemy_backend_import_error(monkeypatch: pytest.MonkeyPatch, library: str, module_path: str):

@@ -2,7 +2,7 @@ import asyncio
 import os
 
 from fastapi_api_key import ApiKeyService, ApiKey
-from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
+from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 
 # Set env var to override default pepper

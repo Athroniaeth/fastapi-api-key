@@ -8,7 +8,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.cli import create_api_keys_cli
-from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
+from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, ApiKeyModelMixin
 
 

@@ -1,6 +1,6 @@
 from typing_extensions import deprecated
 
-from fastapi_api_key.domain.hasher.base import ApiKeyHasher
+from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.service import AbstractApiKeyService
 
 try:
@@ -29,7 +29,7 @@ from fastapi_api_key.domain.errors import (
     KeyNotFound,
     KeyNotProvided,
 )
-from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
+from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 
 D = TypeVar("D", bound=ApiKeyEntity)

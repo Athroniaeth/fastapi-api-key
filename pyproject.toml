@@ -42,8 +42,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.scripts]
-lint = "fastapi_api_key.dev:lint"
-test = "fastapi_api_key.dev:test"
+lint = "fastapi_api_key.__init__:lint"
+test = "fastapi_api_key.__init__:test"
 
 [dependency-groups]
 dev = [

@@ -6,7 +6,7 @@ except ModuleNotFoundError as e:
     raise ImportError("SQLAlchemy backend requires 'bcrypt'. Install it with: uv add fastapi_api_key[bcrypt]") from e
 import bcrypt
 
-from fastapi_api_key.domain.hasher.base import BaseApiKeyHasher
+from fastapi_api_key.hasher.base import BaseApiKeyHasher
 
 
 class BcryptApiKeyHasher(BaseApiKeyHasher):

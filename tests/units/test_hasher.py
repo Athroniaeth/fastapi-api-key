@@ -1,6 +1,6 @@
 import pytest
-from fastapi_api_key.domain.hasher.base import ApiKeyHasher
-from fastapi_api_key.domain.hasher.bcrypt import BcryptApiKeyHasher
+from fastapi_api_key.hasher.base import ApiKeyHasher
+from fastapi_api_key.hasher.bcrypt import BcryptApiKeyHasher
 
 
 def test_hash_and_verify_success(hasher: ApiKeyHasher) -> None:

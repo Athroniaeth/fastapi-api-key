@@ -8,7 +8,7 @@ from typing import Optional
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
 
-from fastapi_api_key.domain.hasher.base import BaseApiKeyHasher
+from fastapi_api_key.hasher.base import BaseApiKeyHasher
 
 
 class Argon2ApiKeyHasher(BaseApiKeyHasher):
