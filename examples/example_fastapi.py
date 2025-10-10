@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import AsyncIterator
 
 from fastapi import FastAPI, Depends, APIRouter
@@ -12,10 +13,12 @@ from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security
 # Default pepper is insecure and should not be used in production
-pepper = os.environ.get("API_KEY_PEPPER")
+pepper = os.getenv("API_KEY_PEPPER")
 hasher = Argon2ApiKeyHasher(pepper=pepper)
 
-database_url = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./db.sqlite3")
+path = Path(__file__).parent / "db.sqlite3"
+database_url = os.environ.get("DATABASE_URL", f"sqlite+aiosqlite:///{path}")
+
 async_engine = create_async_engine(database_url, future=True)
 async_session_maker = async_sessionmaker(
     async_engine,

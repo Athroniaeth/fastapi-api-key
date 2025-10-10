@@ -8,7 +8,7 @@ from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security
 # Default pepper is insecure and should not be used in production
-pepper = os.getenv("API_KEY_PEPPER", "change_me_please")
+pepper = os.getenv("API_KEY_PEPPER")
 hasher = Argon2ApiKeyHasher(pepper=pepper)
 
 # default hasher is Argon2 with a default pepper (to be changed in prod)
