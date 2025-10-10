@@ -40,7 +40,17 @@ uv sync --extra all  # fastapi + sqlalchemy + argon2 + bcrypt
 uv pip install -e ".[all]"
 ```
 
-For lighter setups you can choose individual extras such as `argon2`, `bcrypt`, or `sqlalchemy`.
+For lighter setups you can choose individual extras:
+
+| Installation mode           | Command                       | Description                                                                      |
+|-----------------------------|-------------------------------|----------------------------------------------------------------------------------|
+| **Base installation**       | `fastapi-api-key`             | Installs the core package without any optional dependencies.                     |
+| **With bcrypt support**     | `fastapi-api-key[bcrypt]`     | Adds support for password hashing using **bcrypt** (`bcrypt>=5.0.0`).            |
+| **With Argon2 support**     | `fastapi-api-key[argon2]`     | Adds support for password hashing using **Argon2** (`argon2-cffi>=25.1.0`).      |
+| **With SQLAlchemy support** | `fastapi-api-key[sqlalchemy]` | Adds database integration via **SQLAlchemy** (`sqlalchemy>=2.0.43`).             |
+| **Core setup**              | `fastapi-api-key[core]`       | Installs the **core dependencies** (SQLAlchemy + Argon2 + bcrypt).               |
+| **FastAPI only**            | `fastapi-api-key[fastapi]`    | Installs **FastAPI** as an optional dependency (`fastapi>=0.118.0`).             |
+| **Full installation**       | `fastapi-api-key[all]`        | Installs **all optional dependencies**: FastAPI, SQLAlchemy, Argon2, and bcrypt. |
 
 ```bash
 uv add git+https://github.com/Athroniaeth/fastapi-api-key[sqlalchemy]
@@ -114,9 +124,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from fastapi_api_key.api import create_api_keys_router
 from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
 from sqlalchemy.orm import DeclarativeBase
+from fastapi_api_key.repositories.sql import ApiKeyModelMixin
 
 
 class Base(DeclarativeBase):
+    ...
+
+class ApiKey(Base, ApiKeyModelMixin):
     ...
 
 

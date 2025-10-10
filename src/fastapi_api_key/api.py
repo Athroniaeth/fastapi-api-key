@@ -13,7 +13,7 @@ except ModuleNotFoundError as e:
     ) from e
 
 from datetime import datetime
-from typing import Annotated, AsyncIterator, Awaitable, Callable, List, Optional, TypeVar
+from typing import Annotated, Awaitable, Callable, List, Optional, TypeVar
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 from fastapi.security import APIKeyHeader
@@ -105,35 +105,19 @@ def _to_out(entity: ApiKey) -> ApiKeyOut:
 
 
 def create_api_keys_router(
-    async_session_maker: async_sessionmaker[AsyncSession],
-    hasher: Optional[ApiKeyHasher] = None,
+    depends_svc_api_keys: Callable[[...], Awaitable[AbstractApiKeyService[D]]],
     router: Optional[APIRouter] = None,
 ) -> APIRouter:
     """Create and configure the API Keys router.
 
     Args:
-        async_session_maker: SQLAlchemy async session factory.
-        hasher: Optional hasher instance. Defaults to `Argon2ApiKeyHasher`.
+        depends_svc_api_keys: Dependency callable that provides an `ApiKeyService`.
         router: Optional `APIRouter` instance. If not provided, a new one is created.
 
     Returns:
         Configured `APIRouter` ready to be included into a FastAPI app.
     """
-    hasher = hasher or Argon2ApiKeyHasher()
     router = router or APIRouter(prefix="/api-keys", tags=["API Keys"])
-
-    async def get_db() -> AsyncIterator[AsyncSession]:
-        """Provide a transactional scope around a series of operations."""
-        async with async_session_maker() as session:
-            async with session.begin():
-                yield session
-
-    async def get_service(
-        async_session: AsyncSession = Depends(get_db),
-    ) -> ApiKeyService:
-        """Provide an `ApiKeyService` instance, wired with SQLAlchemy and Argon2."""
-        repo = SqlAlchemyApiKeyRepository(async_session)
-        return ApiKeyService(repo=repo, hasher=hasher)
 
     @router.post(
         path="/",
@@ -143,7 +127,7 @@ def create_api_keys_router(
     )
     async def create_api_key(
         payload: ApiKeyCreateIn,
-        svc: ApiKeyService = Depends(get_service),
+        svc: ApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyCreatedOut:
         """Create an API key and return the plaintext secret once.
 
@@ -170,7 +154,7 @@ def create_api_keys_router(
         summary="List API keys",
     )
     async def list_api_keys(
-        svc: ApiKeyService = Depends(get_service),
+        svc: ApiKeyService = Depends(depends_svc_api_keys),
         offset: Annotated[int, Query(ge=0, description="Items to skip")] = 0,
         limit: Annotated[int, Query(gt=0, le=100, description="Page size")] = 50,
     ) -> List[ApiKeyOut]:
@@ -195,7 +179,7 @@ def create_api_keys_router(
     )
     async def get_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(get_service),
+        svc: ApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Retrieve an API key by its identifier.
 
@@ -222,7 +206,7 @@ def create_api_keys_router(
     async def update_api_key(
         api_key_id: str,
         payload: ApiKeyUpdateIn,
-        svc: ApiKeyService = Depends(get_service),
+        svc: ApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Partially update an API key.
 
@@ -255,7 +239,7 @@ def create_api_keys_router(
     )
     async def delete_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(get_service),
+        svc: ApiKeyService = Depends(depends_svc_api_keys),
     ):
         """Delete an API key by ID.
 
@@ -276,7 +260,7 @@ def create_api_keys_router(
     @router.post("/{api_key_id}/activate", response_model=ApiKeyOut)
     async def activate_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(get_service),
+        svc: ApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Activate an API key by ID.
 
@@ -302,7 +286,7 @@ def create_api_keys_router(
     @router.post("/{api_key_id}/deactivate", response_model=ApiKeyOut)
     async def deactivate_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(get_service),
+        svc: ApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Deactivate an API key by ID.
 

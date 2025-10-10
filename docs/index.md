@@ -1,36 +1,41 @@
 # fastapi-api-key
 
-> Opinionated building blocks to issue, persist, and verify API keys for FastAPI services.
+`fastapi-api-key` provides reusable building blocks to issue, persist, and verify API keys in FastAPI applications. It
+ships with a domain model, hashing helpers, repository contracts, and an optional FastAPI router for CRUD management of
+keys.
 
-`fastapi-api-key` packages the pieces you need to generate keyed credentials, hash them securely, and expose management endpoints. It ships with:
+## Features
 
-- A domain entity that tracks activation, expiration, and usage timestamps.
-- Async services that create, list, rotate, and verify secrets without ever storing the clear text.
-- Repository contracts plus ready-to-use in-memory and SQLAlchemy implementations.
-- A FastAPI router factory that mounts CRUD endpoints in a couple of lines.
+- **Security-first**: secrets are hashed with a salt and a pepper, and never logged or returned after creation
+- **Ready-to-use**: just create your repository (storage) and use service
+- **Prod-ready**: services and repositories are async, and battle-tested
 
-## Why another API key library?
-
-Modern APIs still rely on static keys for machine-to-machine traffic. This project focuses on:
-
-- **Security defaults** – Argon2 hashing, pepper support, and separated `key_id` lookup.
-- **Async-first design** – repositories and services are fully async/await friendly.
-- **Extensibility** – customise the domain dataclass or the SQLAlchemy model in minutes.
-- **FastAPI integration** – drop-in router exposes CRUD endpoints with request/response models.
-
-Material for MkDocs powers this site, so everything is organised into quick starts, usage guides, and API references—just like the FastAPI and Pydantic docs you know.
+- **Agnostic hasher**: you can use any async-compatible hashing strategy (default: Argon2)
+- **Agnostic backend**: you can use any async-compatible database (default: SQLAlchemy)
+- **Factory**: create a Typer, FastAPI router wired to api key systems (only SQLAlchemy for now)
 
 ## Installation
 
-Choose the extras that match your stack. The examples on this site assume you are using `uv`, but `pip` or `rye` work as well.
+This projet does not publish to PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
 
 ```bash
-uv sync --extra all --group dev
+uv add git+https://github.com/Athroniaeth/fastapi-api-key
+uv pip install git+https://github.com/Athroniaeth/fastapi-api-key
 ```
-The `all` extra installs FastAPI, SQLAlchemy, Argon2, and BCrypt. For minimal deployments, pick the individual extras (`argon`, `bcrypt`, `sqlalchemy`).
 
-| Installation mode           | Command                                   | Description                                                                      |
-| --------------------------- | ----------------------------------------- | -------------------------------------------------------------------------------- |
+## Development installation
+
+Clone the repository and install the project with the extras that fit your stack. Examples below use `uv`:
+
+```bash
+uv sync --extra all  # fastapi + sqlalchemy + argon2 + bcrypt
+uv pip install -e ".[all]"
+```
+
+For lighter setups you can choose individual extras:
+
+| Installation mode           | Command                       | Description                                                                      |
+|-----------------------------|-------------------------------|----------------------------------------------------------------------------------|
 | **Base installation**       | `fastapi-api-key`             | Installs the core package without any optional dependencies.                     |
 | **With bcrypt support**     | `fastapi-api-key[bcrypt]`     | Adds support for password hashing using **bcrypt** (`bcrypt>=5.0.0`).            |
 | **With Argon2 support**     | `fastapi-api-key[argon2]`     | Adds support for password hashing using **Argon2** (`argon2-cffi>=25.1.0`).      |
@@ -39,14 +44,22 @@ The `all` extra installs FastAPI, SQLAlchemy, Argon2, and BCrypt. For minimal de
 | **FastAPI only**            | `fastapi-api-key[fastapi]`    | Installs **FastAPI** as an optional dependency (`fastapi>=0.118.0`).             |
 | **Full installation**       | `fastapi-api-key[all]`        | Installs **all optional dependencies**: FastAPI, SQLAlchemy, Argon2, and bcrypt. |
 
+```bash
+uv add git+https://github.com/Athroniaeth/fastapi-api-key[sqlalchemy]
+uv pip install git+https://github.com/Athroniaeth/fastapi-api-key[sqlalchemy]
+uv sync --extra sqlalchemy
+uv pip install -e ".[sqlalchemy]"
+```
 
-!!! tip "Always set a pepper"
-    The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
+Development dependencies (pytest, ruff, etc.) are available under the `dev` group:
+
+```bash
+uv sync --extra dev
+uv pip install -e ".[dev]"
+```
 
 ## What to read next
 
 1. Head to the [Quickstart](quickstart.md) to wire the service in a REPL or script.
 2. Browse the [Usage](usage/inmemory.md) section to reuse the example applications that ship with the project.
 3. Dive into the [Reference](reference/service.md) for service semantics and repository contracts.
-
-Happy hacking!

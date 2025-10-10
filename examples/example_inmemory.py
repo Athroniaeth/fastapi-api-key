@@ -1,38 +1,31 @@
+import asyncio
 import os
 
-from argon2 import PasswordHasher
-
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.service import ApiKeyService
-from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key import ApiKeyService, ApiKey
 from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
+from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security
 # Default pepper is insecure and should not be used in production
-pepper = os.environ.get("API_KEY_PEPPER")
+pepper = os.getenv("API_KEY_PEPPER", "change_me_please")
+hasher = Argon2ApiKeyHasher(pepper=pepper)
+
+# default hasher is Argon2 with a default pepper (to be changed in prod)
+repo = InMemoryApiKeyRepository()
+service = ApiKeyService(
+    repo=repo,
+    hasher=hasher,
+)
 
 
 async def main():
-    password_hasher = PasswordHasher()
-    hasher = Argon2ApiKeyHasher(
-        pepper=pepper,
-        password_hasher=password_hasher,
-    )
-    repo = InMemoryApiKeyRepository()
+    entity = ApiKey(name="development")
+    entity, api_key = await service.create(entity)
+    print("Give this secret to the client:", api_key)
 
-    svc = ApiKeyService(repo=repo, hasher=hasher)
-    entity = ApiKey(
-        name="my-first-key",
-        description="This is my first API key",
-        is_active=True,
-    )
-    entity, api_key = await svc.create(entity)
-    print(f"Created entity: {entity}")
-    print(f"Created api_key: {api_key} ({len(api_key)})\n")
+    verified = await service.verify_key(api_key)
+    print("Verified key belongs to:", verified.id_)
 
 
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())
+asyncio.run(main())

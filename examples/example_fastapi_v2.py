@@ -1,18 +1,35 @@
 import os
+from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from fastapi import FastAPI, Depends, APIRouter
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.orm import DeclarativeBase
 
 from fastapi_api_key import ApiKey, ApiKeyService
-from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
+from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
+from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, ApiKeyModelMixin
+
+
+class Base(DeclarativeBase): ...
+
+
+class ApiKeyModel(Base, ApiKeyModelMixin): ...
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    # Create the database tables
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
 
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security
 # Default pepper is insecure and should not be used in production
-pepper = os.environ.get("API_KEY_PEPPER")
+pepper = os.getenv("API_KEY_PEPPER", "change_me_please")
 hasher = Argon2ApiKeyHasher(pepper=pepper)
 
 database_url = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./db.sqlite3")
@@ -23,7 +40,7 @@ async_session_maker = async_sessionmaker(
     expire_on_commit=False,
 )
 
-app = FastAPI(title="API with API Key Management")
+app = FastAPI(title="API with API Key Management", lifespan=lifespan)
 
 
 async def async_session() -> AsyncIterator[AsyncSession]:
@@ -35,8 +52,8 @@ async def async_session() -> AsyncIterator[AsyncSession]:
 
 async def inject_svc_api_keys(async_session: AsyncSession = Depends(async_session)) -> ApiKeyService:
     """Dependency to inject the API key service with an active SQLAlchemy async session."""
+    # No need to ensure table here, done in lifespan
     repo = SqlAlchemyApiKeyRepository(async_session)
-    await repo.ensure_table()
     return ApiKeyService(repo=repo, hasher=hasher)
 
 

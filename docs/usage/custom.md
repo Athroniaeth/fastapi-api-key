@@ -8,15 +8,28 @@ Extend the default dataclass and SQLAlchemy model to capture application-specifi
 - Derive a SQLAlchemy model from `ApiKeyModelMixin` and add new mapped columns.
 - Override `SqlAlchemyApiKeyRepository` to translate between the two.
 
-## Full example
+## SQLAlchemy 
 
-Pulled straight from `examples/example_sql_custom.py`:
+This example shows how to add a `notes` field to the domain model and persist it in the database.
+
+!!! tip "Always set a pepper"
+    The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
 
 ```python
 --8<-- "examples/example_sql_custom.py"
 ```
 
-### Key takeaways
+## FastAPI
+This example shows how to add a `notes` field to the domain model and persist it in the database, then expose it over HTTP.
+
+!!! tip "Always set a pepper"
+    The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
+
+```python
+--8<-- "examples/example_fastapi_custom.py"
+```
+
+## Key takeaways
 
 1. The dataclass extends `ApiKey` with a `notes` field.
 2. `ApiKeyModel` inherits from `ApiKeyModelMixin` and maps the new column.

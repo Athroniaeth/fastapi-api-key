@@ -1,19 +1,19 @@
 import os
+from contextlib import asynccontextmanager
 from dataclasses import field, dataclass
+from typing import AsyncIterator
 from typing import Optional, Type
 
+from fastapi import FastAPI, Depends, APIRouter
 from sqlalchemy import String
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
 from fastapi_api_key import ApiKeyService
+from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
 from fastapi_api_key.domain.entities import ApiKey as OldApiKey
 from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.repositories.sql import (
-    SqlAlchemyApiKeyRepository,
-    ApiKeyModelMixin,
-)
-import asyncio
+from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, ApiKeyModelMixin
 
 
 class Base(DeclarativeBase): ...
@@ -98,6 +98,14 @@ class ApiKeyRepository(SqlAlchemyApiKeyRepository[ApiKey, ApiKeyModel]):
         )
 
 
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    # Create the database tables
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    yield
+
+
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security
 # Default pepper is insecure and should not be used in production
@@ -113,23 +121,61 @@ async_session_maker = async_sessionmaker(
 )
 
 
-async def main():
+app = FastAPI(title="API with API Key Management", lifespan=lifespan)
+
+
+async def async_session() -> AsyncIterator[AsyncSession]:
+    """Dependency to provide an active SQLAlchemy async session."""
     async with async_session_maker() as session:
-        repo = SqlAlchemyApiKeyRepository(session)
-
-        # Don't need to create Base and ApiKeyModel, the repository does it for you
-        await repo.ensure_table()
-
-        service = ApiKeyService(repo=repo, hasher=hasher)
-        entity = ApiKey(name="persistent")
-
-        # Entity have updated id after creation
-        entity, secret = await service.create(entity)
-        print("Stored key", entity.id_, "secret", secret)
-
-        # Don't forget to commit the session to persist the key
-        # You can also use a transaction `async with session.begin():`
-        await session.commit()
+        async with session.begin():
+            yield session
 
 
-asyncio.run(main())
+async def inject_svc_api_keys(async_session: AsyncSession = Depends(async_session)) -> ApiKeyService:
+    """Dependency to inject the API key service with an active SQLAlchemy async session."""
+    # No need to ensure table here, done in lifespan
+    repo = SqlAlchemyApiKeyRepository(
+        async_session=async_session,
+        model_cls=ApiKeyModel,
+        domain_cls=ApiKey,
+    )
+    return ApiKeyService(
+        repo=repo,
+        hasher=hasher,
+        domain_cls=ApiKey,
+    )
+
+
+security = create_depends_api_key(inject_svc_api_keys)
+router_protected = APIRouter(prefix="/protected", tags=["Protected"])
+
+router = APIRouter(prefix="/api-keys", tags=["API Keys"])
+router_api_keys = create_api_keys_router(
+    inject_svc_api_keys,
+    router=router,
+)
+
+
+@router_protected.get("/")
+async def read_protected_data(api_key: ApiKey = Depends(security)):
+    return {
+        "message": "This is protected data",
+        "apiKey": {
+            "id": api_key.id_,
+            "name": api_key.name,
+            "description": api_key.description,
+            "isActive": api_key.is_active,
+            "createdAt": api_key.created_at,
+            "expiresAt": api_key.expires_at,
+            "lastUsedAt": api_key.last_used_at,
+        },
+    }
+
+
+app.include_router(router_api_keys)
+app.include_router(router_protected)
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(app, host="localhost", port=8000)

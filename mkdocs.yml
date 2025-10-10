@@ -41,10 +41,8 @@ nav:
   - Home: index.md
   - Quickstart: quickstart.md
   - Usage:
-      - In-memory: usage/inmemory.md
-      - SQLAlchemy: usage/sqlalchemy.md
-      - FastAPI: usage/router.md
-      - SQLAlchemy (custom): usage/custom-model.md
+      - Custom: usage/custom.md
+      - FastAPI: usage/fastapi.md
 extra:
   social:
     - icon: fontawesome/brands/github

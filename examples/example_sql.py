@@ -1,51 +1,44 @@
+import asyncio
 import os
-from pathlib import Path
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from fastapi_api_key import ApiKeyService
-from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key import ApiKeyService, ApiKey
 from fastapi_api_key.domain.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security
 # Default pepper is insecure and should not be used in production
-pepper = os.environ.get("API_KEY_PEPPER")
-db_path = Path(__file__).parent / "db.sqlite3"
-database_url = os.environ.get("DATABASE_URL", f"sqlite+aiosqlite:///{db_path}")
+pepper = os.getenv("API_KEY_PEPPER", "change_me_please")
+hasher = Argon2ApiKeyHasher(pepper=pepper)
+
+database_url = os.environ.get("DATABASE_URL", "sqlite+aiosqlite:///./db.sqlite3")
+async_engine = create_async_engine(database_url, future=True)
+async_session_maker = async_sessionmaker(
+    async_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
 
 
 async def main():
-    print(f"Using database URL: {database_url}")
+    async with async_session_maker() as session:
+        repo = SqlAlchemyApiKeyRepository(session)
 
-    async_engine = create_async_engine(database_url)
-    async_session_maker = async_sessionmaker(
-        async_engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
+        # Don't need to create Base and ApiKeyModel, the repository does it for you
+        await repo.ensure_table()
 
-    async with async_session_maker() as async_session:
-        hasher = Argon2ApiKeyHasher(pepper=pepper)
-        repo = SqlAlchemyApiKeyRepository(async_session)
-        await repo.ensure_table()  # Ensure the table exists
+        service = ApiKeyService(repo=repo, hasher=hasher)
+        entity = ApiKey(name="persistent")
 
-        svc = ApiKeyService(repo=repo, hasher=hasher)
-        entity = ApiKey(
-            name="my-first-key",
-            description="This is my first API key",
-            is_active=True,
-        )
-        entity, api_key = await svc.create(entity)
-        print(f"Created entity: {entity}")
-        print(f"Created api_key: {api_key}\n")
+        # Entity have updated id after creation
+        entity, secret = await service.create(entity)
+        print("Stored key", entity.id_, "secret", secret)
 
-        # Commit the transaction to persist the data
-        await async_session.commit()
+        # Don't forget to commit the session to persist the key
+        # You can also use a transaction `async with session.begin():`
+        await session.commit()
 
 
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())
+asyncio.run(main())
