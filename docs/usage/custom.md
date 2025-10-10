@@ -1,4 +1,4 @@
-# Custom Domain Model
+# Custom Model
 
 Extend the default dataclass and SQLAlchemy model to capture application-specific metadata (notes, scopes, tags, etc.).
 
