@@ -53,7 +53,7 @@ def lint():  # pragma: no cover
         "ruff format .",
         "ruff check --fix .",
         "ty check .",
-        "bandit -c pyproject.toml -r src -q",
+        "bandit -c pyproject.toml -r src examples -q",
     ]
 
     for command in list_commands:

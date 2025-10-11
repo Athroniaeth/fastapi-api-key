@@ -24,7 +24,7 @@ keys.
 
 ## Installation
 
-This projet does not publish to PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
+This project is not published to PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
 
 ```bash
 uv add git+https://github.com/Athroniaeth/fastapi-api-key
@@ -109,6 +109,20 @@ service = ApiKeyService(
     hasher=hasher,
 )
 ```
+
+### How API Keys Work
+
+This is a classic API key if you don't modify the service behavior:
+
+`ak-7a74caa323a5410d-mAfP3l6yAxqFz0FV2LOhu2tPCqL66lQnj3Ubd08w9RyE4rV4skUcpiUVIfsKEbzw`
+
+- "-" separators so that systems can easily split
+- Prefix `ak` (for "Api Key"), to identify the key type (useful to indicate that it is an API key).
+- 16 first characters are the identifier (UUIDv4 without dashes)
+- 48 last characters are the secret (random URL-safe base64 string)
+
+When verifying an API key, the service extracts the identifier, retrieves the corresponding record from the repository, and compares the hashed secret. If found, it hashes the provided secret (with the same salt and pepper) and compares it to the stored hash.
+If they match, the key is valid.
 
 ### Mount the FastAPI router
 
