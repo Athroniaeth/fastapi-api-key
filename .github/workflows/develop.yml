@@ -2,9 +2,9 @@ name: Development Workflow
 
 on:
   pull_request:
-    branches: [ main, development ]
+    branches: [  development ]
   push:
-    branches: [ main, development ]
+    branches: [ development ]
 
 permissions:
   contents: read
