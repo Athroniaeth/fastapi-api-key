@@ -1,3 +1,9 @@
+## 0.2.1 (2025-10-13)
+
+### Fix
+
+- **router**: add json schema to deleted 204 response
+
 ## 0.2.0 (2025-10-11)
 
 ### Feat
