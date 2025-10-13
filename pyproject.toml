@@ -67,6 +67,7 @@ version_scheme = "pep440"
 version_provider = "uv"
 update_changelog_on_bump = true
 major_version_zero = true
+git_tag_version = true
 
 [tool.pytest.ini_options]
 # Automatically create html and xml coverage reports

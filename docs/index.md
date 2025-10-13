@@ -19,8 +19,8 @@ keys.
 This projet does not publish to PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
 
 ```bash
-uv add git+https://github.com/Athroniaeth/fastapi-api-key
-uv pip install git+https://github.com/Athroniaeth/fastapi-api-key
+uv add fastapi-api-key
+uv pip install fastapi-api-key
 ```
 
 ## Development installation
@@ -45,8 +45,8 @@ For lighter setups you can choose individual extras:
 | **Full installation**       | `fastapi-api-key[all]`        | Installs **all optional dependencies**: FastAPI, SQLAlchemy, Argon2, and bcrypt. |
 
 ```bash
-uv add git+https://github.com/Athroniaeth/fastapi-api-key[sqlalchemy]
-uv pip install git+https://github.com/Athroniaeth/fastapi-api-key[sqlalchemy]
+uv add fastapi-api-key[sqlalchemy]
+uv pip install fastapi-api-key[sqlalchemy]
 uv sync --extra sqlalchemy
 uv pip install -e ".[sqlalchemy]"
 ```
@@ -61,5 +61,4 @@ uv pip install -e ".[dev]"
 ## What to read next
 
 1. Head to the [Quickstart](quickstart.md) to wire the service in a REPL or script.
-2. Browse the [Usage](usage/inmemory.md) section to reuse the example applications that ship with the project.
-3. Dive into the [Reference](reference/service.md) for service semantics and repository contracts.
+2. Browse the [Usage](usage/custom/) section to reuse the example applications that ship with the project.

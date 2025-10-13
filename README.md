@@ -27,13 +27,13 @@ keys.
 This project is not published to PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
 
 ```bash
-uv add git+https://github.com/Athroniaeth/fastapi-api-key
-uv pip install git+https://github.com/Athroniaeth/fastapi-api-key
+uv add fastapi-api-key
+uv pip install fastapi-api-key
 ```
 
 ## Development installation
 
-Clone the repository and install the project with the extras that fit your stack. Examples below use `uv`:
+Clone or fork the repository and install the project with the extras that fit your stack. Examples below use `uv`:
 
 ```bash
 uv sync --extra all  # fastapi + sqlalchemy + argon2 + bcrypt
@@ -53,8 +53,8 @@ For lighter setups you can choose individual extras:
 | **Full installation**       | `fastapi-api-key[all]`        | Installs **all optional dependencies**: FastAPI, SQLAlchemy, Argon2, and bcrypt. |
 
 ```bash
-uv add git+https://github.com/Athroniaeth/fastapi-api-key[sqlalchemy]
-uv pip install git+https://github.com/Athroniaeth/fastapi-api-key[sqlalchemy]
+uv add fastapi-api-key[sqlalchemy]
+uv pip install fastapi-api-key[sqlalchemy]
 uv sync --extra sqlalchemy
 uv pip install -e ".[sqlalchemy]"
 ```
