@@ -72,7 +72,7 @@ class MockPasswordHasher(PasswordHasher):
         raise VerifyMismatchError("Mock mismatch")
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture(scope="session")
 async def async_engine() -> AsyncIterator[AsyncEngine]:
     """Create an in-memory SQLite async engine."""
     async_engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
@@ -89,14 +89,19 @@ async def async_engine() -> AsyncIterator[AsyncEngine]:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def async_session(async_engine: AsyncEngine) -> AsyncIterator[AsyncSession]:
+async def async_session_maker(async_engine: AsyncEngine) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
     """Provide an AsyncSession bound to the in-memory engine."""
     async_session_maker = async_sessionmaker(
         async_engine,
         class_=AsyncSession,
         expire_on_commit=False,
     )
+    yield async_session_maker
 
+
+@pytest_asyncio.fixture(scope="function")
+async def async_session(async_session_maker: async_sessionmaker[AsyncSession]) -> AsyncIterator[AsyncSession]:
+    """Provide an AsyncSession bound to the in-memory engine."""
     async with async_session_maker() as session:
         yield session
 
