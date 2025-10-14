@@ -2,7 +2,7 @@
 
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FAthroniaeth%2Ffastapi-api-key%2Fmain%2Fpyproject.toml)
 [![Tested with pytest](https://img.shields.io/badge/tests-pytest-informational.svg)](https://pytest.org/)
-![Coverage](https://img.shields.io/badge/coverage-67%25-brightgreen.svg)
+![Coverage](https://img.shields.io/badge/coverage-69%25-brightgreen.svg)
 [![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-4B32C3.svg)](https://docs.astral.sh/ruff/)
 [![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://bandit.readthedocs.io/)
 [![Deps: uv](https://img.shields.io/badge/deps-managed%20with%20uv-3E4DD8.svg)](https://docs.astral.sh/uv/)
@@ -21,6 +21,14 @@ keys.
 - **Agnostic hasher**: you can use any async-compatible hashing strategy (default: Argon2)
 - **Agnostic backend**: you can use any async-compatible database (default: SQLAlchemy)
 - **Factory**: create a Typer, FastAPI router wired to api key systems (only SQLAlchemy for now)
+
+## Standards compliance
+
+This library try to follow best practices and relevant RFCs for API key management and authentication:
+
+- **[RFC 9110/7235](https://www.rfc-editor.org/rfc/rfc9110.html)**: Router raise 401 for missing/invalid keys, 403 for valid but inactive/expired keys
+- **[RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750)**: Supports `Authorization: Bearer <api_key>` header for key transmission (also supports deprecated `X-API-Key` header and `api_key` query param)
+
 
 ## Installation
 
