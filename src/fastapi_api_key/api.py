@@ -1,3 +1,5 @@
+import warnings
+
 from typing_extensions import deprecated
 
 from fastapi_api_key.hasher.base import ApiKeyHasher
@@ -13,10 +15,10 @@ except ModuleNotFoundError as e:
     ) from e
 
 from datetime import datetime
-from typing import Annotated, Awaitable, Callable, List, Optional, TypeVar, Literal
+from typing import Annotated, Awaitable, Callable, List, Optional, TypeVar, Literal, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
-from fastapi.security import APIKeyHeader
+from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -238,7 +240,7 @@ def create_api_keys_router(
 
     @router.delete(
         "/{api_key_id}",
-        status_code=status.HTTP_204_NO_CONTENT,
+        status_code=status.HTTP_200_OK,
         summary="Delete an API key",
     )
     async def delete_api_key(
@@ -350,12 +352,21 @@ def create_api_key_security(
         auto_error=auto_error,
     )
 
+    if isinstance(api_key_header, APIKeyHeader):
+        warnings.warn(
+            "Please note that the use of ApiKeyHeader is no longer standard "
+            "according to RFC 6750: https://datatracker.ietf.org/doc/html/rfc6750"
+        )
+
+    if not api_key_header.auto_error:
+        raise ValueError("The provided security scheme must have auto_error=True")
+
     async def dependency(api_key: str = Security(api_key_header)) -> ApiKey:
         if not api_key:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="API key missing",
-                headers={"WWW-Authenticate": scheme_name},
+                headers={"WWW-Authenticate": api_key_header.scheme_name},
             )
 
         async with async_session_maker() as async_session:
@@ -369,13 +380,13 @@ def create_api_key_security(
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="API key missing",
-                        headers={"WWW-Authenticate": scheme_name},
+                        headers={"WWW-Authenticate": api_key_header.scheme_name},
                     ) from exc
                 except (InvalidKey, KeyNotFound) as exc:
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail="API key invalid",
-                        headers={"WWW-Authenticate": scheme_name},
+                        headers={"WWW-Authenticate": api_key_header.scheme_name},
                     ) from exc
                 except KeyInactive as exc:
                     raise HTTPException(
@@ -394,6 +405,7 @@ def create_api_key_security(
 async def _handle_verify_key(
     svc: AbstractApiKeyService[D],
     api_key: str,
+    scheme_name: str = "API Key",
 ) -> D:
     """Async context manager to handle key verification errors."""
     try:
@@ -402,56 +414,88 @@ async def _handle_verify_key(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="API key missing",
+            headers={"WWW-Authenticate": scheme_name},
         ) from exc
     except (InvalidKey, KeyNotFound) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="API key invalid",
+            headers={"WWW-Authenticate": scheme_name},
         ) from exc
     except KeyInactive as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="API key inactive",
+            headers={"WWW-Authenticate": scheme_name},
         ) from exc
     except KeyExpired as exc:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="API key expired",
+            headers={"WWW-Authenticate": scheme_name},
         ) from exc
+
+
+SecurityHTTPBearer = Union[Callable[[HTTPAuthorizationCredentials], Awaitable[D]]]
+SecurityAPIKeyHeader = Union[Callable[[str], Awaitable[D]]]
 
 
 def create_depends_api_key(
     depends_svc_api_keys: Callable[[...], Awaitable[AbstractApiKeyService[D]]],
-    header_scheme: Optional[APIKeyHeader] = None,
-) -> Callable[[str], Awaitable[D]]:
+    security: Optional[Union[HTTPBearer, APIKeyHeader]] = None,
+) -> Union[SecurityHTTPBearer, SecurityAPIKeyHeader]:
     """Create a FastAPI security dependency that verifies API keys.
 
     Args:
-        header_scheme: Pre-configured `APIKeyHeader` instance.
         depends_svc_api_keys: Dependency callable that provides an `ApiKeyService`.
+        security: Optional FastAPI security scheme (e.g., `APIKeyHeader` or `HTTPBearer`). defaults to `HTTPBearer`.
 
     Returns:
         A dependency callable that yields a verified :class:`ApiKey` entity or
         raises an :class:`fastapi.HTTPException` when verification fails.
     """
-    header_scheme = header_scheme or APIKeyHeader(
-        name="X-API-Key",
+    security = security or HTTPBearer(
+        auto_error=True,
         scheme_name="API Key",
-        auto_error=False,
+        description="API key required in the `Authorization` header as a Bearer token.",
     )
 
-    async def _valid_api_key(
-        api_key: str = Security(header_scheme),
-        svc: AbstractApiKeyService[D] = Depends(depends_svc_api_keys),
-    ) -> D:
-        # Faster check for missing key (avoid prepare transaction etc)
-        if not api_key:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="API key missing",
-                headers={"WWW-Authenticate": header_scheme.scheme_name},
-            )
+    if isinstance(security, APIKeyHeader):
+        warnings.warn(
+            "Please note that the use of ApiKeyHeader is no longer standard "
+            "according to RFC 6750: https://datatracker.ietf.org/doc/html/rfc6750"
+        )
 
-        return await _handle_verify_key(svc, api_key)
+        async def _valid_api_key(
+            api_key: str = Security(security),
+            svc: AbstractApiKeyService[D] = Depends(depends_svc_api_keys),
+        ) -> D:
+            # Faster check for missing key (avoid prepare transaction etc)
+            if not api_key:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="API key missing",
+                    headers={"WWW-Authenticate": security.scheme_name},
+                )
+
+            return await _handle_verify_key(svc, api_key, security.scheme_name)
+
+    elif isinstance(security, HTTPBearer):
+
+        async def _valid_api_key(
+            api_key: HTTPAuthorizationCredentials = Security(security),
+            svc: AbstractApiKeyService[D] = Depends(depends_svc_api_keys),
+        ) -> D:
+            # Faster check for missing key (avoid prepare transaction etc)
+            if not api_key:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="API key missing",
+                    headers={"WWW-Authenticate": security.scheme_name},
+                )
+
+            return await _handle_verify_key(svc, api_key.credentials, security.scheme_name)
+    else:
+        raise ValueError("The provided security scheme must be either HTTPBearer or APIKeyHeader")
 
     return _valid_api_key
