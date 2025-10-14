@@ -21,7 +21,7 @@ from fastapi_api_key.domain.entities import ApiKey, D
 from fastapi_api_key.hasher.argon2 import (
     Argon2ApiKeyHasher,
 )
-from fastapi_api_key.hasher.base import ApiKeyHasher
+from fastapi_api_key.hasher.base import ApiKeyHasher, MockApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 
 
@@ -114,13 +114,15 @@ def make_api_key() -> ApiKey:
     )
 
 
-@pytest.fixture(params=["argon2", "bcrypt"], scope="function")
+@pytest.fixture(params=["argon2", "bcrypt", "mock"], scope="function")
 def hasher_class(request: pytest.FixtureRequest) -> Type[ApiKeyHasher]:
     """Helper to get the hasher class from the request parameter."""
     if request.param == "argon2":
         return Argon2ApiKeyHasher
     elif request.param == "bcrypt":
         return BcryptApiKeyHasher
+    elif request.param == "mock":
+        return MockApiKeyHasher
     else:
         raise ValueError(f"Unknown hasher type: {request.param}")
 
@@ -134,9 +136,15 @@ def hasher(hasher_class: Type[ApiKeyHasher]) -> Iterator[ApiKeyHasher]:
         hasher_class: Type[Argon2ApiKeyHasher]
         ph = MockPasswordHasher(fixed_salt=False)
         yield hasher_class(pepper=pepper, password_hasher=ph)
+
     elif issubclass(hasher_class, BcryptApiKeyHasher):
         hasher_class: Type[BcryptApiKeyHasher]
         yield hasher_class(pepper=pepper, rounds=4)
+
+    elif issubclass(hasher_class, MockApiKeyHasher):
+        hasher_class: Type[MockApiKeyHasher]
+        yield hasher_class(pepper=pepper)
+
     else:
         raise ValueError(f"Unknown hasher type: {hasher_class}")
 

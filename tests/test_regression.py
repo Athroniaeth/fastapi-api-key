@@ -65,6 +65,10 @@ def test_version():
             "InMemoryApiKeyRepository",
         ],
         [
+            "hasher",
+            "MockApiKeyHasher",
+        ],
+        [
             "hasher.bcrypt",
             "BcryptApiKeyHasher",
         ],
