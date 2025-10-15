@@ -455,10 +455,13 @@ def create_depends_api_key(
         raises an :class:`fastapi.HTTPException` when verification fails.
     """
     security = security or HTTPBearer(
-        auto_error=True,
+        auto_error=False,
         scheme_name="API Key",
         description="API key required in the `Authorization` header as a Bearer token.",
     )
+
+    if security.auto_error:
+        raise ValueError("The provided security scheme must have auto_error=False")
 
     if isinstance(security, APIKeyHeader):
         warnings.warn(
