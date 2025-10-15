@@ -1,7 +1,7 @@
 from typing import Optional, List
 
+from fastapi_api_key.domain.base import D
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
-from fastapi_api_key.domain.entities import D
 
 
 class InMemoryApiKeyRepository(AbstractApiKeyRepository[D]):

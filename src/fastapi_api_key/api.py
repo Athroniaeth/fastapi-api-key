@@ -1,7 +1,8 @@
 import warnings
 
 
-from fastapi_api_key.service import AbstractApiKeyService
+from fastapi_api_key.services.service import AbstractApiKeyService
+from fastapi_api_key.types import SecurityHTTPBearer, SecurityAPIKeyHeader
 
 try:
     import fastapi  # noqa: F401
@@ -96,7 +97,7 @@ class DeletedResponse(BaseModel):
 def _to_out(entity: ApiKey) -> ApiKeyOut:
     """Map an `ApiKey` entity to the public `ApiKeyOut` schema."""
     return ApiKeyOut(
-        id=str(entity.id_),
+        id="entity.id_",
         name=entity.name,
         description=entity.description,
         is_active=entity.is_active,
@@ -349,10 +350,6 @@ async def _handle_verify_key(
             detail="API key expired",
             headers={"WWW-Authenticate": scheme_name},
         ) from exc
-
-
-SecurityHTTPBearer = Union[Callable[[HTTPAuthorizationCredentials], Awaitable[D]]]
-SecurityAPIKeyHeader = Union[Callable[[str], Awaitable[D]]]
 
 
 def create_depends_api_key(

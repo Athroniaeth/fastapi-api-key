@@ -14,10 +14,11 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from fastapi_api_key.domain.base import D
 from fastapi_api_key.hasher.bcrypt import BcryptApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, Base
-from fastapi_api_key.domain.entities import ApiKey, D
+from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.hasher.argon2 import (
     Argon2ApiKeyHasher,
 )
@@ -27,6 +28,7 @@ from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 
 import pytest_asyncio
 
+from fastapi_api_key.types import AsyncSessionMaker
 from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
 
 
@@ -89,7 +91,7 @@ async def async_engine() -> AsyncIterator[AsyncEngine]:
 
 
 @pytest_asyncio.fixture(scope="function")
-async def async_session_maker(async_engine: AsyncEngine) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
+async def async_session_maker(async_engine: AsyncEngine) -> AsyncIterator[AsyncSessionMaker]:
     """Provide an AsyncSession bound to the in-memory engine."""
     async_session_maker = async_sessionmaker(
         async_engine,
@@ -100,7 +102,7 @@ async def async_session_maker(async_engine: AsyncEngine) -> AsyncIterator[async_
 
 
 @pytest_asyncio.fixture(scope="function")
-async def async_session(async_session_maker: async_sessionmaker[AsyncSession]) -> AsyncIterator[AsyncSession]:
+async def async_session(async_session_maker: AsyncSessionMaker) -> AsyncIterator[AsyncSession]:
     """Provide an AsyncSession bound to the in-memory engine."""
     async with async_session_maker() as session:
         yield session

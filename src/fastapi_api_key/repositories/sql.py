@@ -1,3 +1,5 @@
+from fastapi_api_key.domain.base import D
+
 try:
     import sqlalchemy  # noqa: F401
 except ModuleNotFoundError as e:
@@ -15,7 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
-from fastapi_api_key.domain.entities import ApiKey, D
+from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.utils import datetime_factory
 

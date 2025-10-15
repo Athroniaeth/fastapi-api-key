@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Generic, Optional, List
 
-from fastapi_api_key.domain.entities import D
+from fastapi_api_key.domain.base import D
 
 
 class AbstractApiKeyRepository(ABC, Generic[D]):
