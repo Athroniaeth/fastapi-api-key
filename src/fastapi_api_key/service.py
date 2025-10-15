@@ -187,7 +187,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
         if entity.expires_at and entity.expires_at < datetime_factory():
             raise ValueError("Expiration date must be in the future")
 
-        key_secret = key_secret or key_secret_factory()
+        key_secret = key_secret or entity.key_secret or key_secret_factory()
 
         full_key_secret = entity.full_key_secret(
             self.global_prefix,
@@ -195,6 +195,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
             key_secret=key_secret,
         )
         entity.key_hash = self._hasher.hash(key_secret)
+        entity._key_secret = key_secret
         return await self._repo.create(entity), full_key_secret
 
     async def update(self, entity: D) -> D:

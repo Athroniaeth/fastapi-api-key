@@ -39,7 +39,6 @@ class InMemoryApiKeyRepository(AbstractApiKeyRepository[D]):
         return entity
 
     async def delete_by_id(self, id_: str) -> bool:
-        """Return True if deleted, None if not found (aligns with abstract docstring)."""
         if id_ not in self._store:
             return False
 

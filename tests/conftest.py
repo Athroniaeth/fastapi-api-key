@@ -108,15 +108,20 @@ async def async_session(async_session_maker: async_sessionmaker[AsyncSession]) -
 
 def make_api_key() -> ApiKey:
     """Create a fresh ApiKey domain entity with unique key_id/hash."""
-    return ApiKey(
+    key_secret = key_secret_factory()
+    key_hash = hashlib.sha256(key_secret.encode()).hexdigest()
+
+    api_key = ApiKey(
         name="test-key",
         description="A test API key",
         is_active=True,
         expires_at=datetime_factory() + timedelta(days=30),
         created_at=datetime_factory(),
         key_id=key_id_factory(),
-        key_hash=key_secret_factory(),
+        _key_secret=key_secret_factory(),
+        key_hash=key_hash,
     )
+    return api_key
 
 
 @pytest.fixture(params=["argon2", "bcrypt", "mock"], scope="function")

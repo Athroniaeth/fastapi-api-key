@@ -73,6 +73,14 @@ class ApiKeyModelMixin:
         nullable=False,
         unique=True,
     )
+    key_secret_first: Mapped[str] = mapped_column(
+        String(4),
+        nullable=False,
+    )
+    key_secret_last: Mapped[str] = mapped_column(
+        String(4),
+        nullable=False,
+    )
 
 
 class ApiKeyModel(Base, ApiKeyModelMixin):
@@ -130,6 +138,8 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
                 last_used_at=entity.last_used_at,
                 key_id=entity.key_id,
                 key_hash=entity.key_hash,
+                key_secret_first=entity.key_secret_first,
+                key_secret_last=entity.key_secret_last,
             )
 
         # Update existing model
@@ -140,6 +150,8 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
         target.last_used_at = entity.last_used_at
         target.key_id = entity.key_id
         target.key_hash = entity.key_hash  # type: ignore[invalid-assignment]
+        target._key_secret_first = entity.key_secret_first  # type: ignore[invalid-assignment]
+        target._key_secret_last = entity.key_secret_last  # type: ignore[invalid-assignment]
 
         return target
 
@@ -148,7 +160,7 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
         if model is None:
             return None
 
-        return model_cls(
+        domain = model_cls(
             id_=model.id_,
             name=model.name,
             description=model.description,
@@ -158,7 +170,10 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
             last_used_at=model.last_used_at,
             key_id=model.key_id,
             key_hash=model.key_hash,
+            _key_secret_first=model.key_secret_first,
+            _key_secret_last=model.key_secret_last,
         )
+        return domain
 
     async def get_by_id(self, id_: str) -> Optional[D]:
         stmt = select(self.model_cls).where(self.model_cls.id_ == id_)

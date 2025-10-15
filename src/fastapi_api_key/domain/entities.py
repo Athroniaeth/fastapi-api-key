@@ -7,12 +7,27 @@ from fastapi_api_key.utils import (
     uuid_factory,
     datetime_factory,
     key_id_factory,
+    key_secret_factory,
 )
 
 
 @runtime_checkable
 class ApiKeyEntity(Protocol):
-    """Protocol for an API key entity."""
+    """Protocol for an API key entity.
+
+    Attributes:
+        id_ (str): Unique identifier for the API key.
+        name (Optional[str]): Optional name for the API key.
+        description (Optional[str]): Optional description for the API key.
+        is_active (bool): Indicates if the API key is active.
+        expires_at (Optional[datetime]): Optional expiration datetime for the API key.
+        created_at (datetime): Datetime when the API key was created.
+        last_used_at (Optional[datetime]): Optional datetime when the API key was last used.
+        key_id (str): Public identifier part of the API key.
+        key_hash (Optional[str]): Hashed secret part of the API key.
+        key_secret_first (str): First part of the secret for display purposes.
+        key_secret_last (str): Last part of the secret for display purposes.
+    """
 
     id_: str
     name: Optional[str]
@@ -23,6 +38,26 @@ class ApiKeyEntity(Protocol):
     last_used_at: Optional[datetime]
     key_id: str
     key_hash: Optional[str]
+    _key_secret: Optional[str]
+    _key_secret_first: Optional[str]
+    _key_secret_last: Optional[str]
+
+    @property
+    def key_secret(self) -> Optional[str]:
+        """The secret part of the API key, only available at creation time."""
+        key_secret = self._key_secret
+        self._key_secret = None  # Clear after first access
+        return key_secret
+
+    @property
+    def key_secret_first(self) -> str:
+        """First part of the secret for display purposes/give the user a clue as to which key we are talking about."""
+        ...
+
+    @property
+    def key_secret_last(self) -> str:
+        """Last part of the secret for display purposes/give the user a clue as to which key we are talking about."""
+        ...
 
     def full_key_secret(
         self,
@@ -92,11 +127,36 @@ class ApiKey(ApiKeyEntity):
     last_used_at: Optional[datetime] = None
     key_id: str = field(default_factory=key_id_factory)
     key_hash: Optional[str] = None
+    _key_secret: Optional[str] = field(default_factory=key_secret_factory, repr=False)
+    _key_secret_first: Optional[str] = field(default=None, repr=False)
+    _key_secret_last: Optional[str] = field(default=None, repr=False)
 
     def __post_init__(self) -> None:
         self.created_at = _normalize_datetime(self.created_at) or datetime_factory()
         self.expires_at = _normalize_datetime(self.expires_at)
         self.last_used_at = _normalize_datetime(self.last_used_at)
+
+    @property
+    def key_secret_first(self) -> str:
+        """First part of the secret for display purposes/give the user a clue as to which key we are talking about."""
+        if self._key_secret_first is not None:
+            return self._key_secret_first
+
+        if self._key_secret is not None:
+            return self._key_secret[:4]
+
+        raise ValueError("Key secret is not set")
+
+    @property
+    def key_secret_last(self) -> str:
+        """Last part of the secret for display purposes/give the user a clue as to which key we are talking about."""
+        if self._key_secret_last is not None:
+            return self._key_secret_last
+
+        if self._key_secret is not None:
+            return self._key_secret[-4:]
+
+        raise ValueError("Key secret is not set")
 
     def full_key_secret(
         self,
