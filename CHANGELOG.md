@@ -1,3 +1,25 @@
+## 0.3.0 (2025-10-15)
+
+### BREAKING CHANGE
+
+- remove using of api.create_api_key_security, now use only create_depends_api_key
+- change signature of domain.init and svc.create and break change sql schema (add key_secret_first String(4) nullable and add key_secret_last String(4) nullable)
+
+### Feat
+
+- **domain**: add first and last key secret for help user
+- **api**: added the ability to use an HTTPBearer to comply with the rfc6750 standard
+- **mock**: add mock api key hasher for tests purpose
+
+### Fix
+
+- **api**: ensure that security have autoerror=False for respect RFC 9110/7235
+
+### Refactor
+
+- **all**: create specific modules for typing
+- **api**: remove depreated function create_api_key_security, update docs
+
 ## 0.2.1 (2025-10-13)
 
 ### Fix
