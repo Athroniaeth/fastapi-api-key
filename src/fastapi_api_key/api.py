@@ -1,8 +1,6 @@
 import warnings
 
-from typing_extensions import deprecated
 
-from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.service import AbstractApiKeyService
 
 try:
@@ -20,7 +18,6 @@ from typing import Annotated, Awaitable, Callable, List, Optional, TypeVar, Lite
 from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.entities import ApiKey, ApiKeyEntity
@@ -31,8 +28,6 @@ from fastapi_api_key.domain.errors import (
     KeyNotFound,
     KeyNotProvided,
 )
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 
 D = TypeVar("D", bound=ApiKeyEntity)
 
@@ -320,86 +315,6 @@ def create_api_keys_router(
     #     ...
 
     return router
-
-
-@deprecated(
-    "`create_api_key_security` is deprecated and will be removed in a future release. Use `create_depends_api_key` instead."
-)
-def create_api_key_security(
-    async_session_maker: async_sessionmaker[AsyncSession],
-    hasher: Optional[ApiKeyHasher] = None,
-    header_name: str = "X-API-Key",
-    scheme_name: str = "API Key",
-    auto_error: bool = True,
-) -> Callable[[str], Awaitable[ApiKey]]:
-    """Create a FastAPI security dependency that verifies API keys.
-
-    Args:
-        async_session_maker: SQLAlchemy async session factory.
-        hasher: Optional hasher instance. Defaults to `Argon2ApiKeyHasher`.
-        header_name: HTTP header to read the API key from.
-        scheme_name: OpenAPI scheme name advertised in docs.
-        auto_error: Forward to :class:`fastapi.security.APIKeyHeader`.
-
-    Returns:
-        A dependency callable that yields a verified :class:`ApiKey` entity or
-        raises an :class:`fastapi.HTTPException` when verification fails.
-    """
-    hasher = hasher or Argon2ApiKeyHasher()
-    api_key_header = APIKeyHeader(
-        name=header_name,
-        scheme_name=scheme_name,
-        auto_error=auto_error,
-    )
-
-    if isinstance(api_key_header, APIKeyHeader):
-        warnings.warn(
-            "Please note that the use of ApiKeyHeader is no longer standard "
-            "according to RFC 6750: https://datatracker.ietf.org/doc/html/rfc6750"
-        )
-
-    if not api_key_header.auto_error:
-        raise ValueError("The provided security scheme must have auto_error=True")
-
-    async def dependency(api_key: str = Security(api_key_header)) -> ApiKey:
-        if not api_key:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="API key missing",
-                headers={"WWW-Authenticate": api_key_header.scheme_name},
-            )
-
-        async with async_session_maker() as async_session:
-            async with async_session.begin():
-                repo = SqlAlchemyApiKeyRepository(async_session)
-                svc = ApiKeyService(repo=repo, hasher=hasher)
-
-                try:
-                    return await svc.verify_key(api_key)
-                except KeyNotProvided as exc:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="API key missing",
-                        headers={"WWW-Authenticate": api_key_header.scheme_name},
-                    ) from exc
-                except (InvalidKey, KeyNotFound) as exc:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="API key invalid",
-                        headers={"WWW-Authenticate": api_key_header.scheme_name},
-                    ) from exc
-                except KeyInactive as exc:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="API key inactive",
-                    ) from exc
-                except KeyExpired as exc:
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="API key expired",
-                    ) from exc
-
-    return dependency
 
 
 async def _handle_verify_key(

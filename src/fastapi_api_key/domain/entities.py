@@ -7,7 +7,6 @@ from fastapi_api_key.utils import (
     uuid_factory,
     datetime_factory,
     key_id_factory,
-    key_secret_factory,
 )
 
 
@@ -127,7 +126,7 @@ class ApiKey(ApiKeyEntity):
     last_used_at: Optional[datetime] = None
     key_id: str = field(default_factory=key_id_factory)
     key_hash: Optional[str] = None
-    _key_secret: Optional[str] = field(default_factory=key_secret_factory, repr=False)
+    _key_secret: Optional[str] = field(default=None, repr=False)
     _key_secret_first: Optional[str] = field(default=None, repr=False)
     _key_secret_last: Optional[str] = field(default=None, repr=False)
 

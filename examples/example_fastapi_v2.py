@@ -74,15 +74,7 @@ router_api_keys = create_api_keys_router(
 async def read_protected_data(api_key: ApiKey = Depends(security)):
     return {
         "message": "This is protected data",
-        "apiKey": {
-            "id": api_key.id_,
-            "name": api_key.name,
-            "description": api_key.description,
-            "isActive": api_key.is_active,
-            "createdAt": api_key.created_at,
-            "expiresAt": api_key.expires_at,
-            "lastUsedAt": api_key.last_used_at,
-        },
+        "apiKey": api_key,
     }
 
 
