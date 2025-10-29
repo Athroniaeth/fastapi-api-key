@@ -29,25 +29,9 @@ def _full_key(
     return f"{global_prefix}{separator}{key_id}{separator}{secret}"
 
 
-@pytest.fixture(scope="function")
-def service(
-    repository: AbstractApiKeyRepository[ApiKey],
-    fixed_salt_hasher: ApiKeyHasher,
-) -> ApiKeyService[ApiKey]:
-    """Service under test with mocked hasher and parametrized repository."""
-    return ApiKeyService(
-        repo=repository,
-        hasher=fixed_salt_hasher,
-        domain_cls=ApiKey,
-        separator=".",
-        global_prefix="ak",
-    )
-
-
 @pytest.mark.asyncio
 async def test_create_success(
     service: ApiKeyService[ApiKey],
-    repository: AbstractApiKeyRepository[ApiKey],
     fixed_salt_hasher: ApiKeyHasher,
 ) -> None:
     """create(): should persist entity and return full plain key with expected format."""
@@ -69,7 +53,7 @@ async def test_create_success(
     assert created_entity.key_hash == expected_hash
 
     # Double-check it was persisted
-    fetched = await repository.get_by_id(created_entity.id_)
+    fetched = await service._repo.get_by_id(created_entity.id_)
     assert fetched is not None
     assert fetched.id_ == created_entity.id_
 

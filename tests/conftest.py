@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
+from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.base import D
 from fastapi_api_key.hasher.bcrypt import BcryptApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
@@ -28,6 +29,8 @@ from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 
 import pytest_asyncio
 
+from fastapi_api_key.services.base import AbstractApiKeyService
+from fastapi_api_key.services.cached import CachedApiKeyService
 from fastapi_api_key.types import AsyncSessionMaker
 from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
 
@@ -185,3 +188,34 @@ def repository(request: pytest.FixtureRequest, async_session: AsyncSession) -> I
         yield SqlAlchemyApiKeyRepository(async_session=async_session)
     else:
         raise ValueError(f"Unknown repository type: {request.param}")
+
+
+@pytest.fixture(params=["base", "cached"], scope="function")
+def service_class(request: pytest.FixtureRequest) -> Type[AbstractApiKeyService[D]]:
+    """Helper to get the service class from the request parameter."""
+    if request.param == "base":
+        return ApiKeyService
+    elif request.param == "cached":
+        return CachedApiKeyService
+    else:
+        raise ValueError(f"Unknown service type: {request.param}")
+
+
+@pytest.fixture
+def service(
+    service_class: Type[AbstractApiKeyService[D]],
+    fixed_salt_hasher: ApiKeyHasher,
+) -> Iterator[AbstractApiKeyService[D]]:
+    """Fixture to provide different AbstractApiKeyRepository implementations."""
+    repo = InMemoryApiKeyRepository()
+    domain_cls = ApiKey
+    separator = "."
+    global_prefix = "ak"
+
+    yield service_class(
+        repo=repo,
+        hasher=fixed_salt_hasher,
+        domain_cls=domain_cls,
+        separator=separator,
+        global_prefix=global_prefix,
+    )
