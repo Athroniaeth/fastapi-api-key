@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from fastapi_api_key.services.base import D
 
-from fastapi_api_key.services.service import AbstractApiKeyService
+from fastapi_api_key.services.base import AbstractApiKeyService
 
 
 AsyncSessionMaker = async_sessionmaker[AsyncSession]

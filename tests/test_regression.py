@@ -65,6 +65,10 @@ def test_version():
             "InMemoryApiKeyRepository",
         ],
         [
+            "services.cached",
+            "CachedApiKeyService",
+        ],
+        [
             "hasher",
             "MockApiKeyHasher",
         ],
@@ -100,6 +104,7 @@ def test_warning_default_pepper(hasher_class: Type[ApiKeyHasher]):
         ["sqlalchemy", "fastapi_api_key.repositories.sql"],
         ["bcrypt", "fastapi_api_key.hasher.bcrypt"],
         ["argon2", "fastapi_api_key.hasher.argon2"],
+        ["aiocache", "fastapi_api_key.services.cached"],
     ],
 )
 def test_sqlalchemy_backend_import_error(monkeypatch: pytest.MonkeyPatch, library: str, module_path: str):
@@ -110,7 +115,7 @@ def test_sqlalchemy_backend_import_error(monkeypatch: pytest.MonkeyPatch, librar
         module = importlib.import_module(module_path)
         importlib.reload(module)
 
-    expected = f"backend requires '{library}'. Install it with: uv add fastapi_api_key[{library}]"
+    expected = f"requires '{library}'. Install it with: uv add fastapi_api_key[{library}]"
     assert expected in f"{exc_info.value}"
 
 

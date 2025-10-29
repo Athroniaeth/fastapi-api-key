@@ -3,7 +3,7 @@ import shutil  # nosec: B404
 import subprocess  # nosec: B404
 
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.services.service import ApiKeyService
+from fastapi_api_key.services.base import ApiKeyService
 from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
 from fastapi_api_key.cli import create_api_keys_cli
 

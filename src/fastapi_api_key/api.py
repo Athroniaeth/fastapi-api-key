@@ -1,7 +1,7 @@
 import warnings
 
 
-from fastapi_api_key.services.service import AbstractApiKeyService
+from fastapi_api_key.services.base import AbstractApiKeyService
 from fastapi_api_key.types import SecurityHTTPBearer, SecurityAPIKeyHeader
 
 try:
