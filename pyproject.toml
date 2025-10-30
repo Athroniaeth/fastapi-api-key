@@ -15,14 +15,8 @@ keywords = [
     "backend-agnostic",
     "fastapi",
     "typer",
-    "cli",
-    "aiocache",
-    "hashing", "argon2", "bcrypt",
-    "cache", "aiocache", "redis",
-    "python", "async"
 ]
 
-# Aide les moteurs et les utilisateurs à comprendre le périmètre
 classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
@@ -39,14 +33,14 @@ classifiers = [
     "Topic :: Internet :: WWW/HTTP",
     "Typing :: Typed",
 ]
+requires-python = ">=3.9"
+dependencies = []
+
 [project.urls]
 Homepage = "https://github.com/Athroniaeth/fastapi-api-key"
 Documentation = "https://github.com/Athroniaeth/fastapi-api-key#readme"
 Issues = "https://github.com/Athroniaeth/fastapi-api-key/issues"
 Changelog = "https://github.com/Athroniaeth/fastapi-api-key/blob/main/CHANGELOG.md"
-
-requires-python = ">=3.9"
-dependencies = []
 
 
 [project.optional-dependencies]
