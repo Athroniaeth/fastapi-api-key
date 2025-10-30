@@ -16,7 +16,14 @@ from fastapi_api_key.domain.errors import (
     KeyExpired,
     InvalidKey,
 )
+from fastapi_api_key.services.cached import CachedApiKeyService
 from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
+
+# test_cached_api_key_service.py
+import hashlib
+from unittest.mock import MagicMock
+
+from fastapi_api_key.services.base import DEFAULT_SEPARATOR
 
 
 def _full_key(
@@ -439,3 +446,145 @@ async def test_update_does_not_change_key_hash(service: ApiKeyService[ApiKey]) -
     entity.description = "new desc"
     updated = await service.update(entity)
     assert updated.key_hash == old_hash
+
+
+# --- Cached ---
+
+
+@pytest.mark.asyncio
+async def test_verify_key_hashes_key_and_writes_to_cache_on_miss(
+    monkeypatch: pytest.MonkeyPatch,
+    fixed_salt_hasher: ApiKeyHasher,
+):
+    """Ensure the API key is hashed before cache access and that a cache miss stores the entity.
+
+    Steps:
+      1) Cache.get -> None (cache miss)
+      2) super().verify_key -> returns a fake entity
+      3) Cache.set is called with the SHA256 hash key and the returned entity
+    """
+    # Arrange
+    api_key = "super-secret-key"
+    expected_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    fake_entity = {"id": "abc123"}
+
+    # Mock cache with async get/set
+    cache = MagicMock()
+    cache.get = AsyncMock(return_value=None)
+    cache.set = AsyncMock()
+
+    # Patch the parent class verify_key to avoid touching real repo logic
+    super_verify_mock = AsyncMock(return_value=fake_entity)
+    monkeypatch.setattr(ApiKeyService, "verify_key", super_verify_mock)
+
+    # Build service
+    repo_mock = MagicMock()  # not used directly since we patched super().verify_key
+    service = CachedApiKeyService(
+        repo=repo_mock,
+        cache=cache,
+        cache_prefix="api_key",
+        hasher=fixed_salt_hasher,
+        domain_cls=ApiKey,
+        separator=DEFAULT_SEPARATOR,
+        global_prefix="ak",
+    )
+
+    # Act
+    result = await service.verify_key(api_key)
+
+    # Assert
+    assert result == fake_entity
+
+    # cache.get must be called with the hashed key only (never the raw key)
+    cache.get.assert_awaited_once_with(expected_hash)
+    assert not any(call_args[0][0] == api_key for call_args in cache.get.await_args_list)
+
+    # super().verify_key must be called once on miss
+    super_verify_mock.assert_awaited_once_with(api_key)
+
+    # cache.set must store under the hashed key
+    cache.set.assert_awaited_once_with(expected_hash, fake_entity)
+
+
+@pytest.mark.asyncio
+async def test_verify_key_returns_cached_when_present(
+    monkeypatch: pytest.MonkeyPatch,
+    fixed_salt_hasher: ApiKeyHasher,
+):
+    """If the cache already contains the entity, return it and do NOT call the repo/super."""
+    # Arrange
+    api_key = "cached-key"
+    expected_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    cached_entity = {"id": "in-cache"}
+
+    cache = MagicMock()
+    cache.get = AsyncMock(return_value=cached_entity)
+    cache.set = AsyncMock()
+
+    # Even if patched, it must NOT be called in this scenario
+    super_verify_mock = AsyncMock()
+    monkeypatch.setattr(ApiKeyService, "verify_key", super_verify_mock)
+
+    repo_mock = MagicMock()
+    service = CachedApiKeyService(
+        repo=repo_mock,
+        cache=cache,
+        hasher=fixed_salt_hasher,
+    )
+
+    # Act
+    result = await service.verify_key(api_key)
+
+    # Assert
+    assert result == cached_entity
+    cache.get.assert_awaited_once_with(expected_hash)
+    super_verify_mock.assert_not_awaited()
+    cache.set.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_verify_key_calls_super_on_cache_miss(
+    monkeypatch: pytest.MonkeyPatch,
+    fixed_salt_hasher: ApiKeyHasher,
+):
+    """On cache miss, the service must call super().verify_key and then populate the cache."""
+    # Arrange
+    api_key = "needs-lookup"
+    expected_hash = hashlib.sha256(api_key.encode()).hexdigest()
+    entity_from_repo = {"id": "from-repo"}
+
+    cache = MagicMock()
+    cache.get = AsyncMock(return_value=None)  # miss
+    cache.set = AsyncMock()
+
+    super_verify_mock = AsyncMock(return_value=entity_from_repo)
+    monkeypatch.setattr(ApiKeyService, "verify_key", super_verify_mock)
+
+    repo_mock = MagicMock()
+    service = CachedApiKeyService(
+        repo=repo_mock,
+        cache=cache,
+        hasher=fixed_salt_hasher,
+    )
+
+    # Act
+    result = await service.verify_key(api_key)
+
+    # Assert
+    assert result == entity_from_repo
+    cache.get.assert_awaited_once_with(expected_hash)
+    super_verify_mock.assert_awaited_once_with(api_key)
+    cache.set.assert_awaited_once_with(expected_hash, entity_from_repo)
+
+
+@pytest.mark.asyncio
+async def test_verify_key_raises_when_missing_key(fixed_salt_hasher: ApiKeyHasher):
+    """If no API key is provided, a KeyNotProvided error must be raised."""
+    service = CachedApiKeyService(
+        repo=MagicMock(),
+        cache=MagicMock(),
+        hasher=fixed_salt_hasher,
+    )
+
+    with pytest.raises(KeyNotProvided):
+        await service.verify_key(None)
