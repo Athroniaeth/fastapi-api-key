@@ -257,4 +257,8 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
         entity.touch()
         updated = await self._repo.update(entity)
+
+        if updated is None:
+            raise KeyNotFound(f"API key with ID '{entity.id_}' not found during touch update")
+
         return updated

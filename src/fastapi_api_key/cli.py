@@ -4,7 +4,7 @@ from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Optional
 
-from fastapi_api_key.domain.base import ApiKeyEntity
+from fastapi_api_key import ApiKey
 from fastapi_api_key.domain.errors import (
     InvalidKey,
     KeyExpired,
@@ -260,12 +260,12 @@ def _parse_datetime(value: str) -> datetime:
     return parsed.astimezone(timezone.utc)
 
 
-def _format_entity(entity: ApiKeyEntity) -> str:
+def _format_entity(entity: ApiKey) -> str:
     data = _serialize_entity(entity)
     return json.dumps(data, indent=2, sort_keys=True)
 
 
-def _serialize_entity(entity: ApiKeyEntity) -> dict[str, Any]:
+def _serialize_entity(entity: ApiKey) -> dict[str, Any]:
     if is_dataclass(entity):
         data = asdict(entity)
     else:

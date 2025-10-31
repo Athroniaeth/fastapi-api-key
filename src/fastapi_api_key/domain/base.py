@@ -29,7 +29,7 @@ class ApiKeyEntity(Protocol):
     created_at: datetime
     last_used_at: Optional[datetime]
     key_id: str
-    key_hash: Optional[str]
+    key_hash: str
     _key_secret: Optional[str]
     _key_secret_first: Optional[str]
     _key_secret_last: Optional[str]

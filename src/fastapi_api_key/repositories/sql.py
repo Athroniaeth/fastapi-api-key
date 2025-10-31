@@ -9,7 +9,7 @@ except ModuleNotFoundError as e:
 
 
 from datetime import datetime
-from typing import Callable, Generic, Type, TypeVar, List
+from typing import Callable, Generic, Type, TypeVar, List, overload
 from typing import Optional
 
 from sqlalchemy import String, Text, Boolean, DateTime
@@ -20,6 +20,9 @@ from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.utils import datetime_factory
+
+
+NoneType = type(None)
 
 
 class Base(DeclarativeBase): ...
@@ -157,8 +160,13 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
 
         return target
 
-    @staticmethod
-    def to_domain(model: Optional[M], model_cls: Type[D]) -> Optional[D]:
+    @overload
+    def to_domain(self, model: M, model_cls: Type[D]) -> D: ...
+
+    @overload
+    def to_domain(self, model: NoneType, model_cls: Type[D]) -> NoneType: ...
+
+    def to_domain(self, model: Optional[M], model_cls: Type[D]) -> Optional[D]:
         if model is None:
             return None
 
