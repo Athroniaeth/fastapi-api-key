@@ -1,3 +1,17 @@
+## 0.4.0 (2025-10-31)
+
+### Feat
+
+- **service**: add cached services using aiocache (agnostic backend)
+
+### Fix
+
+- **deps**: forget to add aiocache to `all` extra
+
+### Refactor
+
+- correction of ty warning after upgrade packages
+
 ## 0.3.0 (2025-10-15)
 
 ### BREAKING CHANGE
