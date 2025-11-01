@@ -1,3 +1,4 @@
+import os
 from abc import ABC, abstractmethod
 from typing import Generic, Optional, Type, Tuple, List
 
@@ -7,7 +8,7 @@ from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKe
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
-from fastapi_api_key.utils import datetime_factory, key_secret_factory
+from fastapi_api_key.utils import datetime_factory, key_secret_factory, key_id_factory
 
 DEFAULT_SEPARATOR = "-"
 """
@@ -162,6 +163,30 @@ class ApiKeyService(AbstractApiKeyService[D]):
             global_prefix=global_prefix,
         )
 
+    async def load_dotenv(self, envvar_prefix: str = "API_KEY_"):
+        """Load environment variables into the service configuration.
+
+        Args:
+            envvar_prefix: The prefix to use for environment variables.
+        """
+        list_keys = [key for key in os.environ.keys() if key.startswith(envvar_prefix)]
+        list_api_key = [os.environ[key] for key in list_keys]
+
+        if not list_api_key:
+            raise Exception(f"Don't have envvar with prefix '{envvar_prefix}'")
+
+        for key, api_key in zip(list_keys, list_api_key):
+            global_prefix, key_id, key_secret = self._get_parts(
+                api_key,
+            )
+
+            entity = ApiKey(name=key)
+            await self.create(
+                entity,
+                key_id=key_id,
+                key_secret=key_secret,
+            )
+
     async def get_by_id(self, id_: str) -> D:
         if id_.strip() == "":
             raise KeyNotProvided("No API key provided")
@@ -184,17 +209,20 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
         return entity
 
-    async def create(self, entity: D, key_secret: Optional[str] = None) -> Tuple[D, str]:
+    async def create(self, entity: D, key_id: Optional[str] = None, key_secret: Optional[str] = None) -> Tuple[D, str]:
         if entity.expires_at and entity.expires_at < datetime_factory():
             raise ValueError("Expiration date must be in the future")
 
+        key_id = key_id or entity.key_id or key_id_factory()
         key_secret = key_secret or entity.key_secret or key_secret_factory()
 
         full_key_secret = entity.full_key_secret(
-            self.global_prefix,
-            self.separator,
+            global_prefix=self.global_prefix,
+            key_id=key_id,
             key_secret=key_secret,
+            separator=self.separator,
         )
+        entity.key_id = key_id
         entity.key_hash = self._hasher.hash(key_secret)
         entity._key_secret = key_secret
         return await self._repo.create(entity), full_key_secret
@@ -230,18 +258,10 @@ class ApiKeyService(AbstractApiKeyService[D]):
             raise InvalidKey("Api key is invalid (missing global key_id)")
 
         # Get the key_id part from the plain key
-        try:
-            parts = api_key.split(self.separator)
-
-            if len(parts) != 3:
-                raise InvalidKey("API key format is invalid (wrong number of segments).")
-
-            global_prefix, prefix, secret = parts
-        except Exception as e:
-            raise InvalidKey(f"API key format is invalid: {str(e)}") from e
+        global_prefix, key_id, key_secret = self._get_parts(api_key)
 
         # Search entity by a key_id (can't brute force hashes)
-        entity = await self.get_by_key_id(prefix)
+        entity = await self.get_by_key_id(key_id)
 
         # Check if the entity can be used for authentication
         # and refresh last_used_at if verified
@@ -249,10 +269,10 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
         key_hash = entity.key_hash
 
-        if not secret:
+        if not key_secret:
             raise InvalidKey("API key is invalid (empty secret)")
 
-        if not self._hasher.verify(key_hash, secret):
+        if not self._hasher.verify(key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
         entity.touch()
@@ -262,3 +282,15 @@ class ApiKeyService(AbstractApiKeyService[D]):
             raise KeyNotFound(f"API key with ID '{entity.id_}' not found during touch update")
 
         return updated
+
+    def _get_parts(self, api_key):
+        try:
+            parts = api_key.split(self.separator)
+
+            if len(parts) != 3:
+                raise InvalidKey("API key format is invalid (wrong number of segments).")
+
+            # global_prefix, key_id, key_secret = parts
+            return parts
+        except Exception as e:
+            raise InvalidKey(f"API key format is invalid: {e}") from e

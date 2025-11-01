@@ -79,11 +79,12 @@ class ApiKey(ApiKeyEntity):
     def full_key_secret(
         self,
         global_prefix: str,
-        separator: str,
+        key_id: str,
         key_secret: str,
+        separator: str,
     ) -> str:
         """Construct the full API key string to be given to the user."""
-        return f"{global_prefix}{separator}{self.key_id}{separator}{key_secret}"
+        return f"{global_prefix}{separator}{key_id}{separator}{key_secret}"
 
     def disable(self) -> None:
         self.is_active = False

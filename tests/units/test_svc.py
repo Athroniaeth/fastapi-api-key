@@ -52,7 +52,7 @@ async def test_create_success(
         expires_at=expires_at,
         key_id=prefix,
     )
-    created_entity, full_key = await service.create(entity, secret)
+    created_entity, full_key = await service.create(entity, key_secret=secret)
     expected_hash = fixed_salt_hasher.hash(secret)
 
     assert full_key == _full_key(prefix, secret, global_prefix="ak", separator=".")

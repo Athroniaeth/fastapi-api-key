@@ -54,8 +54,9 @@ class ApiKeyEntity(Protocol):
     def full_key_secret(
         self,
         global_prefix: str,
-        separator: str,
+        key_id: str,
         key_secret: str,
+        separator: str,
     ) -> str:
         """Construct the full API key string to be given to the user."""
         ...
