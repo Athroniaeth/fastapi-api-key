@@ -1,5 +1,6 @@
 import asyncio
 from datetime import timedelta, datetime, timezone
+from typing import Type
 from unittest.mock import AsyncMock, create_autospec
 
 import pytest
@@ -15,6 +16,7 @@ from fastapi_api_key.domain.errors import (
     KeyInactive,
     KeyExpired,
     InvalidKey,
+    ApiKeyError,
 )
 from fastapi_api_key.services.cached import CachedApiKeyService
 from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
@@ -245,24 +247,32 @@ async def test_verify_key_empty_raises(service: ApiKeyService[ApiKey]) -> None:
 
 
 @pytest.mark.parametrize(
-    "api_key",
     [
-        "ak.",  # Missing key id, secret
-        "ak.key_id",  # Missing secret
-        "ak..key_secret",  # Missing key id
-        "ak.key_id.key_secret.",  # Too many segments
-        "aa.key_id.key_secret",  # Bad global prefix
-        "ak-key_id-key_secret",  # Bad separator
-        "ak.key_id-key_secret",  # Bad separator
-        "ak-key_id.key_secret",  # Bad separator
-        "ak.key_id.key_secret.",  # Too many segments
-        ".ak.key_id.key_secret",  # Too many segments
+        "exception",
+        "api_key",
+    ],
+    [
+        [InvalidKey, "ak."],  # Missing key id, secret
+        [InvalidKey, "ak.key_id"],  # Missing secret
+        [KeyNotProvided, "ak..key_secret"],  # Missing key id
+        [InvalidKey, "ak.key_id.key_secret."],  # Too many segments
+        [InvalidKey, "aa.key_id.key_secret"],  # Bad global prefix
+        [InvalidKey, "aks.key_id.key_secret"],  # Bad global prefix
+        [InvalidKey, "ak-key_id-key_secret"],  # Bad separator
+        [InvalidKey, "ak.key_id-key_secret"],  # Bad separator
+        [InvalidKey, "ak-key_id.key_secret"],  # Bad separator
+        [InvalidKey, "ak.key_id.key_secret."],  # Too many segments
+        [InvalidKey, ".ak.key_id.key_secret"],  # Too many segments
     ],
 )
 @pytest.mark.asyncio
-async def test_verify_key_split_invalid(service: ApiKeyService[ApiKey], api_key: str) -> None:
-    """verify_key(): should raise InvalidKey when key format is invalid."""
-    with pytest.raises((InvalidKey, KeyNotProvided)):  # type: ignore
+async def test_verify_key_malformed_raises(
+    service: ApiKeyService[ApiKey],
+    exception: Type[ApiKeyError],
+    api_key: str,
+) -> None:
+    """verify_key(): should raise ApiKeyError on malformed keys."""
+    with pytest.raises(exception):
         await service.verify_key(api_key)
 
 

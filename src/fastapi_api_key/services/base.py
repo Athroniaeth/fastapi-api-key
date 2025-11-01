@@ -253,12 +253,12 @@ class ApiKeyService(AbstractApiKeyService[D]):
         if api_key.strip() == "":
             raise KeyNotProvided("Api key must be provided (empty)")
 
-        # Global key_id "ak" for "api key"
-        if not api_key.startswith(self.global_prefix):
-            raise InvalidKey("Api key is invalid (missing global key_id)")
-
         # Get the key_id part from the plain key
         global_prefix, key_id, key_secret = self._get_parts(api_key)
+
+        # Global key_id "ak" for "api key"
+        if global_prefix != self.global_prefix:
+            raise InvalidKey("Api key is invalid (wrong global prefix)")
 
         # Search entity by a key_id (can't brute force hashes)
         entity = await self.get_by_key_id(key_id)
