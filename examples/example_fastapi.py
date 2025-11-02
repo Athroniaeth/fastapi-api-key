@@ -29,17 +29,20 @@ async_session_maker = async_sessionmaker(
 app = FastAPI(title="API with API Key Management")
 
 
-async def async_session() -> AsyncIterator[AsyncSession]:
+async def inject_async_session() -> AsyncIterator[AsyncSession]:
     """Dependency to provide an active SQLAlchemy async session."""
     async with async_session_maker() as session:
         async with session.begin():
             yield session
 
 
-async def inject_svc_api_keys(async_session: AsyncSession = Depends(async_session)) -> ApiKeyService:
+async def inject_svc_api_keys(async_session: AsyncSession = Depends(inject_async_session)) -> ApiKeyService:
     """Dependency to inject the API key service with an active SQLAlchemy async session."""
     repo = SqlAlchemyApiKeyRepository(async_session)
+
+    # Necessary if you don't use your own DeclarativeBase
     await repo.ensure_table()
+
     return ApiKeyService(repo=repo, hasher=hasher)
 
 

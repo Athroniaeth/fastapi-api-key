@@ -27,13 +27,13 @@ os.environ["API_KEY_DEV"] = "ak-92f5326fb9b44ab7-fSvBMig0r2vY3WR2SmGoZwM949loPU7
 
 async def main():
     # Load api keys from os.environ
-    await service.load_dotenv()
+    await service.load_dotenv()  # envvar_prefix="API_KEY_"
 
     # Get api key for tests purposes
     api_key = os.environ["API_KEY_DEV"]
 
     verified = await service.verify_key(api_key)
-    print("Verified key belongs to:", verified.id_)
+    print("Verified key belongs to:", verified.name)
 
 
 asyncio.run(main())

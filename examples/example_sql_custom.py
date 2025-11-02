@@ -77,8 +77,8 @@ class ApiKeyRepository(SqlAlchemyApiKeyRepository[ApiKey, ApiKeyModel]):
 
         return target
 
-    @staticmethod
     def to_domain(
+        self,
         model: Optional[ApiKeyModel],
         model_cls: Type[ApiKey],
     ) -> Optional[ApiKey]:

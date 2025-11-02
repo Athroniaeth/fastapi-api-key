@@ -20,7 +20,7 @@ class ApiKeyModel(Base, ApiKeyModelMixin): ...
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     # Create the database tables
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
@@ -46,14 +46,14 @@ async_session_maker = async_sessionmaker(
 app = FastAPI(title="API with API Key Management", lifespan=lifespan)
 
 
-async def async_session() -> AsyncIterator[AsyncSession]:
+async def inject_async_session() -> AsyncIterator[AsyncSession]:
     """Dependency to provide an active SQLAlchemy async session."""
     async with async_session_maker() as session:
         async with session.begin():
             yield session
 
 
-async def inject_svc_api_keys(async_session: AsyncSession = Depends(async_session)) -> ApiKeyService:
+async def inject_svc_api_keys(async_session: AsyncSession = Depends(inject_async_session)) -> ApiKeyService:
     """Dependency to inject the API key service with an active SQLAlchemy async session."""
     # No need to ensure table here, done in lifespan
     repo = SqlAlchemyApiKeyRepository(async_session)
