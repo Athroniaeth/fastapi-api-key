@@ -26,9 +26,10 @@ keys.
 
 This library try to follow best practices and relevant RFCs for API key management and authentication:
 
-- **[RFC 9110/7235](https://www.rfc-editor.org/rfc/rfc9110.html)**: Router raise 401 for missing/invalid keys, 403 for valid but inactive/expired keys
-- **[RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750)**: Supports `Authorization: Bearer <api_key>` header for key transmission (also supports deprecated `X-API-Key` header and `api_key` query param)
-
+- **[RFC 9110/7235](https://www.rfc-editor.org/rfc/rfc9110.html)**: Router raise 401 for missing/invalid keys, 403 for
+  valid but inactive/expired keys
+- **[RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750)**: Supports `Authorization: Bearer <api_key>` header for
+  key transmission (also supports deprecated `X-API-Key` header and `api_key` query param)
 
 ## Installation
 
@@ -50,15 +51,16 @@ uv pip install -e ".[all]"
 
 For lighter setups you can choose individual extras:
 
-| Installation mode           | Command                       | Description                                                                      |
-|-----------------------------|-------------------------------|----------------------------------------------------------------------------------|
-| **Base installation**       | `fastapi-api-key`             | Installs the core package without any optional dependencies.                     |
-| **With bcrypt support**     | `fastapi-api-key[bcrypt]`     | Adds support for password hashing using **bcrypt** (`bcrypt>=5.0.0`).            |
-| **With Argon2 support**     | `fastapi-api-key[argon2]`     | Adds support for password hashing using **Argon2** (`argon2-cffi>=25.1.0`).      |
-| **With SQLAlchemy support** | `fastapi-api-key[sqlalchemy]` | Adds database integration via **SQLAlchemy** (`sqlalchemy>=2.0.43`).             |
-| **Core setup**              | `fastapi-api-key[core]`       | Installs the **core dependencies** (SQLAlchemy + Argon2 + bcrypt).               |
-| **FastAPI only**            | `fastapi-api-key[fastapi]`    | Installs **FastAPI** as an optional dependency (`fastapi>=0.118.0`).             |
-| **Full installation**       | `fastapi-api-key[all]`        | Installs **all optional dependencies**: FastAPI, SQLAlchemy, Argon2, and bcrypt. |
+| Installation mode              | Command                       | Description                                                                 |
+|--------------------------------|-------------------------------|-----------------------------------------------------------------------------|
+| **Base installation**          | `fastapi-api-key`             | Installs the core package without any optional dependencies.                |
+| **With Bcrypt support**        | `fastapi-api-key[bcrypt]`     | Adds support for password hashing using **bcrypt**                          |
+| **With Argon2 support**        | `fastapi-api-key[argon2]`     | Adds support for password hashing using **Argon2**                          |
+| **With SQLAlchemy support**    | `fastapi-api-key[sqlalchemy]` | Adds database integration via **SQLAlchemy**                                |
+| **With Cache Service support** | `fastapi-api-key[aiocache]`   | Adds database integration via **Aiocache**                                  |
+| **Core setup**                 | `fastapi-api-key[core]`       | Installs the **core dependencies** (SQLAlchemy + Argon2 + bcrypt + aiocache |
+| **FastAPI only**               | `fastapi-api-key[fastapi]`    | Installs **FastAPI** as an optional dependency                              |
+| **Full installation**          | `fastapi-api-key[all]`        | Installs **all optional dependencies**                                      |
 
 ```bash
 uv add fastapi-api-key[sqlalchemy]
@@ -129,7 +131,9 @@ This is a classic API key if you don't modify the service behavior:
 - 16 first characters are the identifier (UUIDv4 without dashes)
 - 48 last characters are the secret (random URL-safe base64 string)
 
-When verifying an API key, the service extracts the identifier, retrieves the corresponding record from the repository, and compares the hashed secret. If found, it hashes the provided secret (with the same salt and pepper) and compares it to the stored hash.
+When verifying an API key, the service extracts the identifier, retrieves the corresponding record from the repository,
+and compares the hashed secret. If found, it hashes the provided secret (with the same salt and pepper) and compares it
+to the stored hash.
 If they match, the key is valid.
 
 ### Mount the FastAPI router

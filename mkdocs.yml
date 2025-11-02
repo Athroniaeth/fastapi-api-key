@@ -63,6 +63,8 @@ nav:
   - Quickstart: quickstart.md
   - Usage:
       - Custom: usage/custom.md
+      - Dotenv: usage/dotenv.md
+      - Cache: usage/cache.md
       - FastAPI: usage/fastapi.md
       - Typer: usage/typer.md
 extra:
