@@ -23,7 +23,7 @@ def test_version():
 
     assert hasattr(module, "__version__")
     assert isinstance(module.__version__, str)
-    assert module.__version__ == "0.4.0"  # Replace with the expected version
+    assert module.__version__ == "0.5.0"  # Replace with the expected version
 
 
 @pytest.mark.parametrize(

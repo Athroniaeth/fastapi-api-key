@@ -1,3 +1,17 @@
+## 0.5.0 (2025-11-02)
+
+### BREAKING CHANGE
+
+- service.create(entity, secret) args breaking, now is service.create(entity, key_id, key_secret)
+
+### Feat
+
+- **svc**: add load_dotenv method to load from .env
+
+### Fix
+
+- **security**: svc verify key method don't detect bad global prefix if startWiths
+
 ## 0.4.0 (2025-10-31)
 
 ### Feat
