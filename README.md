@@ -120,7 +120,9 @@ service = ApiKeyService(
 )
 ```
 
-### How API Keys Work
+## How API Keys Work
+
+### API Key Format
 
 This is a classic API key if you don't modify the service behavior:
 
@@ -135,6 +137,12 @@ When verifying an API key, the service extracts the identifier, retrieves the co
 and compares the hashed secret. If found, it hashes the provided secret (with the same salt and pepper) and compares it
 to the stored hash.
 If they match, the key is valid.
+
+### Schema validation
+
+Here is a diagram showing what happens after you initialize your API key service with a global prefix and delimiter when you provide an API key to the `.verify_key()` method.
+
+<img src="./docs/schema.svg">
 
 ### Mount the FastAPI router
 
