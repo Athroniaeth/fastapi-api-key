@@ -2,11 +2,10 @@
 
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FAthroniaeth%2Ffastapi-api-key%2Fmain%2Fpyproject.toml)
 [![Tested with pytest](https://img.shields.io/badge/tests-pytest-informational.svg)](https://pytest.org/)
-![Coverage](https://img.shields.io/badge/coverage-72%25-brightgreen.svg)
-[![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-4B32C3.svg)](https://docs.astral.sh/ruff/)
+[![codecov](https://codecov.io/gh/Athroniaeth/fastapi-api-key/graph/badge.svg)](https://codecov.io/gh/Athroniaeth/fastapi-api-key)
 [![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://bandit.readthedocs.io/)
 [![Deps: uv](https://img.shields.io/badge/deps-managed%20with%20uv-3E4DD8.svg)](https://docs.astral.sh/uv/)
-[![Commitizen friendly](https://img.shields.io/badge/commitizen-friendly-brightgreen.svg)](https://commitizen-tools.github.io/commitizen/)
+[![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-4B32C3.svg)](https://docs.astral.sh/ruff/)
 
 `fastapi-api-key` provides reusable building blocks to issue, persist, and verify API keys in FastAPI applications. It
 ships with a domain model, hashing helpers, repository contracts, and an optional FastAPI router for CRUD management of

@@ -78,6 +78,12 @@ jobs:
       - name: Build sdist & wheel with uv
         run: uv build
 
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
       # Publication via OIDC (Trusted Publisher) – no secret required on GitHub side
       - name: Publish to PyPI
         env:

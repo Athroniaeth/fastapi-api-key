@@ -118,6 +118,8 @@ addopts = [
     "--doctest-modules",
     "--cov-report=html",
     "--cov-report=term-missing",
+    "--junitxml=junit.xml",
+    "-o junit_family=legacy"
 ]
 
 doctest_optionflags = [
