@@ -8,16 +8,13 @@ on:
 
 permissions:
   contents: read
-  id-token: write
+  checks: write
+  pull-requests: write
 
 jobs:
-  test-and-lint:
+  development:
     name: Test & Lint
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [ "3.9", "3.10", "3.11", "3.12", "3.13" ]
 
     steps:
       - name: Checkout
@@ -39,14 +36,18 @@ jobs:
       - name: Sync dev dependencies
         run: uv sync --locked --all-extras --dev --no-progress -q
 
-      - name: Run tests
-        run: uv run pytest
-
       - name: Lint / Format / Type-check
         run: uv run lint
 
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
+      - name: Run tests
+        run: uv run pytest
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./coverage.xml
+          slug: Athroniaeth/fastapi-api-key
+          fail_ci_if_error: true
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
