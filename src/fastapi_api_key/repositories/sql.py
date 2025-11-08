@@ -12,7 +12,7 @@ from datetime import datetime
 from typing import Callable, Generic, Type, TypeVar, List, overload
 from typing import Optional
 
-from sqlalchemy import String, Text, Boolean, DateTime
+from sqlalchemy import String, Text, Boolean, DateTime, JSON
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
@@ -28,8 +28,8 @@ NoneType = type(None)
 class Base(DeclarativeBase): ...
 
 
-class ApiKeyModelMixin:
-    """SQLAlchemy ORM model mixin for API keys.
+class ApiKeyModelMixinV1:
+    """SQLAlchemy ORM model mixin for API keys (v0.5.x).
 
     Notes:
         This is a mixin to allow easy extension of the model with additional fields.
@@ -88,7 +88,13 @@ class ApiKeyModelMixin:
     )
 
 
-class ApiKeyModel(Base, ApiKeyModelMixin):
+class ApiKeyModelMixin(ApiKeyModelMixinV1):
+    """Concrete SQLAlchemy ORM model for API keys."""
+
+    scopes: Mapped[list[str]] = mapped_column(JSON, default=list)
+
+
+class ApiKeyModel(ApiKeyModelMixin, Base):
     """Concrete SQLAlchemy ORM model for API keys."""
 
     ...
@@ -145,6 +151,7 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
                 key_hash=entity.key_hash,
                 key_secret_first=entity.key_secret_first,
                 key_secret_last=entity.key_secret_last,
+                scopes=entity.scopes,
             )
 
         # Update existing model
@@ -157,7 +164,7 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
         target.key_hash = entity.key_hash  # type: ignore[invalid-assignment]
         target._key_secret_first = entity.key_secret_first  # type: ignore[invalid-assignment]
         target._key_secret_last = entity.key_secret_last  # type: ignore[invalid-assignment]
-
+        target.scopes = entity.scopes
         return target
 
     @overload
@@ -182,6 +189,7 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
             key_hash=model.key_hash,
             _key_secret_first=model.key_secret_first,
             _key_secret_last=model.key_secret_last,
+            scopes=model.scopes,
         )
         return domain
 

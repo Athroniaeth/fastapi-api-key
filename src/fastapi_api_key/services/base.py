@@ -4,7 +4,7 @@ from typing import Generic, Optional, Type, Tuple, List
 
 from fastapi_api_key import ApiKey
 from fastapi_api_key.domain.base import D
-from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey
+from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey, InvalidScopes
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
@@ -117,11 +117,12 @@ class AbstractApiKeyService(ABC, Generic[D]):
         ...
 
     @abstractmethod
-    async def verify_key(self, api_key: str) -> D:
+    async def verify_key(self, api_key: str, required_scopes: Optional[List[str]] = None) -> D:
         """Verify the provided plain key and return the corresponding entity if valid, else raise.
 
         Args:
             api_key: The raw API key string to verify.
+            required_scopes: Optional list of required scopes to check against the key's scopes.
 
         Raises:
             KeyNotProvided: If no API key is provided (empty).
@@ -246,7 +247,9 @@ class ApiKeyService(AbstractApiKeyService[D]):
     async def list(self, limit: int = 100, offset: int = 0) -> list[D]:
         return await self._repo.list(limit=limit, offset=offset)
 
-    async def verify_key(self, api_key: Optional[str] = None) -> D:
+    async def verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
+        required_scopes = required_scopes or []
+
         if api_key is None:
             raise KeyNotProvided("Api key must be provided (not given)")
 
@@ -275,6 +278,12 @@ class ApiKeyService(AbstractApiKeyService[D]):
         if not self._hasher.verify(key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
+        if required_scopes:
+            missing_scopes = [scope for scope in required_scopes if scope not in entity.scopes]
+            missing_scopes_str = ", ".join(missing_scopes)
+            if missing_scopes:
+                raise InvalidScopes(f"API key is missing required scopes: {missing_scopes_str}")
+
         entity.touch()
         updated = await self._repo.update(entity)
 
@@ -283,7 +292,18 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
         return updated
 
-    def _get_parts(self, api_key):
+    def _get_parts(self, api_key: str) -> Tuple[str, str, str]:
+        """Extract the parts of the API key string.
+
+        Args:
+            api_key: The full API key string.
+
+        Returns:
+            A tuple of (global_prefix, key_id, key_secret).
+
+        Raises:
+            InvalidKey: If the API key format is invalid.
+        """
         try:
             parts = api_key.split(self.separator)
 
@@ -291,6 +311,6 @@ class ApiKeyService(AbstractApiKeyService[D]):
                 raise InvalidKey("API key format is invalid (wrong number of segments).")
 
             # global_prefix, key_id, key_secret = parts
-            return parts
+            return parts[0], parts[1], parts[2]
         except Exception as e:
             raise InvalidKey(f"API key format is invalid: {e}") from e

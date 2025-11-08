@@ -1,6 +1,6 @@
 from dataclasses import field, dataclass
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, List
 
 from fastapi_api_key.domain.base import ApiKeyEntity
 from fastapi_api_key.domain.errors import KeyExpired, KeyInactive
@@ -44,7 +44,8 @@ class ApiKey(ApiKeyEntity):
     created_at: datetime = field(default_factory=datetime_factory)
     last_used_at: Optional[datetime] = None
     key_id: str = field(default_factory=key_id_factory)
-    key_hash: Optional[str] = None
+    key_hash: Optional[str] = field(default=None)
+    scopes: List[str] = field(default_factory=list)
     _key_secret: Optional[str] = field(default=None, repr=False)
     _key_secret_first: Optional[str] = field(default=None, repr=False)
     _key_secret_last: Optional[str] = field(default=None, repr=False)

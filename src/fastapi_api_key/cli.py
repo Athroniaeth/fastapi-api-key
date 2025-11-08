@@ -38,7 +38,9 @@ def create_api_keys_cli(
     """
 
     typer = _import_typer()
-    cli = app or typer.Typer(help="Manage API keys using fastapi-api-key services.", no_args_is_help=True)
+    cli = app or typer.Typer(
+        help="Manage API keys using fastapi-api-key services.", no_args_is_help=True, pretty_exceptions_enable=False
+    )
 
     def run_async(coro: Awaitable[Any]) -> Any:
         try:

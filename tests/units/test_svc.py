@@ -17,6 +17,7 @@ from fastapi_api_key.domain.errors import (
     KeyExpired,
     InvalidKey,
     ApiKeyError,
+    InvalidScopes,
 )
 from fastapi_api_key.services.cached import CachedApiKeyService
 from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
@@ -510,7 +511,7 @@ async def test_verify_key_hashes_key_and_writes_to_cache_on_miss(
     assert not any(call_args[0][0] == api_key for call_args in cache.get.await_args_list)
 
     # super().verify_key must be called once on miss
-    super_verify_mock.assert_awaited_once_with(api_key)
+    super_verify_mock.assert_awaited_once_with(api_key=api_key, required_scopes=None)
 
     # cache.set must store under the hashed key
     cache.set.assert_awaited_once_with(expected_hash, fake_entity)
@@ -583,7 +584,7 @@ async def test_verify_key_calls_super_on_cache_miss(
     # Assert
     assert result == entity_from_repo
     cache.get.assert_awaited_once_with(expected_hash)
-    super_verify_mock.assert_awaited_once_with(api_key)
+    super_verify_mock.assert_awaited_once_with(api_key="needs-lookup", required_scopes=None)
     cache.set.assert_awaited_once_with(expected_hash, entity_from_repo)
 
 
@@ -598,3 +599,55 @@ async def test_verify_key_raises_when_missing_key(fixed_salt_hasher: ApiKeyHashe
 
     with pytest.raises(KeyNotProvided):
         await service.verify_key(None)
+
+
+@pytest.mark.asyncio
+async def test_verify_key_good_scope_success(service: ApiKeyService[ApiKey]):
+    """verify_key(): should pass when no required_scopes are given."""
+    entity = ApiKey(scopes=["read"], name="to-verify")
+    entity, api_key = await service.create(entity=entity)
+    await service.verify_key(api_key, required_scopes=["read"])
+
+
+@pytest.mark.asyncio
+async def test_verify_key_good_scopes_success(service: ApiKeyService[ApiKey]):
+    """verify_key(): should pass when no required_scopes are given."""
+    entity = ApiKey(scopes=["read", "write"], name="to-verify")
+    entity, api_key = await service.create(entity=entity)
+    await service.verify_key(api_key, required_scopes=["read", "write"])
+
+
+@pytest.mark.asyncio
+async def test_verify_key_good_and_more_scopes_success(service: ApiKeyService[ApiKey]):
+    """verify_key(): should pass when no required_scopes are given."""
+    entity = ApiKey(scopes=["read", "write", "delete", "all"], name="to-verify")
+    entity, api_key = await service.create(entity=entity)
+    await service.verify_key(api_key, required_scopes=["read", "write"])
+
+
+@pytest.mark.asyncio
+async def test_verify_key_no_scopes_passes(service: ApiKeyService[ApiKey]):
+    """verify_key(): should pass when no required_scopes are given."""
+    entity = ApiKey(scopes=["read", "write"], name="to-verify")
+    entity, api_key = await service.create(entity=entity)
+    await service.verify_key(api_key)
+
+
+@pytest.mark.asyncio
+async def test_verify_key_raises_when_bad_scope(service: ApiKeyService[ApiKey]):
+    """verify_key(): should raise InvalidKey when secret does not match."""
+    entity = ApiKey(name="to-verify", scopes=["read"])
+    entity, api_key = await service.create(entity=entity)
+
+    with pytest.raises(InvalidScopes, match=r"API key is missing required scopes: write"):
+        await service.verify_key(api_key, required_scopes=["write"])
+
+
+@pytest.mark.asyncio
+async def test_verify_key_raises_when_partial_scopes(service: ApiKeyService[ApiKey]):
+    """verify_key(): should raise InvalidScopes when required_scopes are not all present."""
+    entity = ApiKey(name="to-verify", scopes=["read"])
+    entity, api_key = await service.create(entity=entity)
+
+    with pytest.raises(InvalidScopes, match=r"API key is missing required scopes: write, delete"):
+        await service.verify_key(api_key, required_scopes=["read", "write", "delete"])

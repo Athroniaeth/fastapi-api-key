@@ -32,3 +32,9 @@ class InvalidKey(ApiKeyError):
     """Raised when an API key is invalid (key key_id matches but hash does not)."""
 
     ...
+
+
+class InvalidScopes(ApiKeyError):
+    """Raised when an API key does not have the required scopes for an operation."""
+
+    ...

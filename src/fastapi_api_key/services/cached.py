@@ -6,7 +6,7 @@ except ModuleNotFoundError as e:
     ) from e
 
 import hashlib
-from typing import Optional, Type
+from typing import Optional, Type, List
 
 import aiocache
 from aiocache import BaseCache
@@ -53,7 +53,7 @@ class CachedApiKeyService(ApiKeyService[D]):
         buffer = api_key.encode()
         return hashlib.sha256(buffer).hexdigest()
 
-    async def verify_key(self, api_key: Optional[str] = None) -> D:
+    async def verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
         if api_key is None:
             raise KeyNotProvided("Api key must be provided (not given)")
 
@@ -63,7 +63,10 @@ class CachedApiKeyService(ApiKeyService[D]):
         if cached_entity:
             return cached_entity
 
-        entity = await super().verify_key(api_key)
+        entity = await super().verify_key(
+            api_key=api_key,
+            required_scopes=required_scopes,
+        )
 
         await self.cache.set(hash_api_key, entity)
         return entity

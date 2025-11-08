@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, runtime_checkable, Protocol, TypeVar
+from typing import Optional, runtime_checkable, Protocol, TypeVar, List
 
 
 @runtime_checkable
@@ -28,6 +28,7 @@ class ApiKeyEntity(Protocol):
     expires_at: Optional[datetime]
     created_at: datetime
     last_used_at: Optional[datetime]
+    scopes: List[str]
     key_id: str
     key_hash: str
     _key_secret: Optional[str]

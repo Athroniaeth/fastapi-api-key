@@ -8,6 +8,18 @@ from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 from tests.conftest import make_api_key
 
 
+def assert_identical(a: ApiKey, b: ApiKey, same_name: bool = False, same_is_active: bool = False) -> None:
+    """Assert that two ApiKey instances are identical."""
+    assert a.id_ == b.id_, "IDs do not match"
+    assert a.name == b.name or same_name, "Names do not match"
+    assert a.description == b.description, "Descriptions do not match"
+    assert a.is_active == b.is_active or same_is_active, "Active statuses do not match"
+    assert a.expires_at == b.expires_at, "Expiration dates do not match"
+    assert a.key_id == b.key_id, "Key IDs do not match"
+    assert a.key_hash == b.key_hash, "Key hashes do not match"
+    assert a.scopes == b.scopes, "Scopes do not match"
+
+
 @pytest.mark.asyncio
 async def test_ensure_table() -> None:
     """Test that the database table for API keys exists."""
@@ -41,12 +53,7 @@ async def test_api_key_create(repository: AbstractApiKeyRepository) -> None:
     created = await repository.create(entity=api_key)
 
     assert created.id_ is not None
-    assert created.name == api_key.name
-    assert created.description == api_key.description
-    assert created.is_active == api_key.is_active
-    assert created.expires_at == api_key.expires_at
-    assert created.key_id == api_key.key_id
-    assert created.key_hash == api_key.key_hash
+    assert_identical(created, api_key)
 
 
 @pytest.mark.asyncio
@@ -57,13 +64,7 @@ async def test_api_key_get_by_id(repository: AbstractApiKeyRepository) -> None:
     retrieved = await repository.get_by_id(id_=created.id_)
 
     assert retrieved is not None
-    assert retrieved.id_ == created.id_
-    assert retrieved.name == created.name
-    assert retrieved.description == created.description
-    assert retrieved.is_active == created.is_active
-    assert retrieved.expires_at == created.expires_at
-    assert retrieved.key_id == created.key_id
-    assert retrieved.key_hash == created.key_hash
+    assert_identical(created, api_key)
 
 
 @pytest.mark.asyncio
@@ -74,13 +75,7 @@ async def test_api_key_get_by_prefix(repository: AbstractApiKeyRepository) -> No
     retrieved = await repository.get_by_key_id(key_id=created.key_id)
 
     assert retrieved is not None
-    assert retrieved.id_ == created.id_
-    assert retrieved.name == created.name
-    assert retrieved.description == created.description
-    assert retrieved.is_active == created.is_active
-    assert retrieved.expires_at == created.expires_at
-    assert retrieved.key_id == created.key_id
-    assert retrieved.key_hash == created.key_hash
+    assert_identical(created, api_key)
 
 
 @pytest.mark.asyncio
@@ -93,13 +88,12 @@ async def test_api_key_update(repository: AbstractApiKeyRepository) -> None:
     updated = await repository.update(entity=created)
 
     assert updated is not None
-    assert updated.id_ == created.id_
-    assert updated.name == "updated-name"
-    assert updated.is_active is False
-    assert updated.description == created.description
-    assert updated.expires_at == created.expires_at
-    assert updated.key_id == created.key_id
-    assert updated.key_hash == created.key_hash
+    assert_identical(
+        created,
+        api_key,
+        same_name=True,
+        same_is_active=True,
+    )
 
 
 @pytest.mark.asyncio

@@ -28,6 +28,7 @@ from fastapi_api_key.domain.errors import (
     KeyInactive,
     KeyNotFound,
     KeyNotProvided,
+    InvalidScopes,
 )
 
 D = TypeVar("D", bound=ApiKeyEntity)
@@ -45,6 +46,7 @@ class ApiKeyCreateIn(BaseModel):
     name: str = Field(..., min_length=1, max_length=128)
     description: Optional[str] = Field(None, max_length=1024)
     is_active: bool = Field(default=True)
+    scopes: List[str] = Field(default_factory=list)
 
 
 class ApiKeyUpdateIn(BaseModel):
@@ -59,6 +61,7 @@ class ApiKeyUpdateIn(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=128)
     description: Optional[str] = Field(None, max_length=1024)
     is_active: Optional[bool] = None
+    scopes: Optional[List[str]] = None
 
 
 class ApiKeyOut(BaseModel):
@@ -75,6 +78,7 @@ class ApiKeyOut(BaseModel):
     is_active: bool
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    scopes: List[str] = Field(default_factory=list)
 
 
 class ApiKeyCreatedOut(BaseModel):
@@ -103,6 +107,7 @@ def _to_out(entity: ApiKey) -> ApiKeyOut:
         is_active=entity.is_active,
         created_at=entity.created_at,
         updated_at=entity.last_used_at,
+        scopes=entity.scopes,
     )
 
 
@@ -322,10 +327,11 @@ async def _handle_verify_key(
     svc: AbstractApiKeyService[D],
     api_key: str,
     scheme_name: str = "API Key",
+    required_scopes: Optional[List[str]] = None,
 ) -> D:
     """Async context manager to handle key verification errors."""
     try:
-        return await svc.verify_key(api_key)
+        return await svc.verify_key(api_key, required_scopes=required_scopes)
     except KeyNotProvided as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -350,17 +356,28 @@ async def _handle_verify_key(
             detail="API key expired",
             headers={"WWW-Authenticate": scheme_name},
         ) from exc
+    except InvalidScopes as exc:
+        assert required_scopes is not None, "required_scopes should not be None here"  # nosec: B101  # Just for typing tools
+        required_scopes_str = ", ".join([f"'{scope}'" for scope in required_scopes])
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=f"API key missing required scopes {required_scopes_str}",
+            headers={"WWW-Authenticate": scheme_name},
+        ) from exc
 
 
 def create_depends_api_key(
     depends_svc_api_keys: Callable[[...], Awaitable[AbstractApiKeyService[D]]],
     security: Optional[Union[HTTPBearer, APIKeyHeader]] = None,
+    required_scopes: Optional[List[str]] = None,
 ) -> Union[SecurityHTTPBearer, SecurityAPIKeyHeader]:
     """Create a FastAPI security dependency that verifies API keys.
 
     Args:
         depends_svc_api_keys: Dependency callable that provides an `ApiKeyService`.
         security: Optional FastAPI security scheme (e.g., `APIKeyHeader` or `HTTPBearer`). defaults to `HTTPBearer`.
+        required_scopes: Optional list of scopes required for the API key.
 
     Returns:
         A dependency callable that yields a verified :class:`ApiKey` entity or
@@ -393,7 +410,12 @@ def create_depends_api_key(
                     headers={"WWW-Authenticate": security.scheme_name},
                 )
 
-            return await _handle_verify_key(svc, api_key, security.scheme_name)
+            return await _handle_verify_key(
+                svc=svc,
+                api_key=api_key,
+                scheme_name=security.scheme_name,
+                required_scopes=required_scopes,
+            )
 
     elif isinstance(security, HTTPBearer):
 
@@ -409,7 +431,12 @@ def create_depends_api_key(
                     headers={"WWW-Authenticate": security.scheme_name},
                 )
 
-            return await _handle_verify_key(svc, api_key.credentials, security.scheme_name)
+            return await _handle_verify_key(
+                svc=svc,
+                api_key=api_key.credentials,
+                scheme_name=security.scheme_name,
+                required_scopes=required_scopes,
+            )
     else:
         raise ValueError("The provided security scheme must be either HTTPBearer or APIKeyHeader")
 

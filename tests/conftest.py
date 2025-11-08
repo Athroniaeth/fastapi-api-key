@@ -125,6 +125,7 @@ def make_api_key() -> ApiKey:
         key_id=key_id_factory(),
         _key_secret=key_secret_factory(),
         key_hash=key_hash,
+        scopes=["read", "write"],
     )
     return api_key
 
@@ -204,16 +205,16 @@ def service_class(request: pytest.FixtureRequest) -> Type[AbstractApiKeyService[
 @pytest.fixture
 def service(
     service_class: Type[AbstractApiKeyService[D]],
+    repository: AbstractApiKeyRepository[D],
     fixed_salt_hasher: ApiKeyHasher,
 ) -> Iterator[AbstractApiKeyService[D]]:
     """Fixture to provide different AbstractApiKeyRepository implementations."""
-    repo = InMemoryApiKeyRepository()
     domain_cls = ApiKey
     separator = "."
     global_prefix = "ak"
 
     yield service_class(
-        repo=repo,
+        repo=repository,
         hasher=fixed_salt_hasher,
         domain_cls=domain_cls,
         separator=separator,
