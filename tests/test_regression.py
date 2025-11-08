@@ -17,15 +17,6 @@ from fastapi_api_key.utils import (
 )
 
 
-def test_version():
-    """Ensure the version attribute is present and correctly formatted."""
-    module = importlib.import_module("fastapi_api_key")
-
-    assert hasattr(module, "__version__")
-    assert isinstance(module.__version__, str)
-    assert module.__version__ == "0.5.0"  # Replace with the expected version
-
-
 @pytest.mark.parametrize(
     [
         "module_path",

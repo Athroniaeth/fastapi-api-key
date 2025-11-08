@@ -1,3 +1,13 @@
+## 0.6.0 (2025-11-08)
+
+### BREAKING CHANGE
+
+- Your SQL database (SQLAlchemy repository) must add "scopes" attributes (List[str]) for work, the old schema name is now ApiKeyMixinV1
+
+### Feat
+
+- add scopes attributes to api keys, service, fastapi
+
 ## 0.5.0 (2025-11-02)
 
 ### BREAKING CHANGE
