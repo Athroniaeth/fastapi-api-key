@@ -75,4 +75,4 @@ jobs:
         run: uv sync --locked --all-extras --dev --no-progress -q
 
       - name: Deploy MkDocs
-        run: uv run mkdocs gh-deploy --force
+        run: uv run mkdocs gh-deploy
