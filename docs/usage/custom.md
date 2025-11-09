@@ -12,7 +12,7 @@ Extend the default dataclass and SQLAlchemy model to capture application-specifi
 
 This example shows how to add a `notes` field to the domain model and persist it in the database.
 
-!!! tip "Always set a pepper"
+!!! warning "Always set a pepper"
     The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
 
 ```python
@@ -22,7 +22,7 @@ This example shows how to add a `notes` field to the domain model and persist it
 ## FastAPI
 This example shows how to add a `notes` field to the domain model and persist it in the database, then expose it over HTTP.
 
-!!! tip "Always set a pepper"
+!!! warning "Always set a pepper"
     The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
 
 ```python

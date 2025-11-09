@@ -9,7 +9,7 @@ If you define 2 scopes "read" and "write" to an route, an API key must have both
 
 This is the canonical example from `examples/example_scopes.py`:
 
-!!! tip "Always set a pepper"
+!!! warning "Always set a pepper"
     The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
 
 ```python

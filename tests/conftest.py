@@ -31,7 +31,7 @@ import pytest_asyncio
 
 from fastapi_api_key.services.base import AbstractApiKeyService
 from fastapi_api_key.services.cached import CachedApiKeyService
-from fastapi_api_key.types import AsyncSessionMaker
+from fastapi_api_key._types import AsyncSessionMaker
 from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
 
 

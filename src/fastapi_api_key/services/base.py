@@ -2,7 +2,7 @@ import os
 from abc import ABC, abstractmethod
 from typing import Generic, Optional, Type, Tuple, List
 
-from fastapi_api_key import ApiKey
+from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.base import D
 from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey, InvalidScopes
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
@@ -15,6 +15,7 @@ DEFAULT_SEPARATOR = "-"
 Default separator between key_type, key_id, key_secret in the API key string. 
 Must be not in `token_urlsafe` alphabet. (like '.', ':', '~", '|')
 """
+DEFAULT_GLOBAL_PREFIX = "ak"
 
 
 class AbstractApiKeyService(ABC, Generic[D]):

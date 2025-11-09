@@ -2,20 +2,20 @@ import importlib.metadata
 import shutil  # nosec: B404
 import subprocess  # nosec: B404
 
+from fastapi_api_key.cli import create_api_keys_cli
+from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.services.base import ApiKeyService
-from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
-from fastapi_api_key.cli import create_api_keys_cli
 
+__version__ = importlib.metadata.version("fastapi_api_key")
 __all__ = [
     "ApiKey",
     "ApiKeyService",
     "create_api_keys_router",
     "create_depends_api_key",
     "create_api_keys_cli",
+    "__version__",
 ]
-
-__version__ = importlib.metadata.version("fastapi_api_key")
 
 
 def _run_command(command: str) -> None:  # pragma: no cover

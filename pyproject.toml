@@ -82,7 +82,7 @@ build-backend = "hatchling.build"
 
 [project.scripts]
 lint = "fastapi_api_key.__init__:lint"
-test = "fastapi_api_key.__init__:test"
+fak = "fastapi_api_key.__main__:main"
 
 [dependency-groups]
 dev = [

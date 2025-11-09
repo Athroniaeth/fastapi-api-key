@@ -3,8 +3,7 @@ import json
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
 from typing import Any, Awaitable, Callable, Optional
-
-from fastapi_api_key import ApiKey
+from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.errors import (
     InvalidKey,
     KeyExpired,
@@ -12,7 +11,7 @@ from fastapi_api_key.domain.errors import (
     KeyNotFound,
     KeyNotProvided,
 )
-from fastapi_api_key.types import ServiceFactory
+from fastapi_api_key._types import ServiceFactory
 
 DomainErrors = (
     InvalidKey,

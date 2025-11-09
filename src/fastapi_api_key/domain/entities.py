@@ -77,8 +77,8 @@ class ApiKey(ApiKeyEntity):
 
         raise ValueError("Key secret is not set")
 
+    @staticmethod
     def full_key_secret(
-        self,
         global_prefix: str,
         key_id: str,
         key_secret: str,
