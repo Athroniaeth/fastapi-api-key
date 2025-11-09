@@ -2,7 +2,7 @@ name: Development Workflow
 
 on:
   pull_request:
-    branches: [  development ]
+    branches: [ development ]
   push:
     branches: [ development ]
 
@@ -12,9 +12,41 @@ permissions:
   pull-requests: write
 
 jobs:
-  development:
-    name: Test & Lint
+  lint:
+    name: Lint / Format / Type-check
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up UV
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.13'
+
+      - name: Cache UV
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/uv
+          key: ${{ runner.os }}-uv-3.13-${{ hashFiles('uv.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-3.13-
+
+      - name: Sync dev dependencies
+        run: uv sync --locked --all-extras --dev --no-progress -q
+
+      - name: Lint / Format / Type-check
+        run: uv run lint
+
+  tests:
+    name: Run tests (matrix)
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        python-version: [ '3.9', '3.10', '3.11', '3.12', '3.13' ]
+      fail-fast: false
 
     steps:
       - name: Checkout
@@ -36,11 +68,27 @@ jobs:
       - name: Sync dev dependencies
         run: uv sync --locked --all-extras --dev --no-progress -q
 
-      - name: Lint / Format / Type-check
-        run: uv run lint
-
       - name: Run tests
-        run: uv run pytest
+        run: uv run pytest --cov --cov-report=xml
+
+      - name: Upload coverage artifact (only 3.13)
+        if: matrix.python-version == '3.13'
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-3.13
+          path: coverage.xml
+
+  codecov:
+    name: Upload saved coverage to Codecov
+    runs-on: ubuntu-latest
+    needs: tests
+
+    steps:
+      - name: Download coverage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-3.13
+          path: .
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -50,4 +98,3 @@ jobs:
           fail_ci_if_error: true
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-
