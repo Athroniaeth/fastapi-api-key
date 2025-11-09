@@ -17,7 +17,7 @@ permissions:
 
 jobs:
   dev:
-    uses: ./.github/workflows/development.yml
+    uses: ./.github/workflows/develop.yml
     secrets: inherit
 
   publish:
