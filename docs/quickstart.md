@@ -5,11 +5,15 @@ This quickstart guide helps you set up the package and create your first API key
 ## 1. Install dependencies
 
 ### Basic installation
-This project is not published to PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
+This project is published on PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
 
 ```bash
 uv add fastapi-api-key
-uv pip install fastapi-api-key
+```
+
+or using pip:
+```bash
+pip install fastapi-api-key
 ```
 
 ## 2. Create api key
