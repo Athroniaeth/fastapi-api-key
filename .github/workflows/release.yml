@@ -28,7 +28,7 @@ jobs:
 
     # Runs only if on a version tag (e.g., refs/tags/1.2.3)
     # Runs only when code is pushed to main (not on PRs)
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
     steps:
       - name: Checkout (full history for changelog/tools)
         uses: actions/checkout@v4
