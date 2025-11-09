@@ -17,6 +17,7 @@ permissions:
 
 jobs:
   dev:
+    name: Development Checks
     uses: ./.github/workflows/develop.yml
     secrets: inherit
 

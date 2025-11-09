@@ -1,3 +1,9 @@
+## 0.7.0 (2025-11-09)
+
+### Feat
+
+- **cli**: add fak (fastapi api key) cli for generate api key (for dotenv), get version
+
 ## 0.6.0 (2025-11-08)
 
 ### BREAKING CHANGE

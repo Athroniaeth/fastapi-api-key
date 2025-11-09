@@ -13,7 +13,7 @@ supports async operations.
 
 This is the canonical example from `examples/example_inmemory_env.py`:
 
-!!! tip "Always set a pepper"
+!!! warning "Always set a pepper"
     The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
 
 ```python

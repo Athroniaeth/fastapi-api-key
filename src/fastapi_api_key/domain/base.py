@@ -52,8 +52,8 @@ class ApiKeyEntity(Protocol):
         """Last part of the secret for display purposes/give the user a clue as to which key we are talking about."""
         ...
 
+    @staticmethod
     def full_key_secret(
-        self,
         global_prefix: str,
         key_id: str,
         key_secret: str,

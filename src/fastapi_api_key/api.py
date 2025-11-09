@@ -2,7 +2,7 @@ import warnings
 
 
 from fastapi_api_key.services.base import AbstractApiKeyService
-from fastapi_api_key.types import SecurityHTTPBearer, SecurityAPIKeyHeader
+from fastapi_api_key._types import SecurityHTTPBearer, SecurityAPIKeyHeader
 
 try:
     import fastapi  # noqa: F401
@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 
-from fastapi_api_key import ApiKeyService
+from fastapi_api_key.services.base import ApiKeyService
 from fastapi_api_key.domain.entities import ApiKey, ApiKeyEntity
 from fastapi_api_key.domain.errors import (
     InvalidKey,
