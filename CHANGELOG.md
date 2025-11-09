@@ -1,3 +1,9 @@
+## 0.7.3 (2025-11-09)
+
+### Fix
+
+- **ci/cd**: fix(ci/cd): fix ci/cd problem with release (empty commit)
+
 ## 0.7.2 (2025-11-09)
 
 ### Fix
