@@ -10,8 +10,8 @@ on:
 
 permissions:
   contents: read
-  checks: write
-  pull-requests: write
+  checks: none
+  pull-requests: none
 
 jobs:
   lint:
