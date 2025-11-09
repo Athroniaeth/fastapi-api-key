@@ -34,8 +34,8 @@ theme:
         icon: material/weather-night
         name: Switch to dark mode
     - scheme: slate
-      primary: deep purple
-      accent: indigo
+      primary: indigo
+      accent: deep purple
       toggle:
         icon: material/weather-sunny
         name: Switch to light mode
@@ -62,11 +62,12 @@ nav:
   - Home: index.md
   - Quickstart: quickstart.md
   - Usage:
-      - Custom: usage/custom.md
       - Dotenv: usage/dotenv.md
       - Cache: usage/cache.md
       - FastAPI: usage/fastapi.md
+      - Scopes: usage/scopes.md
       - Typer: usage/typer.md
+      - Custom: usage/custom.md
 extra:
   social:
     - icon: fontawesome/brands/github
