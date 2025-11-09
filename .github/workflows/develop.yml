@@ -5,6 +5,8 @@ on:
     branches: [ development ]
   push:
     branches: [ development ]
+  # Allow this workflow to be called by other workflows
+  workflow_call:
 
 permissions:
   contents: read
