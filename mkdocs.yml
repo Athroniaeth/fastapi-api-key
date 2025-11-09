@@ -66,6 +66,7 @@ nav:
       - Dotenv: usage/dotenv.md
       - Cache: usage/cache.md
       - FastAPI: usage/fastapi.md
+      - Scopes: usage/scopes.md
       - Typer: usage/typer.md
 extra:
   social:

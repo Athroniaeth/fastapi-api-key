@@ -1,4 +1,4 @@
-﻿# Fastapi Api Key
+﻿# FastAPI Api Key
 
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FAthroniaeth%2Ffastapi-api-key%2Fmain%2Fpyproject.toml)
 [![Tested with pytest](https://img.shields.io/badge/tests-pytest-informational.svg)](https://pytest.org/)
@@ -14,12 +14,17 @@ keys.
 ## Features
 
 - **Security-first**: secrets are hashed with a salt and a pepper, and never logged or returned after creation
-- **Ready-to-use**: just create your repository (storage) and use service
 - **Prod-ready**: services and repositories are async, and battle-tested
+
 
 - **Agnostic hasher**: you can use any async-compatible hashing strategy (default: Argon2)
 - **Agnostic backend**: you can use any async-compatible database (default: SQLAlchemy)
-- **Factory**: create a Typer, FastAPI router wired to api key systems (only SQLAlchemy for now)
+- **Connector**: create a Typer, FastAPI router wired to api key systems
+
+
+- **Envvar support**: easily configure peppers and other secrets via environment variables
+- **Extensible**: customize models, repositories, hashers, and services to fit your needs
+- **Scopes support**: assign scopes to API keys for fine-grained access control
 
 ## Standards compliance
 
@@ -32,6 +37,7 @@ This library try to follow best practices and relevant RFCs for API key manageme
 
 ## Installation
 
+### Basic installation
 This project is not published to PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
 
 ```bash
@@ -39,7 +45,7 @@ uv add fastapi-api-key
 uv pip install fastapi-api-key
 ```
 
-## Development installation
+### Development installation
 
 Clone or fork the repository and install the project with the extras that fit your stack. Examples below use `uv`:
 
@@ -47,6 +53,8 @@ Clone or fork the repository and install the project with the extras that fit yo
 uv sync --extra all  # fastapi + sqlalchemy + argon2 + bcrypt
 uv pip install -e ".[all]"
 ```
+
+### Optional dependencies
 
 For lighter setups you can choose individual extras:
 
@@ -124,6 +132,12 @@ service = ApiKeyService(
 ### API Key Format
 
 This is a classic API key if you don't modify the service behavior:
+
+**Structure:**
+
+`{global_prefix}`-`{delimiter}`-`{identifier}`-`{delimiter}`-`{secret}`
+
+**Example:**
 
 `ak-7a74caa323a5410d-mAfP3l6yAxqFz0FV2LOhu2tPCqL66lQnj3Ubd08w9RyE4rV4skUcpiUVIfsKEbzw`
 
