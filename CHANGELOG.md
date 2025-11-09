@@ -1,3 +1,9 @@
+## 0.7.1 (2025-11-09)
+
+### Fix
+
+- **cached**: cached service update (delete or update method) clear cache key
+
 ## 0.7.0 (2025-11-09)
 
 ### Feat

@@ -5,11 +5,8 @@ on:
     branches: [ main ]
   push:
     branches: [ main ]
-  # Authorize to publish manually from the Actions tab
-  release:
-    types: [published]
-  workflow_dispatch:
-
+    tags:
+      - '*'
 permissions:
   contents: write     # For creating the release
   id-token: write     # Required for PyPI Trusted Publisher
@@ -28,7 +25,7 @@ jobs:
 
     # Runs only if on a version tag (e.g., refs/tags/1.2.3)
     # Runs only when code is pushed to main (not on PRs)
-    if: (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) || github.event_name == 'release' || github.event_name == 'workflow_dispatch'
+    if: startsWith(github.ref, 'refs/tags/')
     steps:
       - name: Checkout (full history for changelog/tools)
         uses: actions/checkout@v4
@@ -48,9 +45,7 @@ jobs:
 
       # Publication via OIDC (Trusted Publisher) – no secret required on GitHub side
       - name: Publish to PyPI
-        # env:
-        #   PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: uv publish --verbose --trusted-publisher
+        run: uv publish --verbose
 
       # GitHub Release with auto notes + attached artifacts (sdist/wheel)
       - name: Create GitHub Release
@@ -67,8 +62,6 @@ jobs:
     name: Deploy MkDocs
     runs-on: ubuntu-latest
     needs: publish
-    # Runs only when code is pushed to main (when MR, not on PRs)
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
