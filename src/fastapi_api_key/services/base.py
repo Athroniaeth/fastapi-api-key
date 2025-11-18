@@ -1,3 +1,4 @@
+import asyncio
 import os
 from abc import ABC, abstractmethod
 from typing import Generic, Optional, Type, Tuple, List
@@ -34,6 +35,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
         domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
+        rrd: float = 1 / 3,
     ) -> None:
         # Warning developer that separator is automatically added to the global key_id
         if separator in global_prefix:
@@ -44,6 +46,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
         self.domain_cls = domain_cls or D
         self.separator = separator
         self.global_prefix = global_prefix
+        self.rrd = rrd
 
     @abstractmethod
     async def get_by_id(self, id_: str) -> D:
@@ -117,8 +120,38 @@ class AbstractApiKeyService(ABC, Generic[D]):
         """List entities with pagination support."""
         ...
 
-    @abstractmethod
     async def verify_key(self, api_key: str, required_scopes: Optional[List[str]] = None) -> D:
+        """Verify the provided plain key and return the corresponding entity if valid, else raise.
+
+        Args:
+            api_key: The raw API key string to verify.
+            required_scopes: Optional list of required scopes to check against the key's scopes.
+
+        Raises:
+            KeyNotProvided: If no API key is provided (empty).
+            KeyNotFound: If no API key with the given key_id exists.
+            InvalidKey: If the API key is invalid (hash mismatch).
+            KeyInactive: If the API key is inactive.
+            KeyExpired: If the API key is expired.
+
+        Returns:
+            The corresponding entity if the key is valid.
+
+        Notes:
+            This method extracts the key_id from the provided plain key,
+            retrieves the corresponding entity, and verifies the hash.
+            If the entity is inactive or expired, an exception is raised.
+            If the check between the provided plain key and the stored hash fails,
+            an InvalidKey exception is raised. Else, the entity is returned.
+        """
+        try:
+            return await self._verify_key(api_key, required_scopes)
+        except Exception as e:
+            await asyncio.sleep(self.rrd)
+            raise e
+
+    @abstractmethod
+    async def _verify_key(self, api_key: str, required_scopes: Optional[List[str]] = None) -> D:
         """Verify the provided plain key and return the corresponding entity if valid, else raise.
 
         Args:
@@ -155,6 +188,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
         domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
+        rrd: float = 1 / 3,
     ) -> None:
         domain_cls = domain_cls or ApiKey
         super().__init__(
@@ -163,6 +197,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
             domain_cls=domain_cls,
             separator=separator,
             global_prefix=global_prefix,
+            rrd=rrd,
         )
 
     async def load_dotenv(self, envvar_prefix: str = "API_KEY_"):
@@ -248,7 +283,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
     async def list(self, limit: int = 100, offset: int = 0) -> list[D]:
         return await self._repo.list(limit=limit, offset=offset)
 
-    async def verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
+    async def _verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
         required_scopes = required_scopes or []
 
         if api_key is None:

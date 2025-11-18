@@ -219,4 +219,5 @@ def service(
         domain_cls=domain_cls,
         separator=separator,
         global_prefix=global_prefix,
+        rrd=0,
     )

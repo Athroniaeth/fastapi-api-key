@@ -33,6 +33,7 @@ class CachedApiKeyService(ApiKeyService[D]):
         domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
+        rrd: float = 1 / 3,
     ):
         super().__init__(
             repo=repo,
@@ -40,6 +41,7 @@ class CachedApiKeyService(ApiKeyService[D]):
             domain_cls=domain_cls,
             separator=separator,
             global_prefix=global_prefix,
+            rrd=rrd,
         )
         self.cache_prefix = cache_prefix
         self.cache = cache or aiocache.SimpleMemoryCache()
@@ -80,7 +82,7 @@ class CachedApiKeyService(ApiKeyService[D]):
         await self._initialize_cache(result)
         return True
 
-    async def verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
+    async def _verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
         required_scopes = required_scopes or []
 
         if api_key is None:
