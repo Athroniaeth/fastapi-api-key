@@ -1,3 +1,13 @@
+## 0.8.0 (2025-11-18)
+
+### Feat
+
+- **svc**: add rrd (random response delay) when bad api key is provided for avoid brute force attack
+
+### Fix
+
+- **ci/cd**: codecov publish fail because don't have access to files
+
 ## 0.7.3 (2025-11-09)
 
 ### Fix
