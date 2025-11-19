@@ -162,8 +162,8 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
         target.last_used_at = entity.last_used_at
         target.key_id = entity.key_id
         target.key_hash = entity.key_hash  # type: ignore[invalid-assignment]
-        target._key_secret_first = entity.key_secret_first  # type: ignore[invalid-assignment]
-        target._key_secret_last = entity.key_secret_last  # type: ignore[invalid-assignment]
+        target.key_secret_first = entity.key_secret_first  # type: ignore[invalid-assignment]
+        target.key_secret_last = entity.key_secret_last  # type: ignore[invalid-assignment]
         target.scopes = entity.scopes
         return target
 

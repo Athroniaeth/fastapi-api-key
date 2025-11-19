@@ -146,8 +146,14 @@ async def test_update_success(service: ApiKeyService[ApiKey]) -> None:
     entity = ApiKey(name="to-update")
     entity, _ = await service.create(entity)
     entity.name = "updated-name"
+    entity.scopes = ["read", "write"]
+
+    # Imagine that user make rotation, so we set these for display purposes
+    entity._key_secret_first = "xxxx"
+    entity._key_secret_last = "xxxx"
+
     updated = await service.update(entity)
-    assert updated.name == "updated-name"
+    assert updated == entity
 
 
 @pytest.mark.asyncio
