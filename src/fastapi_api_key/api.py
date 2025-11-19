@@ -147,9 +147,7 @@ def create_api_keys_router(
         """
 
         entity = ApiKey(
-            name=payload.name,
-            description=payload.description,
-            is_active=payload.is_active,
+            name=payload.name, description=payload.description, is_active=payload.is_active, scopes=payload.scopes
         )
         entity, api_key = await svc.create(entity)
         return ApiKeyCreatedOut(api_key=api_key, entity=_to_out(entity))
@@ -233,10 +231,13 @@ def create_api_keys_router(
         current.name = payload.name or current.name
         current.description = payload.description or current.description
         current.is_active = payload.is_active if payload.is_active is not None else current.is_active
+        current.scopes = payload.scopes if payload.scopes is not None else current.scopes
+
         try:
             updated = await svc.update(current)
         except KeyNotFound as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found") from exc
+
         return _to_out(updated)
 
     @router.delete(
