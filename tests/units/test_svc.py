@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key import ApiKeyService
@@ -25,10 +24,9 @@ from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_f
 
 # test_cached_api_key_service.py
 import hashlib
-from unittest.mock import MagicMock
 
-from fastapi_api_key.services.base import DEFAULT_SEPARATOR
-from tests.conftest import MockPasswordHasher, LIST_SVC_EXCEPTIONS
+from fastapi_api_key.services.base import DEFAULT_SEPARATOR, AbstractApiKeyService
+from tests.conftest import LIST_SVC_EXCEPTIONS
 
 
 def _full_key(
@@ -43,7 +41,7 @@ def _full_key(
 
 @pytest.mark.asyncio
 async def test_create_success(
-    service: ApiKeyService[ApiKey],
+    all_possible_service: AbstractApiKeyService,
     fixed_salt_hasher: ApiKeyHasher,
 ) -> None:
     """create(): should persist entity and return full plain key with expected format."""
@@ -57,7 +55,7 @@ async def test_create_success(
         expires_at=expires_at,
         key_id=prefix,
     )
-    created_entity, full_key = await service.create(entity, key_secret=secret)
+    created_entity, full_key = await all_possible_service.create(entity, key_secret=secret)
     expected_hash = fixed_salt_hasher.hash(secret)
 
     assert full_key == _full_key(prefix, secret, global_prefix="ak", separator=".")
@@ -65,88 +63,88 @@ async def test_create_success(
     assert created_entity.key_hash == expected_hash
 
     # Double-check it was persisted
-    fetched = await service._repo.get_by_id(created_entity.id_)
+    fetched = await all_possible_service._repo.get_by_id(created_entity.id_)
     assert fetched is not None
     assert fetched.id_ == created_entity.id_
 
 
 @pytest.mark.asyncio
-async def test_create_bad_expired_at_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_create_bad_expired_at_raises(all_possible_service: AbstractApiKeyService) -> None:
     """create(): should reject past expiration dates."""
     with pytest.raises(ValueError):
         expired_at = datetime_factory() - timedelta(seconds=1)
         entity = ApiKey(name="expired", expires_at=expired_at)
-        await service.create(entity)
+        await all_possible_service.create(entity)
 
 
 @pytest.mark.asyncio
-async def test_get_by_id_success(service: ApiKeyService[ApiKey]) -> None:
+async def test_get_by_id_success(all_possible_service: AbstractApiKeyService) -> None:
     """get_by_id(): should return entity when it exists."""
     entity = ApiKey(name="expired")
     assert entity.id_ is not None
 
-    entity, _ = await service.create(entity)
-    got = await service.get_by_id(entity.id_)
+    entity, _ = await all_possible_service.create(entity)
+    got = await all_possible_service.get_by_id(entity.id_)
     assert got.id_ == entity.id_
 
 
 @pytest.mark.asyncio
-async def test_get_by_id_empty_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_get_by_id_empty_raises(all_possible_service: AbstractApiKeyService) -> None:
     """get_by_id(): should raise KeyNotProvided on empty input."""
     with pytest.raises(KeyNotProvided):
-        await service.get_by_id("  ")
+        await all_possible_service.get_by_id("  ")
 
 
 @pytest.mark.asyncio
-async def test_get_by_id_not_found_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_get_by_id_not_found_raises(all_possible_service: AbstractApiKeyService) -> None:
     """get_by_id(): should raise KeyNotFound when repository returns None."""
 
     with pytest.raises(KeyNotFound):
-        await service.get_by_id("missing-id")
+        await all_possible_service.get_by_id("missing-id")
 
 
 @pytest.mark.asyncio
-async def test_get_by_key_id_success(service: ApiKeyService[ApiKey]) -> None:
+async def test_get_by_key_id_success(all_possible_service: AbstractApiKeyService) -> None:
     """get_by_prefix(): should find by key_id."""
     key_id = key_id_factory()
     key_secret = key_secret_factory()
 
     entity = ApiKey(name="by-key_id", key_id=key_id)
-    entity, _ = await service.create(
+    entity, _ = await all_possible_service.create(
         entity=entity,
         key_secret=key_secret,
     )
-    got = await service.get_by_key_id(key_id)
+    got = await all_possible_service.get_by_key_id(key_id)
     assert got.id_ == entity.id_
 
 
 @pytest.mark.asyncio
-async def test_get_by_key_id_not_found_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_get_by_key_id_not_found_raises(all_possible_service: AbstractApiKeyService) -> None:
     """get_by_prefix(): should raise KeyNotFound when not present."""
     with pytest.raises(KeyNotFound):
-        await service.get_by_key_id("nope")
+        await all_possible_service.get_by_key_id("nope")
 
 
 @pytest.mark.asyncio
-async def test_get_by_prefix_empty_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_get_by_prefix_empty_raises(all_possible_service: AbstractApiKeyService) -> None:
     """get_by_prefix(): should raise KeyNotProvided on empty."""
     with pytest.raises(KeyNotProvided):
-        await service.get_by_key_id("  ")
+        await all_possible_service.get_by_key_id("  ")
 
 
 @pytest.mark.asyncio
-async def test_get_by_prefix_not_found_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_get_by_prefix_not_found_raises(all_possible_service: AbstractApiKeyService) -> None:
     """get_by_prefix(): should raise KeyNotFound when not present."""
 
     with pytest.raises(KeyNotFound):
-        await service.get_by_key_id("nope")
+        await all_possible_service.get_by_key_id("nope")
 
 
 @pytest.mark.asyncio
-async def test_update_success(service: ApiKeyService[ApiKey]) -> None:
+async def test_update_success(all_possible_service: AbstractApiKeyService) -> None:
     """update(): should persist modifications."""
     entity = ApiKey(name="to-update")
-    entity, _ = await service.create(entity)
+    entity, _ = await all_possible_service.create(entity)
     entity.name = "updated-name"
     entity.scopes = ["read", "write"]
 
@@ -154,12 +152,12 @@ async def test_update_success(service: ApiKeyService[ApiKey]) -> None:
     entity._key_secret_first = "xxxx"
     entity._key_secret_last = "xxxx"
 
-    updated = await service.update(entity)
+    updated = await all_possible_service.update(entity)
     assert updated == entity
 
 
 @pytest.mark.asyncio
-async def test_update_not_found_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_update_not_found_raises(all_possible_service: AbstractApiKeyService) -> None:
     """update(): should raise KeyNotFound when repository returns None."""
 
     dummy = ApiKey(
@@ -176,55 +174,55 @@ async def test_update_not_found_raises(service: ApiKeyService[ApiKey]) -> None:
     assert dummy.id_ is not None
 
     with pytest.raises(KeyNotFound):
-        await service.update(dummy)
+        await all_possible_service.update(dummy)
 
 
 @pytest.mark.asyncio
-async def test_delete_by_id_success(service: ApiKeyService[ApiKey]) -> None:
+async def test_delete_by_id_success(all_possible_service: AbstractApiKeyService) -> None:
     """delete_by_id(): should delete and then get_by_id should fail."""
     entity = ApiKey(name="to-delete")
-    entity, _ = await service.create(entity)
-    assert await service.delete_by_id(entity.id_) is True
+    entity, _ = await all_possible_service.create(entity)
+    assert await all_possible_service.delete_by_id(entity.id_) is True
 
     with pytest.raises(KeyNotFound):
-        await service.get_by_id(entity.id_)
+        await all_possible_service.get_by_id(entity.id_)
 
 
 @pytest.mark.asyncio
-async def test_delete_by_id_not_found_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_delete_by_id_not_found_raises(all_possible_service: AbstractApiKeyService) -> None:
     """delete_by_id(): should raise KeyNotFound when repository returns False."""
 
     with pytest.raises(KeyNotFound):
-        await service.delete_by_id("missing")
+        await all_possible_service.delete_by_id("missing")
 
 
 @pytest.mark.asyncio
-async def test_list_success(service: ApiKeyService[ApiKey]) -> None:
+async def test_list_success(all_possible_service: AbstractApiKeyService) -> None:
     """list(): should return created entities."""
     entity_1 = ApiKey(name="k1")
     entity_2 = ApiKey(name="k2")
-    await service.create(entity_1)
-    await service.create(entity_2)
+    await all_possible_service.create(entity_1)
+    await all_possible_service.create(entity_2)
 
-    items = await service.list(limit=10, offset=0)
+    items = await all_possible_service.list(limit=10, offset=0)
     assert len(items) >= 2
 
 
 @pytest.mark.asyncio
-async def test_list_empty_success(service: ApiKeyService[ApiKey]) -> None:
+async def test_list_empty_success(all_possible_service: AbstractApiKeyService) -> None:
     """list(): should return empty list when no entities exist."""
-    items = await service.list(limit=10, offset=0)
+    items = await all_possible_service.list(limit=10, offset=0)
     assert len(items) == 0
 
 
 @pytest.mark.asyncio
-async def test_verify_key_success(service: ApiKeyService[ApiKey]) -> None:
+async def test_verify_key_success(all_possible_service: AbstractApiKeyService) -> None:
     """verify_key(): should return entity when key is valid."""
     key_id = key_id_factory()
     key_secret = key_secret_factory()
 
     entity = ApiKey(name="to-verify", key_id=key_id)
-    entity, full = await service.create(
+    entity, full = await all_possible_service.create(
         entity=entity,
         key_secret=key_secret,
     )
@@ -232,7 +230,7 @@ async def test_verify_key_success(service: ApiKeyService[ApiKey]) -> None:
     last_used_before = entity.last_used_at
     assert last_used_before is None
 
-    got = await service._verify_key(full)
+    got = await all_possible_service.verify_key(full)
     assert got.id_ == entity.id_
     assert got.name == entity.name
     assert got.last_used_at is not None
@@ -242,17 +240,17 @@ async def test_verify_key_success(service: ApiKeyService[ApiKey]) -> None:
 
 
 @pytest.mark.asyncio
-async def test_verify_key_none_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_verify_key_none_raises(service: AbstractApiKeyService) -> None:
     """verify_key(): should raise KeyNotProvided when key is None."""
     with pytest.raises(KeyNotProvided, match=r"Api key must be provided \(not given\)"):
-        await service._verify_key(None)
+        await service.verify_key(None)  # ty: ignore[invalid-argument-type]
 
 
 @pytest.mark.asyncio
-async def test_verify_key_empty_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_verify_key_empty_raises(service: AbstractApiKeyService) -> None:
     """verify_key(): should raise KeyNotProvided when key is empty."""
     with pytest.raises(KeyNotProvided, match=r"Api key must be provided \(empty\)"):
-        await service._verify_key("   ")
+        await service.verify_key("   ")
 
 
 @pytest.mark.parametrize(
@@ -276,17 +274,24 @@ async def test_verify_key_empty_raises(service: ApiKeyService[ApiKey]) -> None:
 )
 @pytest.mark.asyncio
 async def test_verify_key_malformed_raises(
-    service: ApiKeyService[ApiKey],
+    service: AbstractApiKeyService,
     exception: Type[ApiKeyError],
     api_key: str,
 ) -> None:
-    """verify_key(): should raise ApiKeyError on malformed keys."""
+    """verify_key(): should raise ApiKeyError on malformed keys.
+
+    Notes:
+        The KeyNotFound is tested elsewhere because this test don't need
+        repository access. (use service instead of all_possible_service).
+
+        It is not important to test a real key because these errors only occur before accessing the repository.
+    """
     with pytest.raises(exception):
-        await service._verify_key(api_key)
+        await service.verify_key(api_key)
 
 
 @pytest.mark.asyncio
-async def test_verify_key_id_not_found_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_verify_key_id_not_found_raises(all_possible_service: AbstractApiKeyService) -> None:
     """verify_key(): should raise KeyNotFound if key_id lookup yields nothing."""
 
     key_id = key_id_factory()
@@ -299,29 +304,29 @@ async def test_verify_key_id_not_found_raises(service: ApiKeyService[ApiKey]) ->
     )
 
     with pytest.raises(KeyNotFound):
-        await service._verify_key(bad)
+        await all_possible_service.verify_key(bad)
 
 
 @pytest.mark.asyncio
-async def test_verify_key_inactive_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_verify_key_inactive_raises(all_possible_service: AbstractApiKeyService) -> None:
     """verify_key(): should raise KeyInactive when entity cannot authenticate."""
     # Arrange a fake entity that raises on ensure_can_authenticate
     prefix = key_id_factory()
     key_secret = key_secret_factory()
 
     entity = ApiKey(name="inactive", key_id=prefix, is_active=False)
-    await service.create(
+    await all_possible_service.create(
         entity=entity,
         key_secret=key_secret,
     )
     bad = _full_key(prefix, key_secret, global_prefix="ak", separator=".")
 
     with pytest.raises(KeyInactive):
-        await service._verify_key(bad)
+        await all_possible_service.verify_key(bad)
 
 
 @pytest.mark.asyncio
-async def test_verify_key_expired_raises(service: ApiKeyService[ApiKey]) -> None:
+async def test_verify_key_expired_raises(all_possible_service: AbstractApiKeyService) -> None:
     """verify_key(): should raise KeyExpired when entity is expired."""
     wait = 1e-3  # 1 ms
 
@@ -335,7 +340,7 @@ async def test_verify_key_expired_raises(service: ApiKeyService[ApiKey]) -> None
         key_id=prefix,
         expires_at=expires_at,
     )
-    await service.create(
+    await all_possible_service.create(
         entity=entity,
         key_secret=key_secret,
     )
@@ -347,47 +352,25 @@ async def test_verify_key_expired_raises(service: ApiKeyService[ApiKey]) -> None
     await asyncio.sleep(max(0, time_to_wait))
 
     with pytest.raises(KeyExpired, match=r"API key is expired."):
-        await service._verify_key(bad)
+        await all_possible_service.verify_key(bad)
 
 
 @pytest.mark.asyncio
-async def test_verify_key_empty_secret_raises(
-    service: ApiKeyService[ApiKey],
-) -> None:
-    """verify_key(): should raise InvalidKey when secret does not match."""
-    prefix = key_id_factory()
-    good_secret = key_secret_factory()
-    bad_secret = ""
-
-    entity = ApiKey(name="to-verify", key_id=prefix)
-    await service.create(
-        entity=entity,
-        key_secret=good_secret,
-    )
-    bad = _full_key(prefix, bad_secret, global_prefix="ak", separator=".")
-
-    with pytest.raises(InvalidKey, match=r"API key is invalid \(empty secret\)"):
-        await service._verify_key(bad)
-
-
-@pytest.mark.asyncio
-async def test_verify_key_bad_secret_raises(
-    service: ApiKeyService[ApiKey],
-) -> None:
+async def test_verify_key_bad_secret_raises(all_possible_service: AbstractApiKeyService) -> None:
     """verify_key(): should raise InvalidKey when secret does not match."""
     prefix = key_id_factory()
     good_secret = key_secret_factory()
     bad_secret = key_secret_factory()
 
     entity = ApiKey(name="to-verify", key_id=prefix)
-    await service.create(
+    await all_possible_service.create(
         entity=entity,
         key_secret=good_secret,
     )
     bad = _full_key(prefix, bad_secret, global_prefix="ak", separator=".")
 
     with pytest.raises(InvalidKey, match=r"API key is invalid \(hash mismatch\)"):
-        await service._verify_key(bad)
+        await all_possible_service.verify_key(bad)
 
 
 def test_constructor_separator_in_gp_raises(hasher: ApiKeyHasher) -> None:
@@ -436,22 +419,10 @@ async def test_create_custom_success(hasher: ApiKeyHasher) -> None:
     "exception",
     LIST_SVC_EXCEPTIONS,
 )
-async def test_errors_do_not_leak_secret(exception: Exception) -> None:
+async def test_errors_do_not_leak_secret(service: AbstractApiKeyService, exception: Exception) -> None:
     """Les messages d'erreur ne doivent pas révéler le secret."""
     key_id = key_id_factory()
     key_secret = key_secret_factory()
-
-    ph = MockPasswordHasher(fixed_salt=False)
-    hasher = Argon2ApiKeyHasher(pepper="pepper", password_hasher=ph)
-
-    svc = ApiKeyService(
-        repo=InMemoryApiKeyRepository(),
-        hasher=hasher,
-        domain_cls=ApiKey,
-        separator=".",
-        global_prefix="ak",
-        rrd=0,
-    )
 
     api_key = _full_key(
         key_id=key_id,
@@ -460,29 +431,21 @@ async def test_errors_do_not_leak_secret(exception: Exception) -> None:
         global_prefix="ak",
     )
     # mock raises for _verify_key
-    with patch.object(svc, "_verify_key", side_effect=exception):
+    with patch.object(service, "_verify_key", side_effect=exception):
         with pytest.raises(type(exception)) as exc:
-            await svc.verify_key(api_key)
+            await service.verify_key(api_key)
 
     assert api_key not in f"{exc}"
 
 
 @pytest.mark.asyncio
-async def test_create_can_be_inactive(service: ApiKeyService[ApiKey]) -> None:
-    """create(): must don't raise when creating an inactive key."""
-    entity = ApiKey(name="inactive", is_active=False)
-    entity, _ = await service.create(entity=entity)
-    assert entity.is_active is False
-
-
-@pytest.mark.asyncio
-async def test_update_does_not_change_key_hash(service: ApiKeyService[ApiKey]) -> None:
+async def test_update_does_not_change_key_hash(all_possible_service: AbstractApiKeyService) -> None:
     """update(): must not change key_hash."""
     entity = ApiKey(name="to-update")
-    entity, _ = await service.create(entity=entity)
+    entity, _ = await all_possible_service.create(entity=entity)
     old_hash = entity.key_hash
     entity.description = "new desc"
-    updated = await service.update(entity)
+    updated = await all_possible_service.update(entity)
     assert updated.key_hash == old_hash
 
 
@@ -523,7 +486,7 @@ async def test_verify_key_hashes_key_and_writes_to_cache_on_miss(
     entity, api_key = await service.create(entity)
 
     expected_hash = hashlib.sha256(f"{entity.key_id}{entity.key_hash}".encode()).hexdigest()
-    await service._verify_key(api_key)
+    await service.verify_key(api_key)
 
     # cache.get must be called with the hashed key only (never the raw key)
     cache.get.assert_awaited_once_with(expected_hash)
@@ -564,69 +527,55 @@ async def test_verify_key_returns_cached_when_present(
 
 
 @pytest.mark.asyncio
-async def test_verify_key_raises_when_missing_key(fixed_salt_hasher: ApiKeyHasher):
-    """If no API key is provided, a KeyNotProvided error must be raised."""
-    service = CachedApiKeyService(
-        repo=MagicMock(),
-        cache=MagicMock(),
-        hasher=fixed_salt_hasher,
-        rrd=0,
-    )
-
-    with pytest.raises(KeyNotProvided):
-        await service._verify_key(None)
-
-
-@pytest.mark.asyncio
-async def test_verify_key_good_scope_success(service: ApiKeyService[ApiKey]):
+async def test_verify_key_good_scope_success(all_possible_service: AbstractApiKeyService):
     """verify_key(): should pass when no required_scopes are given."""
     entity = ApiKey(scopes=["read"], name="to-verify")
-    entity, api_key = await service.create(entity=entity)
-    await service._verify_key(api_key, required_scopes=["read"])
+    entity, api_key = await all_possible_service.create(entity=entity)
+    await all_possible_service.verify_key(api_key, required_scopes=["read"])
 
 
 @pytest.mark.asyncio
-async def test_verify_key_good_scopes_success(service: ApiKeyService[ApiKey]):
+async def test_verify_key_good_scopes_success(all_possible_service: AbstractApiKeyService):
     """verify_key(): should pass when no required_scopes are given."""
     entity = ApiKey(scopes=["read", "write"], name="to-verify")
-    entity, api_key = await service.create(entity=entity)
-    await service._verify_key(api_key, required_scopes=["read", "write"])
+    entity, api_key = await all_possible_service.create(entity=entity)
+    await all_possible_service.verify_key(api_key, required_scopes=["read", "write"])
 
 
 @pytest.mark.asyncio
-async def test_verify_key_good_and_more_scopes_success(service: ApiKeyService[ApiKey]):
+async def test_verify_key_good_and_more_scopes_success(all_possible_service: AbstractApiKeyService):
     """verify_key(): should pass when no required_scopes are given."""
     entity = ApiKey(scopes=["read", "write", "delete", "all"], name="to-verify")
-    entity, api_key = await service.create(entity=entity)
-    await service._verify_key(api_key, required_scopes=["read", "write"])
+    entity, api_key = await all_possible_service.create(entity=entity)
+    await all_possible_service.verify_key(api_key, required_scopes=["read", "write"])
 
 
 @pytest.mark.asyncio
-async def test_verify_key_no_scopes_passes(service: ApiKeyService[ApiKey]):
+async def test_verify_key_no_scopes_passes(all_possible_service: AbstractApiKeyService):
     """verify_key(): should pass when no required_scopes are given."""
     entity = ApiKey(scopes=["read", "write"], name="to-verify")
-    entity, api_key = await service.create(entity=entity)
-    await service._verify_key(api_key)
+    entity, api_key = await all_possible_service.create(entity=entity)
+    await all_possible_service.verify_key(api_key)
 
 
 @pytest.mark.asyncio
-async def test_verify_key_raises_when_bad_scope(service: ApiKeyService[ApiKey]):
+async def test_verify_key_raises_when_bad_scope(all_possible_service: AbstractApiKeyService):
     """verify_key(): should raise InvalidKey when secret does not match."""
     entity = ApiKey(name="to-verify", scopes=["read"])
-    entity, api_key = await service.create(entity=entity)
+    entity, api_key = await all_possible_service.create(entity=entity)
 
     with pytest.raises(InvalidScopes, match=r"API key is missing required scopes: write"):
-        await service._verify_key(api_key, required_scopes=["write"])
+        await all_possible_service.verify_key(api_key, required_scopes=["write"])
 
 
 @pytest.mark.asyncio
-async def test_verify_key_raises_when_partial_scopes(service: ApiKeyService[ApiKey]):
+async def test_verify_key_raises_when_partial_scopes(all_possible_service: AbstractApiKeyService):
     """verify_key(): should raise InvalidScopes when required_scopes are not all present."""
     entity = ApiKey(name="to-verify", scopes=["read"])
-    entity, api_key = await service.create(entity=entity)
+    entity, api_key = await all_possible_service.create(entity=entity)
 
     with pytest.raises(InvalidScopes, match=r"API key is missing required scopes: write, delete"):
-        await service._verify_key(api_key, required_scopes=["read", "write", "delete"])
+        await all_possible_service.verify_key(api_key, required_scopes=["read", "write", "delete"])
 
 
 @pytest.mark.parametrize(
@@ -635,13 +584,13 @@ async def test_verify_key_raises_when_partial_scopes(service: ApiKeyService[ApiK
 )
 @pytest.mark.asyncio
 async def test_rrd_work_when_raises(
-    service: ApiKeyService[ApiKey],
+    all_possible_service: AbstractApiKeyService,
     monkeypatch: pytest.MonkeyPatch,
     exception: Exception,
 ):
     """Ensure that read-during-write operations still work when an error is raised."""
     # The fixture service have rdd enabled with 0.5s delay
-    service.rrd = 0.5
+    all_possible_service.rrd = 0.5
 
     def fake_method(*args, **kwargs):
         raise exception
@@ -653,10 +602,10 @@ async def test_rrd_work_when_raises(
         separator="-",
     )
 
-    monkeypatch.setattr(service, "_verify_key", fake_method)
+    monkeypatch.setattr(all_possible_service, "_verify_key", fake_method)
 
     with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
         with pytest.raises(type(exception)):
-            await service.verify_key(api_key)
+            await all_possible_service.verify_key(api_key)
 
         mock_sleep.assert_awaited_once_with(0.5)
