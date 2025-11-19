@@ -1,13 +1,14 @@
 import asyncio
+import time
 from datetime import timedelta, datetime, timezone
 from typing import Type
-from unittest.mock import AsyncMock, create_autospec, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.hasher.base import ApiKeyHasher
-from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.errors import (
@@ -27,16 +28,17 @@ import hashlib
 from unittest.mock import MagicMock
 
 from fastapi_api_key.services.base import DEFAULT_SEPARATOR
+from tests.conftest import MockPasswordHasher, LIST_SVC_EXCEPTIONS
 
 
 def _full_key(
     key_id: str,
-    secret: str,
+    key_secret: str,
     separator: str,
     global_prefix: str,
 ) -> str:
     """Compose a full API key from parts."""
-    return f"{global_prefix}{separator}{key_id}{separator}{secret}"
+    return f"{global_prefix}{separator}{key_id}{separator}{key_secret}"
 
 
 @pytest.mark.asyncio
@@ -321,9 +323,12 @@ async def test_verify_key_inactive_raises(service: ApiKeyService[ApiKey]) -> Non
 @pytest.mark.asyncio
 async def test_verify_key_expired_raises(service: ApiKeyService[ApiKey]) -> None:
     """verify_key(): should raise KeyExpired when entity is expired."""
+    wait = 1e-3  # 1 ms
+
+    time_start = time.time()
     prefix = key_id_factory()
     key_secret = key_secret_factory()
-    expires_at = datetime_factory() + timedelta(microseconds=300)
+    expires_at = datetime_factory() + timedelta(seconds=wait)
 
     entity = ApiKey(
         name="expired",
@@ -335,8 +340,12 @@ async def test_verify_key_expired_raises(service: ApiKeyService[ApiKey]) -> None
         key_secret=key_secret,
     )
     bad = _full_key(prefix, key_secret, global_prefix="ak", separator=".")
+    time_end = time.time()
+    time_elapsed = time_end - time_start
+    time_to_wait = max(0, wait - time_elapsed)
 
-    await asyncio.sleep(0.3)  # Wait to ensure the key is expired
+    await asyncio.sleep(max(0, time_to_wait))
+
     with pytest.raises(KeyExpired, match=r"API key is expired."):
         await service._verify_key(bad)
 
@@ -381,9 +390,7 @@ async def test_verify_key_bad_secret_raises(
         await service._verify_key(bad)
 
 
-def test_constructor_separator_in_gp_raises(
-    hasher: ApiKeyHasher,
-) -> None:
+def test_constructor_separator_in_gp_raises(hasher: ApiKeyHasher) -> None:
     """Service constructor: should reject a global_prefix that contains the separator."""
     with pytest.raises(ValueError):
         ApiKeyService(
@@ -392,6 +399,7 @@ def test_constructor_separator_in_gp_raises(
             domain_cls=ApiKey,
             separator=".",
             global_prefix="ak.",  # invalid: contains separator ('.' sep in 'ak.')
+            rrd=0,
         )
 
 
@@ -405,17 +413,18 @@ async def test_create_custom_success(hasher: ApiKeyHasher) -> None:
         domain_cls=ApiKey,
         separator=":",
         global_prefix="APIKEY",
+        rrd=0,
     )
-    prefix = key_id_factory()
+    key_id = key_id_factory()
     key_secret = key_secret_factory()
 
-    entity = ApiKey(name="custom", key_id=prefix)
+    entity = ApiKey(name="custom", key_id=key_id)
     _, full = await svc.create(
         entity=entity,
         key_secret=key_secret,
     )
     assert full == _full_key(
-        prefix,
+        key_id,
         key_secret,
         ":",
         "APIKEY",
@@ -423,27 +432,39 @@ async def test_create_custom_success(hasher: ApiKeyHasher) -> None:
 
 
 @pytest.mark.asyncio
-async def test_errors_do_not_leak_secret(hasher) -> None:
+@pytest.mark.parametrize(
+    "exception",
+    LIST_SVC_EXCEPTIONS,
+)
+async def test_errors_do_not_leak_secret(exception: Exception) -> None:
     """Les messages d'erreur ne doivent pas révéler le secret."""
-    p, provided = key_id_factory(), "supersecret"
+    key_id = key_id_factory()
+    key_secret = key_secret_factory()
 
-    class _E:
-        id_ = "id1"
-        key_id = p
-        key_hash = "hash::other"
+    ph = MockPasswordHasher(fixed_salt=False)
+    hasher = Argon2ApiKeyHasher(pepper="pepper", password_hasher=ph)
 
-        @staticmethod
-        def ensure_can_authenticate() -> None:
-            return None
+    svc = ApiKeyService(
+        repo=InMemoryApiKeyRepository(),
+        hasher=hasher,
+        domain_cls=ApiKey,
+        separator=".",
+        global_prefix="ak",
+        rrd=0,
+    )
 
-    repo = create_autospec(AbstractApiKeyRepository[ApiKey], instance=True)
-    repo.get_by_key_id = AsyncMock(return_value=_E())
-    svc = ApiKeyService(repo=repo, hasher=hasher, domain_cls=ApiKey)
+    api_key = _full_key(
+        key_id=key_id,
+        key_secret=key_secret,
+        separator=".",
+        global_prefix="ak",
+    )
+    # mock raises for _verify_key
+    with patch.object(svc, "_verify_key", side_effect=exception):
+        with pytest.raises(type(exception)) as exc:
+            await svc.verify_key(api_key)
 
-    with pytest.raises(InvalidKey) as exc:
-        await svc._verify_key(f"ak.{p}.{provided}")
-
-    assert "supersecret" not in str(exc.value)
+    assert api_key not in f"{exc}"
 
 
 @pytest.mark.asyncio
@@ -495,6 +516,7 @@ async def test_verify_key_hashes_key_and_writes_to_cache_on_miss(
         domain_cls=ApiKey,
         separator=DEFAULT_SEPARATOR,
         global_prefix="ak",
+        rrd=0,
     )
 
     entity = ApiKey(name="test")
@@ -529,6 +551,7 @@ async def test_verify_key_returns_cached_when_present(
         repo=repo_mock,
         cache=cache,
         hasher=fixed_salt_hasher,
+        rrd=0,
     )
 
     entity, api_key = await service.create(entity)
@@ -547,6 +570,7 @@ async def test_verify_key_raises_when_missing_key(fixed_salt_hasher: ApiKeyHashe
         repo=MagicMock(),
         cache=MagicMock(),
         hasher=fixed_salt_hasher,
+        rrd=0,
     )
 
     with pytest.raises(KeyNotProvided):
@@ -607,13 +631,7 @@ async def test_verify_key_raises_when_partial_scopes(service: ApiKeyService[ApiK
 
 @pytest.mark.parametrize(
     "exception",
-    [
-        KeyNotFound(),
-        KeyInactive(),
-        KeyExpired(),
-        InvalidKey(),
-        InvalidScopes(),
-    ],
+    LIST_SVC_EXCEPTIONS,
 )
 @pytest.mark.asyncio
 async def test_rrd_work_when_raises(
