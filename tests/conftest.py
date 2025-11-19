@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import (
 
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.base import D
+from fastapi_api_key.domain.errors import KeyNotFound, KeyInactive, KeyExpired, InvalidKey, InvalidScopes
 from fastapi_api_key.hasher.bcrypt import BcryptApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, Base
@@ -33,6 +34,15 @@ from fastapi_api_key.services.base import AbstractApiKeyService
 from fastapi_api_key.services.cached import CachedApiKeyService
 from fastapi_api_key._types import AsyncSessionMaker
 from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
+
+
+LIST_SVC_EXCEPTIONS = [
+    KeyNotFound(),
+    KeyInactive(),
+    KeyExpired(),
+    InvalidKey(),
+    InvalidScopes(),
+]
 
 
 class MockPasswordHasher(PasswordHasher):
