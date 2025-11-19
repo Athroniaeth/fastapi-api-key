@@ -1,3 +1,11 @@
+## 0.8.1 (2025-11-19)
+
+### Fix
+
+- **svc**: update method don't update key secret first/last (usefull for rotation)
+- **svc**: ApiKeyCreateIn and ApiKeyUpdateIn don't update scopes
+- **api**: helper to_out don't send the true id of api key
+
 ## 0.8.0 (2025-11-18)
 
 ### Feat
