@@ -5,8 +5,7 @@ on:
     branches: [ main ]
   push:
     branches: [ main ]
-    tags:
-      - '*'
+
 permissions:
   contents: write     # For creating the release
   id-token: write     # Required for PyPI Trusted Publisher
