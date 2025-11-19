@@ -215,10 +215,30 @@ def service_class(request: pytest.FixtureRequest) -> Type[AbstractApiKeyService[
 @pytest.fixture
 def service(
     service_class: Type[AbstractApiKeyService[D]],
+    hasher: ApiKeyHasher,
+) -> Iterator[AbstractApiKeyService[D]]:
+    """Fixture to provide different AbstractApiKeyRepository implementations."""
+    domain_cls = ApiKey
+    separator = "."
+    global_prefix = "ak"
+
+    yield service_class(
+        repo=InMemoryApiKeyRepository(),
+        hasher=hasher,
+        domain_cls=domain_cls,
+        separator=separator,
+        global_prefix=global_prefix,
+        rrd=0,
+    )
+
+
+@pytest.fixture
+def all_possible_service(
+    service_class: Type[AbstractApiKeyService[D]],
     repository: AbstractApiKeyRepository[D],
     fixed_salt_hasher: ApiKeyHasher,
 ) -> Iterator[AbstractApiKeyService[D]]:
-    """Fixture to provide different AbstractApiKeyRepository implementations."""
+    """Fixture to provide all possible AbstractApiKeyRepository implementations."""
     domain_cls = ApiKey
     separator = "."
     global_prefix = "ak"
