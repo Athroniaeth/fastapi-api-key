@@ -101,7 +101,7 @@ class DeletedResponse(BaseModel):
 def _to_out(entity: ApiKey) -> ApiKeyOut:
     """Map an `ApiKey` entity to the public `ApiKeyOut` schema."""
     return ApiKeyOut(
-        id="entity.id_",
+        id=entity.id_,
         name=entity.name,
         description=entity.description,
         is_active=entity.is_active,
