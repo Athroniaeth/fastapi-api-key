@@ -28,6 +28,13 @@ class InMemoryApiKeyRepository(AbstractApiKeyRepository[D]):
         return None
 
     async def create(self, entity: D) -> D:
+        # Ensure that any existing entity with the same key_id is overwritten
+        if entity.id_ in self._store:
+            raise ValueError(f"Entity with id {entity.id_} already exists.")
+
+        if any(v.key_id == entity.key_id for v in self._store.values()):
+            raise ValueError(f"Entity with key_id {entity.key_id} already exists.")
+
         self._store[entity.id_] = entity
         return entity
 
