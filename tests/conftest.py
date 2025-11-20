@@ -121,8 +121,9 @@ async def async_session(async_session_maker: AsyncSessionMaker) -> AsyncIterator
         yield session
 
 
-def make_api_key() -> ApiKey:
+def make_api_key(key_id: Optional[str] = None) -> ApiKey:
     """Create a fresh ApiKey domain entity with unique key_id/hash."""
+    key_id = key_id or key_id_factory()
     key_secret = key_secret_factory()
     key_hash = hashlib.sha256(key_secret.encode()).hexdigest()
 
@@ -132,7 +133,7 @@ def make_api_key() -> ApiKey:
         is_active=True,
         expires_at=datetime_factory() + timedelta(days=30),
         created_at=datetime_factory(),
-        key_id=key_id_factory(),
+        key_id=key_id,
         _key_secret=key_secret_factory(),
         key_hash=key_hash,
         scopes=["read", "write"],

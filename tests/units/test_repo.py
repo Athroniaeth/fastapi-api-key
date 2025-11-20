@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
+from fastapi_api_key.utils import key_id_factory
 from tests.conftest import make_api_key
 
 
@@ -174,3 +175,16 @@ async def test_api_key_list_empty(repository: AbstractApiKeyRepository) -> None:
     """Test listing API keys when none exist."""
     listed = await repository.list(limit=10, offset=0)
     assert listed == []
+
+
+@pytest.mark.asyncio
+async def test_duplicate_key_id_creation_raises(repository: AbstractApiKeyRepository) -> None:
+    """create(): should raise when trying to create two keys with same key_id."""
+    key_id = key_id_factory()
+
+    entity_1 = make_api_key(key_id=key_id)
+    await repository.create(entity=entity_1)
+
+    entity_2 = make_api_key(key_id=key_id)
+    with pytest.raises(Exception):
+        await repository.create(entity=entity_2)

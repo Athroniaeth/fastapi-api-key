@@ -485,7 +485,7 @@ async def test_verify_key_hashes_key_and_writes_to_cache_on_miss(
     entity = ApiKey(name="test")
     entity, api_key = await service.create(entity)
 
-    expected_hash = hashlib.sha256(f"{entity.key_id}{entity.key_hash}".encode()).hexdigest()
+    expected_hash = hashlib.sha256(entity.key_id.encode()).hexdigest()
     await service.verify_key(api_key)
 
     # cache.get must be called with the hashed key only (never the raw key)
@@ -518,7 +518,7 @@ async def test_verify_key_returns_cached_when_present(
     )
 
     entity, api_key = await service.create(entity)
-    expected_hash = hashlib.sha256(f"{entity.key_id}{entity.key_hash}".encode()).hexdigest()
+    expected_hash = hashlib.sha256(entity.key_id.encode()).hexdigest()
 
     await service._verify_key(api_key)
     cache.get.assert_awaited_once_with(expected_hash)
