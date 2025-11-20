@@ -49,26 +49,21 @@ class CachedApiKeyService(ApiKeyService[D]):
     def _get_cache_key(self, key_id: str) -> str:
         return f"{self.cache_prefix}:{key_id}"
 
-    def _hash_api_key(self, entity: D) -> str:
+    def _hash_api_key(self, key_id: str) -> str:
         """Hash the API key to use as cache key (don't store raw keys) with SHA256 (faster that Bcrypt)."""
-        # buffer = api_key.encode()
-        # _, key_prefix, _ = api_key.partition(DEFAULT_SEPARATOR)
-        # buffer = key_prefix.encode()
-        # return hashlib.sha256(buffer).hexdigest()
-        key_id, key_hash = entity.key_id, entity.key_hash
-        buffer = f"{key_id}{key_hash}".encode()
+        buffer = key_id.encode()
         return hashlib.sha256(buffer).hexdigest()
 
-    async def _initialize_cache(self, entity: D) -> D:
+    async def _initialize_cache(self, key_id: str) -> None:
         """Helper to initialize cache for an entity, to use after any update of the entity."""
-        hash_api_key = self._hash_api_key(entity)
+        hash_api_key = self._hash_api_key(key_id)
         await self.cache.delete(hash_api_key)
-        return entity
 
     async def update(self, entity: D) -> D:
         # Delete cache entry on update (useful when changing scopes or disabling)
         entity = await super().update(entity)
-        return await self._initialize_cache(entity)
+        await self._initialize_cache(entity.key_id)
+        return entity
 
     async def delete_by_id(self, id_: str) -> bool:
         result = await self._repo.get_by_id(id_)
@@ -79,7 +74,7 @@ class CachedApiKeyService(ApiKeyService[D]):
         # Delete cache entry on delete
         # Todo: Found more optimized way to do this (delete_by_id return directly entity, or delete method)
         await super().delete_by_id(id_)
-        await self._initialize_cache(result)
+        await self._initialize_cache(result.key_id)
         return True
 
     async def _verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
@@ -98,18 +93,18 @@ class CachedApiKeyService(ApiKeyService[D]):
         if global_prefix != self.global_prefix:
             raise InvalidKey("Api key is invalid (wrong global prefix)")
 
-        # Search entity by a key_id (can't brute force hashes)
-        entity = await self.get_by_key_id(key_id)
-
-        hash_api_key = self._hash_api_key(entity)
+        hash_api_key = self._hash_api_key(key_id)
         cached_entity = await self.cache.get(hash_api_key)
 
+        if cached_entity:
+            cached_entity.ensure_can_authenticate()
+            return cached_entity
+
+        # Search entity by a key_id (can't brute force hashes)
+        entity = await self.get_by_key_id(key_id)
         # Check if the entity can be used for authentication
         # and refresh last_used_at if verified
         entity.ensure_can_authenticate()
-
-        if cached_entity:
-            return cached_entity
 
         key_hash = entity.key_hash
 
