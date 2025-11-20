@@ -1,3 +1,14 @@
+## 0.8.2 (2025-11-20)
+
+### Fix
+
+- **repo**: enforce key id uniqueness for all repository
+- **cached**: improve security of cached svc by ensure that api key can authenticate
+
+### Perf
+
+- **cached**: improve cached svc by reduce DB hits (use key_id rather use full entity with repo call), warning maybe less secure
+
 ## 0.8.1 (2025-11-19)
 
 ### Fix
