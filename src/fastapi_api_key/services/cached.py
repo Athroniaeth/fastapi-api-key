@@ -104,12 +104,12 @@ class CachedApiKeyService(ApiKeyService[D]):
         hash_api_key = self._hash_api_key(entity)
         cached_entity = await self.cache.get(hash_api_key)
 
-        if cached_entity:
-            return cached_entity
-
         # Check if the entity can be used for authentication
         # and refresh last_used_at if verified
         entity.ensure_can_authenticate()
+
+        if cached_entity:
+            return cached_entity
 
         key_hash = entity.key_hash
 
