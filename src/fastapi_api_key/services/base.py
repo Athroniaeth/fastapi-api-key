@@ -1,5 +1,6 @@
 import asyncio
 import os
+from random import SystemRandom
 from abc import ABC, abstractmethod
 from typing import Generic, Optional, Type, Tuple, List
 
@@ -47,6 +48,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
         self.separator = separator
         self.global_prefix = global_prefix
         self.rrd = rrd
+        self._system_random = SystemRandom()
 
     @abstractmethod
     async def get_by_id(self, id_: str) -> D:
@@ -148,7 +150,9 @@ class AbstractApiKeyService(ABC, Generic[D]):
         try:
             return await self._verify_key(api_key, required_scopes)
         except Exception as e:
-            await asyncio.sleep(self.rrd)
+            # Add a small jitter to make timing-based probing harder to profile.
+            wait = self._system_random.uniform(self.rrd, self.rrd * 2)
+            await asyncio.sleep(wait)
             raise e
 
     @abstractmethod

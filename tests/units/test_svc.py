@@ -608,4 +608,6 @@ async def test_rrd_work_when_raises(
         with pytest.raises(type(exception)):
             await all_possible_service.verify_key(api_key)
 
-        mock_sleep.assert_awaited_once_with(0.5)
+        mock_sleep.assert_awaited()
+        delay = mock_sleep.await_args.args[0]
+        assert all_possible_service.rrd <= delay <= all_possible_service.rrd * 2
