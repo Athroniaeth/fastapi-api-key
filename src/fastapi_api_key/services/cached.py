@@ -112,12 +112,12 @@ class CachedApiKeyService(ApiKeyService[D]):
         # and refresh last_used_at if verified
         entity.ensure_can_authenticate()
 
-        key_hash = entity.key_hash
+        assert entity.key_hash is not None, "key_hash must be set for existing API keys"  # nosec B101
 
         if not key_secret:
             raise InvalidKey("API key is invalid (empty secret)")
 
-        if not self._hasher.verify(key_hash, key_secret):
+        if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
         if required_scopes:

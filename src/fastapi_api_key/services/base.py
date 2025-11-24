@@ -306,17 +306,16 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
         # Search entity by a key_id (can't brute force hashes)
         entity = await self.get_by_key_id(key_id)
+        assert entity.key_hash is not None, "key_hash must be set for existing API keys"  # nosec B101
 
         # Check if the entity can be used for authentication
         # and refresh last_used_at if verified
         entity.ensure_can_authenticate()
 
-        key_hash = entity.key_hash
-
         if not key_secret:
             raise InvalidKey("API key is invalid (empty secret)")
 
-        if not self._hasher.verify(key_hash, key_secret):
+        if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
         if required_scopes:
