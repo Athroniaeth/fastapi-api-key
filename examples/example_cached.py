@@ -34,9 +34,9 @@ async def main():
     n = 100
 
     for service in [
-        # Must use Bcrypt hash each call
+        # Must use Argon2 hash each call
         ApiKeyService(repo=repo, hasher=hasher),
-        # Use Bcrypt once and cache the result
+        # Use Argon2 once and cache the result
         CachedApiKeyService(repo=repo, hasher=hasher),
     ]:
         print(f"{service.__class__.__name__}")

@@ -453,16 +453,20 @@ async def test_update_does_not_change_key_hash(all_possible_service: AbstractApi
 
 
 @pytest.mark.asyncio
-async def test_verify_key_hashes_key_and_writes_to_cache_on_miss(
+async def test_verify_key_hashes_full_key_and_writes_to_cache_on_miss(
     monkeypatch: pytest.MonkeyPatch,
     fixed_salt_hasher: ApiKeyHasher,
 ):
-    """Ensure the API key is hashed before cache access and that a cache miss stores the entity.
+    """Ensure the full API key is hashed before cache access and that a cache miss stores the entity + index.
+
+    Security Model:
+      - Cache key = SHA256(full_api_key) ensures only callers with the complete key can hit the cache
+      - Secondary index (key_id → cache_key) enables invalidation without the secret
 
     Steps:
       1) Cache.get -> None (cache miss)
-      2) super().verify_key -> returns a fake entity
-      3) Cache.set is called with the SHA256 hash key and the returned entity
+      2) Full verification via hasher
+      3) Cache.set is called twice: once for the entity, once for the secondary index
     """
     # Mock cache with async get/set
     cache = AsyncMock()
@@ -485,12 +489,25 @@ async def test_verify_key_hashes_key_and_writes_to_cache_on_miss(
     entity = ApiKey(name="test")
     entity, api_key = await service.create(entity)
 
-    expected_hash = hashlib.sha256(entity.key_id.encode()).hexdigest()
+    # New: cache key is SHA256 of the FULL API key (not just key_id)
+    expected_cache_key = hashlib.sha256(api_key.encode()).hexdigest()
+    expected_index_key = f"api_key:idx:{entity.key_id}"
+
     await service.verify_key(api_key)
 
-    # cache.get must be called with the hashed key only (never the raw key)
-    cache.get.assert_awaited_once_with(expected_hash)
-    cache.set.assert_awaited_once_with(expected_hash, entity)
+    # cache.get must be called with the hashed full key (never just key_id)
+    cache.get.assert_awaited_once_with(expected_cache_key)
+
+    # cache.set should be called twice: once for entity, once for index
+    assert cache.set.await_count == 2
+    calls = cache.set.await_args_list
+
+    # First call: entity cache
+    assert calls[0].args[0] == expected_cache_key
+
+    # Second call: secondary index
+    assert calls[1].args[0] == expected_index_key
+    assert calls[1].args[1] == expected_cache_key
 
 
 @pytest.mark.asyncio
@@ -498,16 +515,11 @@ async def test_verify_key_returns_cached_when_present(
     monkeypatch: pytest.MonkeyPatch,
     fixed_salt_hasher: ApiKeyHasher,
 ):
-    """If the cache already contains the entity, return it and do NOT call the repo/super."""
+    """If the cache already contains the entity (keyed by full API key hash), return it without re-verifying."""
     entity = ApiKey(name="test")
 
     cache = AsyncMock()
-    cache.get = AsyncMock(return_value=entity)
     cache.set = AsyncMock()
-
-    # Even if patched, it must NOT be called in this scenario
-    super_verify_mock = AsyncMock()
-    monkeypatch.setattr(ApiKeyService, "verify_key", super_verify_mock)
 
     repo_mock = InMemoryApiKeyRepository()
     service = CachedApiKeyService(
@@ -518,10 +530,17 @@ async def test_verify_key_returns_cached_when_present(
     )
 
     entity, api_key = await service.create(entity)
-    expected_hash = hashlib.sha256(entity.key_id.encode()).hexdigest()
+
+    # Set up cache to return the entity for the full API key hash
+    expected_cache_key = hashlib.sha256(api_key.encode()).hexdigest()
+    cache.get = AsyncMock(return_value=entity)
+
+    # Even if patched, it must NOT be called in this scenario
+    super_verify_mock = AsyncMock()
+    monkeypatch.setattr(ApiKeyService, "verify_key", super_verify_mock)
 
     await service._verify_key(api_key)
-    cache.get.assert_awaited_once_with(expected_hash)
+    cache.get.assert_awaited_once_with(expected_cache_key)
     super_verify_mock.assert_not_awaited()
     cache.set.assert_not_awaited()
 
@@ -671,3 +690,124 @@ async def test_verify_key_fails_after_expiration_update(all_possible_service: Ab
     # Second verify - should fail with KeyExpired (even if cached service)
     with pytest.raises(KeyExpired):
         await all_possible_service.verify_key(api_key)
+
+
+# --- Cache security tests ---
+
+
+@pytest.mark.asyncio
+async def test_cache_does_not_hit_with_wrong_secret(
+    fixed_salt_hasher: ApiKeyHasher,
+) -> None:
+    """Security: cache should NOT hit if only key_id is correct but secret is wrong.
+
+    This is the core security property of the new cache model:
+    - Cache key = SHA256(full_api_key)
+    - An attacker who knows only key_id cannot hit the cache
+    """
+    repo = InMemoryApiKeyRepository()
+    service = CachedApiKeyService(
+        repo=repo,
+        hasher=fixed_salt_hasher,
+        rrd=0,
+    )
+
+    # Create a key and verify it (puts it in cache)
+    entity = ApiKey(name="security-test")
+    entity, correct_api_key = await service.create(entity)
+    await service.verify_key(correct_api_key)
+
+    # Extract key_id and create a fake key with same key_id but different secret
+    parts = correct_api_key.split("-")
+    key_id = parts[1]
+    fake_secret = key_secret_factory()
+    fake_api_key = f"ak-{key_id}-{fake_secret}"
+
+    # This should NOT hit the cache because SHA256(fake_api_key) != SHA256(correct_api_key)
+    # It should fail with InvalidKey (hash mismatch) after going through full verification
+    with pytest.raises(InvalidKey, match=r"hash mismatch"):
+        await service.verify_key(fake_api_key)
+
+
+@pytest.mark.asyncio
+async def test_cache_invalidation_via_secondary_index(
+    fixed_salt_hasher: ApiKeyHasher,
+) -> None:
+    """Cache invalidation should work via secondary index without knowing the secret.
+
+    Flow:
+    1. Create and verify key (puts in cache)
+    2. Update entity (should invalidate via index)
+    3. Verify again should go through full verification (cache miss)
+    """
+    cache = AsyncMock()
+    cache.get = AsyncMock(return_value=None)
+    cache.set = AsyncMock()
+    cache.delete = AsyncMock()
+
+    repo = InMemoryApiKeyRepository()
+    service = CachedApiKeyService(
+        repo=repo,
+        cache=cache,
+        cache_prefix="test",
+        hasher=fixed_salt_hasher,
+        rrd=0,
+    )
+
+    # Create and verify
+    entity = ApiKey(name="invalidation-test")
+    entity, api_key = await service.create(entity)
+
+    expected_cache_key = hashlib.sha256(api_key.encode()).hexdigest()
+    expected_index_key = f"test:idx:{entity.key_id}"
+
+    await service.verify_key(api_key)
+
+    # Reset mocks
+    cache.reset_mock()
+
+    # Simulate that index returns the cache_key
+    cache.get = AsyncMock(return_value=expected_cache_key)
+
+    # Update should invalidate cache
+    entity.name = "updated"
+    await service.update(entity)
+
+    # Verify that invalidation used the secondary index
+    cache.get.assert_awaited_once_with(expected_index_key)
+
+    # Both cache entry and index should be deleted
+    assert cache.delete.await_count == 2
+    delete_calls = [call.args[0] for call in cache.delete.await_args_list]
+    assert expected_cache_key in delete_calls
+    assert expected_index_key in delete_calls
+
+
+@pytest.mark.asyncio
+async def test_cache_invalidation_handles_missing_index(
+    fixed_salt_hasher: ApiKeyHasher,
+) -> None:
+    """Invalidation should handle the case where the index doesn't exist (key never cached)."""
+    cache = AsyncMock()
+    cache.get = AsyncMock(return_value=None)  # Index not found
+    cache.delete = AsyncMock()
+
+    repo = InMemoryApiKeyRepository()
+    service = CachedApiKeyService(
+        repo=repo,
+        cache=cache,
+        hasher=fixed_salt_hasher,
+        rrd=0,
+    )
+
+    # Create but don't verify (so nothing is cached)
+    entity = ApiKey(name="not-cached")
+    entity, _ = await service.create(entity)
+
+    # Update should not crash even if index doesn't exist
+    entity.name = "updated"
+    await service.update(entity)
+
+    # Only index lookup should happen, no deletes
+    cache.get.assert_awaited_once()
+    cache.delete.assert_not_awaited()

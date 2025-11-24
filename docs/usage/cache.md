@@ -6,12 +6,46 @@ expensive, especially if you are using strong hashing algorithms like Argon2 or 
 implement a caching layer that stores the results of previous hash verifications. This way, if the same API key is
 verified multiple times, you can retrieve the result from the cache instead of recalculating the hash each time.
 
-We use `aiocache` to provide caching capabilities. This library have agnostic backends (in-memory, redis, memcached, etc.) and
+We use `aiocache` to provide caching capabilities. This library has backend-agnostic support (in-memory, Redis, etc.) and
 supports async operations.
+
+## Security Model
+
+The `CachedApiKeyService` uses a secure caching strategy that maintains the same security guarantees as the non-cached service:
+
+**Cache key = SHA256(full_api_key)**
+
+This ensures that:
+
+- Only requests with the **complete and correct API key** can hit the cache
+- An attacker who only knows the `key_id` (visible in the API key format) **cannot exploit the cache**
+- The cached entity is only returned if the caller proves knowledge of the full secret
+
+A **secondary index** (`key_id → cache_key`) enables cache invalidation when updating or deleting API keys, even though the service doesn't store the plain secret.
+
+![Cache API Key System](../mermaid-cache-api-key-system.png)
+
+## Configuration
+
+### Cache Backend
+
+You can use any `aiocache` backend. Configure TTL directly on the cache instance:
+
+```python
+from aiocache import Cache
+
+# In-memory with 5 min TTL
+memory_cache = Cache(Cache.MEMORY, ttl=300)
+service = CachedApiKeyService(repo=repo, hasher=hasher, cache=memory_cache)
+
+# Redis backend with 10 min TTL
+redis_cache = Cache(Cache.REDIS, endpoint="localhost", port=6379, namespace="api_keys", ttl=600)
+service = CachedApiKeyService(repo=repo, hasher=hasher, cache=redis_cache)
+```
 
 ## Example
 
-This is the canonical example from `examples/example_inmemory_env.py`:
+This is the canonical example from `examples/example_cached.py`:
 
 !!! warning "Always set a pepper"
     The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
@@ -20,3 +54,11 @@ This is the canonical example from `examples/example_inmemory_env.py`:
 --8<-- "examples/example_cached.py"
 ```
 
+## Cache Invalidation
+
+The cache is automatically invalidated when:
+
+- An API key is **updated** (e.g., scopes changed, deactivated)
+- An API key is **deleted**
+
+This ensures that changes to API keys take effect immediately, even for cached entries.
