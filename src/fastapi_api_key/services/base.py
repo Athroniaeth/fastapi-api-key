@@ -6,7 +6,7 @@ from typing import Generic, Optional, Type, Tuple, List
 
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.base import D
-from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey, InvalidScopes
+from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
@@ -318,11 +318,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
         if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
-        if required_scopes:
-            missing_scopes = [scope for scope in required_scopes if scope not in entity.scopes]
-            missing_scopes_str = ", ".join(missing_scopes)
-            if missing_scopes:
-                raise InvalidScopes(f"API key is missing required scopes: {missing_scopes_str}")
+        entity.ensure_valid_scopes(required_scopes)
 
         entity.touch()
         updated = await self._repo.update(entity)

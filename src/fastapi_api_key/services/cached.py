@@ -13,7 +13,7 @@ from aiocache import BaseCache
 
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.base import D
-from fastapi_api_key.domain.errors import KeyNotProvided, InvalidKey, InvalidScopes, KeyNotFound
+from fastapi_api_key.domain.errors import KeyNotProvided, InvalidKey, KeyNotFound
 from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.services.base import DEFAULT_SEPARATOR
@@ -128,11 +128,7 @@ class CachedApiKeyService(ApiKeyService[D]):
             cached_entity.ensure_can_authenticate()
 
             # Check scopes on cache hit
-            if required_scopes:
-                missing_scopes = [scope for scope in required_scopes if scope not in cached_entity.scopes]
-                if missing_scopes:
-                    missing_scopes_str = ", ".join(missing_scopes)
-                    raise InvalidScopes(f"API key is missing required scopes: {missing_scopes_str}")
+            cached_entity.ensure_valid_scopes(required_scopes)
 
             cached_entity.touch()
             updated = await self._repo.update(cached_entity)
@@ -154,11 +150,8 @@ class CachedApiKeyService(ApiKeyService[D]):
         if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
-        if required_scopes:
-            missing_scopes = [scope for scope in required_scopes if scope not in entity.scopes]
-            missing_scopes_str = ", ".join(missing_scopes)
-            if missing_scopes:
-                raise InvalidScopes(f"API key is missing required scopes: {missing_scopes_str}")
+        # Check scopes on cache miss
+        entity.ensure_valid_scopes(required_scopes)
 
         entity.touch()
         updated = await self._repo.update(entity)

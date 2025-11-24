@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from typing import Optional, List
 
 from fastapi_api_key.domain.base import ApiKeyEntity
-from fastapi_api_key.domain.errors import KeyExpired, KeyInactive
+from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes
 from fastapi_api_key.utils import (
     uuid_factory,
     datetime_factory,
@@ -102,3 +102,10 @@ class ApiKey(ApiKeyEntity):
 
         if self.expires_at and self.expires_at < datetime_factory():
             raise KeyExpired("API key is expired.")
+
+    def ensure_valid_scopes(self, required_scopes: List[str]) -> None:
+        if required_scopes:
+            missing_scopes = [scope for scope in required_scopes if scope not in self.scopes]
+            missing_scopes_str = ", ".join(missing_scopes)
+            if missing_scopes:
+                raise InvalidScopes(f"API key is missing required scopes: {missing_scopes_str}")
