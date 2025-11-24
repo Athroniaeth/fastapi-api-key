@@ -227,17 +227,17 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
         await self._async_session.flush()
         return self.to_domain(model, self.domain_cls)
 
-    async def delete_by_id(self, id_: str) -> bool:
+    async def delete_by_id(self, id_: str) -> Optional[D]:
         stmt = select(self.model_cls).where(self.model_cls.id_ == id_)
         result = await self._async_session.execute(stmt)
         model = result.scalar_one_or_none()
 
         if model is None:
-            return False
+            return None
 
         await self._async_session.delete(model)
         await self._async_session.flush()
-        return True
+        return self.to_domain(model, self.domain_cls)
 
     async def list(self, limit: int = 100, offset: int = 0) -> List[D]:
         stmt = select(self.model_cls).order_by(self.model_cls.created_at.desc())

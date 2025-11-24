@@ -106,7 +106,7 @@ async def test_api_key_delete(repository: AbstractApiKeyRepository) -> None:
     assert created.id_ is not None
 
     result = await repository.delete_by_id(id_=created.id_)
-    assert result is True
+    assert result == created
 
     deleted = await repository.get_by_id(id_=created.id_)
     assert deleted is None
@@ -167,7 +167,7 @@ async def test_api_key_update_not_found(repository: AbstractApiKeyRepository) ->
 async def test_api_key_delete_not_found(repository: AbstractApiKeyRepository) -> None:
     """Test deleting a non-existent API key."""
     deleted = await repository.delete_by_id(id_="non-existent-id")
-    assert deleted is False
+    assert deleted is None
 
 
 @pytest.mark.asyncio

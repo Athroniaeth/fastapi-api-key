@@ -277,10 +277,10 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
         return result
 
-    async def delete_by_id(self, id_: str) -> bool:
+    async def delete_by_id(self, id_: str) -> D:
         result = await self._repo.delete_by_id(id_)
 
-        if not result:
+        if result is None:
             raise KeyNotFound(f"API key with ID '{id_}' not found")
 
         return result

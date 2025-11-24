@@ -97,17 +97,11 @@ class CachedApiKeyService(ApiKeyService[D]):
         await self._invalidate_cache(entity.key_id)
         return entity
 
-    async def delete_by_id(self, id_: str) -> bool:
-        # Todo : optimize db calls by returning deleted entity from repo
-        result = await self._repo.get_by_id(id_)
-
-        if result is None:
-            raise KeyNotFound(f"API key with ID '{id_}' not found")
-
+    async def delete_by_id(self, id_: str) -> D:
         # Delete cache entry on delete
-        await super().delete_by_id(id_)
-        await self._invalidate_cache(result.key_id)
-        return True
+        entity = await super().delete_by_id(id_)
+        await self._invalidate_cache(entity.key_id)
+        return entity
 
     async def _verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
         required_scopes = required_scopes or []

@@ -45,12 +45,13 @@ class InMemoryApiKeyRepository(AbstractApiKeyRepository[D]):
         self._store[entity.id_] = entity
         return entity
 
-    async def delete_by_id(self, id_: str) -> bool:
+    async def delete_by_id(self, id_: str) -> Optional[D]:
         if id_ not in self._store:
-            return False
+            return None
 
+        entity = self._store[id_]
         del self._store[id_]
-        return True
+        return entity
 
     async def list(self, limit: int = 100, offset: int = 0) -> List[D]:
         items = list(

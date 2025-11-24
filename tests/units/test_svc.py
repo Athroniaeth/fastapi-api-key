@@ -182,7 +182,7 @@ async def test_delete_by_id_success(all_possible_service: AbstractApiKeyService)
     """delete_by_id(): should delete and then get_by_id should fail."""
     entity = ApiKey(name="to-delete")
     entity, _ = await all_possible_service.create(entity)
-    assert await all_possible_service.delete_by_id(entity.id_) is True
+    assert await all_possible_service.delete_by_id(entity.id_) == entity
 
     with pytest.raises(KeyNotFound):
         await all_possible_service.get_by_id(entity.id_)
