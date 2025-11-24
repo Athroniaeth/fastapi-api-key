@@ -98,7 +98,13 @@ class CachedApiKeyService(ApiKeyService[D]):
 
         if cached_entity:
             cached_entity.ensure_can_authenticate()
-            return cached_entity
+            cached_entity.touch()
+            updated = await self._repo.update(cached_entity)
+
+            if updated is None:
+                raise KeyNotFound(f"API key with ID '{cached_entity.id_}' not found during touch update")
+
+            return updated
 
         # Search entity by a key_id (can't brute force hashes)
         entity = await self.get_by_key_id(key_id)
