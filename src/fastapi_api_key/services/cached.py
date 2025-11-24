@@ -19,6 +19,12 @@ from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.services.base import DEFAULT_SEPARATOR
 
 
+def _hash_api_key(key_id: str) -> str:
+    """Hash the API key to use as cache key (don't store raw keys) with SHA256 (faster that Bcrypt)."""
+    buffer = key_id.encode()
+    return hashlib.sha256(buffer).hexdigest()
+
+
 class CachedApiKeyService(ApiKeyService[D]):
     """API Key service with caching support (only for verify_key)."""
 
@@ -46,17 +52,9 @@ class CachedApiKeyService(ApiKeyService[D]):
         self.cache_prefix = cache_prefix
         self.cache = cache or aiocache.SimpleMemoryCache()
 
-    def _get_cache_key(self, key_id: str) -> str:
-        return f"{self.cache_prefix}:{key_id}"
-
-    def _hash_api_key(self, key_id: str) -> str:
-        """Hash the API key to use as cache key (don't store raw keys) with SHA256 (faster that Bcrypt)."""
-        buffer = key_id.encode()
-        return hashlib.sha256(buffer).hexdigest()
-
     async def _initialize_cache(self, key_id: str) -> None:
         """Helper to initialize cache for an entity, to use after any update of the entity."""
-        hash_api_key = self._hash_api_key(key_id)
+        hash_api_key = _hash_api_key(key_id)
         await self.cache.delete(hash_api_key)
 
     async def update(self, entity: D) -> D:
@@ -93,7 +91,7 @@ class CachedApiKeyService(ApiKeyService[D]):
         if global_prefix != self.global_prefix:
             raise InvalidKey("Api key is invalid (wrong global prefix)")
 
-        hash_api_key = self._hash_api_key(key_id)
+        hash_api_key = _hash_api_key(key_id)
         cached_entity = await self.cache.get(hash_api_key)
 
         if cached_entity:

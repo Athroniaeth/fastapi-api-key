@@ -17,6 +17,6 @@ This is the canonical example from `examples/example_inmemory_env.py`:
     The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
 
 ```python
---8<-- "examples/example_inmemory_env.py"
+--8<-- "examples/example_cached.py"
 ```
 

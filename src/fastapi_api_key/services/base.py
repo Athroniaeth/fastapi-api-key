@@ -346,11 +346,11 @@ class ApiKeyService(AbstractApiKeyService[D]):
         """
         try:
             parts = api_key.split(self.separator)
-
-            if len(parts) != 3:
-                raise InvalidKey("API key format is invalid (wrong number of segments).")
-
-            # global_prefix, key_id, key_secret = parts
-            return parts[0], parts[1], parts[2]
         except Exception as e:
             raise InvalidKey(f"API key format is invalid: {e}") from e
+
+        if len(parts) != 3:
+            raise InvalidKey("API key format is invalid (wrong number of segments).")
+
+        # global_prefix, key_id, key_secret = parts
+        return parts[0], parts[1], parts[2]
