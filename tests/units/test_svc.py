@@ -608,4 +608,66 @@ async def test_rrd_work_when_raises(
         with pytest.raises(type(exception)):
             await all_possible_service.verify_key(api_key)
 
-        mock_sleep.assert_awaited_once_with(0.5)
+        mock_sleep.assert_awaited()
+        delay = mock_sleep.await_args.args[0]
+        assert all_possible_service.rrd <= delay <= all_possible_service.rrd * 2
+
+
+# --- Cache invalidation and last_used_at tests ---
+
+
+@pytest.mark.asyncio
+async def test_verify_key_always_updates_last_used_at(all_possible_service: AbstractApiKeyService) -> None:
+    """verify_key(): should always update last_used_at on success, even on cache hit."""
+    entity = ApiKey(name="test-last-used")
+    entity, api_key = await all_possible_service.create(entity)
+
+    # First verify - sets last_used_at
+    result1 = await all_possible_service.verify_key(api_key)
+    last_used_1 = result1.last_used_at
+    assert last_used_1 is not None
+
+    # Small delay to ensure time difference
+    await asyncio.sleep(0.01)
+
+    # Second verify - should update last_used_at again (even if cached)
+    result2 = await all_possible_service.verify_key(api_key)
+    last_used_2 = result2.last_used_at
+    assert last_used_2 is not None
+    assert last_used_2 > last_used_1, "last_used_at should be updated on every successful verify"
+
+
+@pytest.mark.asyncio
+async def test_verify_key_fails_after_scope_removal(all_possible_service: AbstractApiKeyService) -> None:
+    """verify_key(): after removing a scope, subsequent verify with that scope should fail."""
+    entity = ApiKey(name="test-scope-removal", scopes=["read", "write"])
+    entity, api_key = await all_possible_service.create(entity)
+
+    # First verify with scopes - should succeed
+    await all_possible_service.verify_key(api_key, required_scopes=["read", "write"])
+
+    # Remove 'write' scope via update
+    entity.scopes = ["read"]
+    await all_possible_service.update(entity)
+
+    # Second verify with 'write' scope - should fail (even if cached service)
+    with pytest.raises(InvalidScopes, match=r"write"):
+        await all_possible_service.verify_key(api_key, required_scopes=["read", "write"])
+
+
+@pytest.mark.asyncio
+async def test_verify_key_fails_after_expiration_update(all_possible_service: AbstractApiKeyService) -> None:
+    """verify_key(): after setting expiration to past, subsequent verify should fail."""
+    entity = ApiKey(name="test-expiration-update")
+    entity, api_key = await all_possible_service.create(entity)
+
+    # First verify - should succeed (no expiration)
+    await all_possible_service.verify_key(api_key)
+
+    # Set expiration to past via update
+    entity.expires_at = datetime_factory() - timedelta(seconds=1)
+    await all_possible_service.update(entity)
+
+    # Second verify - should fail with KeyExpired (even if cached service)
+    with pytest.raises(KeyExpired):
+        await all_possible_service.verify_key(api_key)

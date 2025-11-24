@@ -14,8 +14,9 @@ class ApiKeyEntity(Protocol):
         expires_at (Optional[datetime]): Optional expiration datetime for the API key.
         created_at (datetime): Datetime when the API key was created.
         last_used_at (Optional[datetime]): Optional datetime when the API key was last used.
+        scopes (List[str]): List of scopes/permissions associated with the API key.
         key_id (str): Public identifier part of the API key.
-        key_hash (Optional[str]): Hashed secret part of the API key.
+        key_hash (Optional[str]): Hashed secret part of the API key. (Must be set for authentication/creation)
         _key_secret (str): The secret part of the API key, only available at creation time.
         _key_secret_first (str): First part of the secret for display purposes.
         _key_secret_last (str): Last part of the secret for display purposes.
@@ -30,7 +31,7 @@ class ApiKeyEntity(Protocol):
     last_used_at: Optional[datetime]
     scopes: List[str]
     key_id: str
-    key_hash: str
+    key_hash: Optional[str]
     _key_secret: Optional[str]
     _key_secret_first: Optional[str]
     _key_secret_last: Optional[str]

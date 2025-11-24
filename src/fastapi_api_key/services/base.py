@@ -1,5 +1,6 @@
 import asyncio
 import os
+from random import SystemRandom
 from abc import ABC, abstractmethod
 from typing import Generic, Optional, Type, Tuple, List
 
@@ -47,6 +48,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
         self.separator = separator
         self.global_prefix = global_prefix
         self.rrd = rrd
+        self._system_random = SystemRandom()
 
     @abstractmethod
     async def get_by_id(self, id_: str) -> D:
@@ -148,7 +150,9 @@ class AbstractApiKeyService(ABC, Generic[D]):
         try:
             return await self._verify_key(api_key, required_scopes)
         except Exception as e:
-            await asyncio.sleep(self.rrd)
+            # Add a small jitter to make timing-based probing harder to profile.
+            wait = self._system_random.uniform(self.rrd, self.rrd * 2)
+            await asyncio.sleep(wait)
             raise e
 
     @abstractmethod
@@ -302,17 +306,16 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
         # Search entity by a key_id (can't brute force hashes)
         entity = await self.get_by_key_id(key_id)
+        assert entity.key_hash is not None, "key_hash must be set for existing API keys"  # nosec B101
 
         # Check if the entity can be used for authentication
         # and refresh last_used_at if verified
         entity.ensure_can_authenticate()
 
-        key_hash = entity.key_hash
-
         if not key_secret:
             raise InvalidKey("API key is invalid (empty secret)")
 
-        if not self._hasher.verify(key_hash, key_secret):
+        if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
         if required_scopes:
@@ -343,11 +346,11 @@ class ApiKeyService(AbstractApiKeyService[D]):
         """
         try:
             parts = api_key.split(self.separator)
-
-            if len(parts) != 3:
-                raise InvalidKey("API key format is invalid (wrong number of segments).")
-
-            # global_prefix, key_id, key_secret = parts
-            return parts[0], parts[1], parts[2]
         except Exception as e:
             raise InvalidKey(f"API key format is invalid: {e}") from e
+
+        if len(parts) != 3:
+            raise InvalidKey("API key format is invalid (wrong number of segments).")
+
+        # global_prefix, key_id, key_secret = parts
+        return parts[0], parts[1], parts[2]

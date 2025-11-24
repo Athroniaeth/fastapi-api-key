@@ -31,9 +31,11 @@ class BcryptApiKeyHasher(BaseApiKeyHasher):
 
     def hash(self, api_key: str) -> str:
         salted_key = self._apply_pepper(api_key).encode("utf-8")
+        # Avoid exception : ValueError: password cannot be longer than 72 bytes, truncate manually if necessary (e.g. my_password[:72])
         hashed = bcrypt.hashpw(salted_key[:72], bcrypt.gensalt(self._rounds))
         return hashed.decode("utf-8")
 
     def verify(self, stored_hash: str, supplied_key: str) -> bool:
-        salted_key = self._apply_pepper(supplied_key).encode("utf-8")
+        # Ensure that verify truncates the supplied key to 72 bytes like hash()
+        salted_key = self._apply_pepper(supplied_key).encode("utf-8")[:72]
         return bcrypt.checkpw(salted_key, stored_hash.encode("utf-8"))
