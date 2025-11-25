@@ -318,15 +318,11 @@ class ApiKeyService(AbstractApiKeyService[D]):
         if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
+        # Check required scopes
         entity.ensure_valid_scopes(required_scopes)
 
-        entity.touch()
-        updated = await self._repo.update(entity)
-
-        if updated is None:
-            raise KeyNotFound(f"API key with ID '{entity.id_}' not found during touch update")
-
-        return updated
+        # Api key is valid, update last_used_at
+        return await self.touch(entity)
 
     def _get_parts(self, api_key: str) -> Tuple[str, str, str]:
         """Extract the parts of the API key string.
@@ -350,3 +346,9 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
         # global_prefix, key_id, key_secret = parts
         return parts[0], parts[1], parts[2]
+
+    async def touch(self, entity: D) -> D:
+        """Update last_used_at to now and persist the change."""
+        entity.touch()
+        await self._repo.update(entity)
+        return entity

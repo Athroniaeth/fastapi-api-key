@@ -13,7 +13,7 @@ from aiocache import BaseCache
 
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.base import D
-from fastapi_api_key.domain.errors import KeyNotProvided, InvalidKey, KeyNotFound
+from fastapi_api_key.domain.errors import KeyNotProvided, InvalidKey
 from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.services.base import DEFAULT_SEPARATOR
@@ -126,17 +126,8 @@ class CachedApiKeyService(ApiKeyService[D]):
         if cached_entity:
             # Cache hit: the full API key is correct (hash matched)
             cached_entity.ensure_can_authenticate()
-
-            # Check scopes on cache hit
             cached_entity.ensure_valid_scopes(required_scopes)
-
-            cached_entity.touch()
-            updated = await self._repo.update(cached_entity)
-
-            if updated is None:
-                raise KeyNotFound(f"API key with ID '{cached_entity.id_}' not found during touch update")
-
-            return updated
+            return await self.touch(cached_entity)
 
         # Cache miss: perform full verification (Argon2/bcrypt)
         entity = await self.get_by_key_id(key_id)
@@ -150,18 +141,13 @@ class CachedApiKeyService(ApiKeyService[D]):
         if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
-        # Check scopes on cache miss
+        # Verify required scopes
         entity.ensure_valid_scopes(required_scopes)
-
-        entity.touch()
-        updated = await self._repo.update(entity)
-
-        if updated is None:
-            raise KeyNotFound(f"API key with ID '{entity.id_}' not found during touch update")
 
         # Store in cache + create secondary index for invalidation
         index_key = self._get_index_key(key_id)
-        await self.cache.set(cache_key, updated)
+        await self.cache.set(cache_key, entity)
         await self.cache.set(index_key, cache_key)
 
-        return updated
+        # Api key is valid, update last_used_at
+        return await self.touch(entity)
