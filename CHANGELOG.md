@@ -1,3 +1,16 @@
+## 0.8.3 (2025-11-24)
+
+### Fix
+
+- **svc**: update last_used_at on cache hit and add cache behavior tests
+- **hasher**: apply consistent 72-byte truncation in bcrypt verify
+- **svc**: add jittered verify delay and update tests
+
+### Refactor
+
+- simplify _get_parts exception handling and remove dead code, rework docs
+- **domain**: make key_hash Optional in Protocol, add safety assertion
+
 ## 0.8.2 (2025-11-20)
 
 ### Fix

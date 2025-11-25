@@ -13,20 +13,39 @@ from aiocache import BaseCache
 
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.base import D
-from fastapi_api_key.domain.errors import KeyNotProvided, InvalidKey, InvalidScopes, KeyNotFound
+from fastapi_api_key.domain.errors import KeyNotProvided, InvalidKey
 from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.services.base import DEFAULT_SEPARATOR
 
+INDEX_PREFIX = "idx"
+"""Prefix for the secondary index mapping key_id to cache_key."""
 
-def _hash_api_key(key_id: str) -> str:
-    """Hash the API key to use as cache key (don't store raw keys) with SHA256 (faster that Bcrypt)."""
-    buffer = key_id.encode()
+
+def _compute_cache_key(full_api_key: str) -> str:
+    """Compute cache key from the full API key using SHA256.
+
+    This ensures the cache can only be hit if the caller knows the complete
+    API key (including the secret), providing security equivalent to the
+    non-cached verification path.
+    """
+    buffer = full_api_key.encode()
     return hashlib.sha256(buffer).hexdigest()
 
 
 class CachedApiKeyService(ApiKeyService[D]):
-    """API Key service with caching support (only for verify_key)."""
+    """API Key service with caching support (only for verify_key).
+
+    Security Model:
+        The cache uses SHA256(full_api_key) as the cache key, ensuring that
+        only requests with the correct complete API key can hit the cache.
+        A secondary index (key_id → cache_key) enables cache invalidation
+        when only the entity is available (e.g., during update/delete).
+
+    Attributes:
+        cache: The aiocache backend instance (configure TTL on the cache itself).
+        cache_prefix: Prefix for index keys (default: "api_key").
+    """
 
     cache: aiocache.BaseCache
 
@@ -52,28 +71,37 @@ class CachedApiKeyService(ApiKeyService[D]):
         self.cache_prefix = cache_prefix
         self.cache = cache or aiocache.SimpleMemoryCache()
 
-    async def _initialize_cache(self, key_id: str) -> None:
-        """Helper to initialize cache for an entity, to use after any update of the entity."""
-        hash_api_key = _hash_api_key(key_id)
-        await self.cache.delete(hash_api_key)
+    def _get_index_key(self, key_id: str) -> str:
+        """Build the secondary index key for a given key_id."""
+        return f"{self.cache_prefix}:{INDEX_PREFIX}:{key_id}"
+
+    async def _invalidate_cache(self, key_id: str) -> None:
+        """Invalidate cache entry using the secondary index.
+
+        This method retrieves the cache_key from the secondary index and
+        deletes both the main cache entry and the index entry.
+        """
+        index_key = self._get_index_key(key_id)
+
+        # Retrieve the cache_key via the secondary index
+        cache_key = await self.cache.get(index_key)
+
+        if cache_key:
+            # Delete the main cache entry and the index
+            await self.cache.delete(cache_key)
+            await self.cache.delete(index_key)
 
     async def update(self, entity: D) -> D:
         # Delete cache entry on update (useful when changing scopes or disabling)
         entity = await super().update(entity)
-        await self._initialize_cache(entity.key_id)
+        await self._invalidate_cache(entity.key_id)
         return entity
 
-    async def delete_by_id(self, id_: str) -> bool:
-        result = await self._repo.get_by_id(id_)
-
-        if result is None:
-            raise KeyNotFound(f"API key with ID '{id_}' not found")
-
+    async def delete_by_id(self, id_: str) -> D:
         # Delete cache entry on delete
-        # Todo: Found more optimized way to do this (delete_by_id return directly entity, or delete method)
-        await super().delete_by_id(id_)
-        await self._initialize_cache(result.key_id)
-        return True
+        entity = await super().delete_by_id(id_)
+        await self._invalidate_cache(entity.key_id)
+        return entity
 
     async def _verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
         required_scopes = required_scopes or []
@@ -91,23 +119,18 @@ class CachedApiKeyService(ApiKeyService[D]):
         if global_prefix != self.global_prefix:
             raise InvalidKey("Api key is invalid (wrong global prefix)")
 
-        hash_api_key = _hash_api_key(key_id)
-        cached_entity = await self.cache.get(hash_api_key)
+        # Compute cache key from the full API key (secure: requires complete key)
+        cache_key = _compute_cache_key(api_key)
+        cached_entity = await self.cache.get(cache_key)
 
         if cached_entity:
+            # Cache hit: the full API key is correct (hash matched)
             cached_entity.ensure_can_authenticate()
-            cached_entity.touch()
-            updated = await self._repo.update(cached_entity)
+            cached_entity.ensure_valid_scopes(required_scopes)
+            return await self.touch(cached_entity)
 
-            if updated is None:
-                raise KeyNotFound(f"API key with ID '{cached_entity.id_}' not found during touch update")
-
-            return updated
-
-        # Search entity by a key_id (can't brute force hashes)
+        # Cache miss: perform full verification (Argon2/bcrypt)
         entity = await self.get_by_key_id(key_id)
-        # Check if the entity can be used for authentication
-        # and refresh last_used_at if verified
         entity.ensure_can_authenticate()
 
         assert entity.key_hash is not None, "key_hash must be set for existing API keys"  # nosec B101
@@ -118,17 +141,13 @@ class CachedApiKeyService(ApiKeyService[D]):
         if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
-        if required_scopes:
-            missing_scopes = [scope for scope in required_scopes if scope not in entity.scopes]
-            missing_scopes_str = ", ".join(missing_scopes)
-            if missing_scopes:
-                raise InvalidScopes(f"API key is missing required scopes: {missing_scopes_str}")
+        # Verify required scopes
+        entity.ensure_valid_scopes(required_scopes)
 
-        entity.touch()
-        updated = await self._repo.update(entity)
+        # Store in cache + create secondary index for invalidation
+        index_key = self._get_index_key(key_id)
+        await self.cache.set(cache_key, entity)
+        await self.cache.set(index_key, cache_key)
 
-        if updated is None:
-            raise KeyNotFound(f"API key with ID '{entity.id_}' not found during touch update")
-
-        await self.cache.set(hash_api_key, updated)
-        return updated
+        # Api key is valid, update last_used_at
+        return await self.touch(entity)

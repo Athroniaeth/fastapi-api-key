@@ -43,8 +43,8 @@ class AbstractApiKeyRepository(ABC, Generic[D]):
         ...
 
     @abstractmethod
-    async def delete_by_id(self, id_: str) -> bool:
-        """Delete the model by ID and return True if deleted, False if not found."""
+    async def delete_by_id(self, id_: str) -> Optional[D]:
+        """Delete the model by ID and return the deleted entity, or None if not found."""
         ...
 
     @abstractmethod

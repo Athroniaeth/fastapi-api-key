@@ -84,6 +84,14 @@ class ApiKeyEntity(Protocol):
         """
         ...
 
+    def ensure_valid_scopes(self, required_scopes: List[str]) -> None:
+        """Raise domain error if this key does not have the required scopes.
+
+        Raises:
+            ApiKeyInsufficientScopesError: If the key does not have the required scopes.
+        """
+        ...
+
 
 D = TypeVar("D", bound=ApiKeyEntity)
 """Domain entity type variable bound to any ApiKeyEntity subclass."""
