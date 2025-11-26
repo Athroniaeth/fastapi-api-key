@@ -16,10 +16,16 @@ class ApiKeyEntity(Protocol):
         last_used_at (Optional[datetime]): Optional datetime when the API key was last used.
         scopes (List[str]): List of scopes/permissions associated with the API key.
         key_id (str): Public identifier part of the API key.
-        key_hash (Optional[str]): Hashed secret part of the API key. (Must be set for authentication/creation)
+        key_hash (str): Hashed secret part of the API key. This is set by the service
+            during creation and is required for authentication.
         _key_secret (str): The secret part of the API key, only available at creation time.
         _key_secret_first (str): First part of the secret for display purposes.
         _key_secret_last (str): Last part of the secret for display purposes.
+
+    Note:
+        Entities should be created through ApiKeyService.create() which ensures
+        all required fields (key_id, key_hash) are properly set. Direct instantiation
+        is allowed for testing and advanced use cases.
     """
 
     id_: str

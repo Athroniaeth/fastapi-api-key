@@ -146,13 +146,12 @@ def create_api_keys_router(
             `ApiKeyCreatedOut` with the plaintext API key and the created entity.
         """
 
-        entity = ApiKey(
+        entity, api_key = await svc.create(
             name=payload.name,
             description=payload.description,
             is_active=payload.is_active,
             scopes=payload.scopes,
         )
-        entity, api_key = await svc.create(entity)
         return ApiKeyCreatedOut(api_key=api_key, entity=_to_out(entity))
 
     @router.get(

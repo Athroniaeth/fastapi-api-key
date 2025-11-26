@@ -71,21 +71,15 @@ def create_api_keys_cli(
 
         async def _create() -> None:
             async with service_factory() as service:
-                payload: dict[str, Any] = {
-                    "name": name,
-                    "description": description,
-                    "is_active": not inactive,
-                }
-
                 parsed_expires = _parse_datetime(expires_at) if expires_at else None
-                if parsed_expires:
-                    payload["expires_at"] = parsed_expires
 
-                entity = service.domain_cls(  # type: ignore[call-arg]
-                    **{key: value for key, value in payload.items() if value is not None}
+                created, api_key = await service.create(
+                    name=name,
+                    description=description,
+                    is_active=not inactive,
+                    expires_at=parsed_expires,
+                    key_secret=key_secret,
                 )
-
-                created, api_key = await service.create(entity, key_secret=key_secret)
 
                 typer.secho("API key created successfully.", fg=typer.colors.GREEN)
                 typer.echo(_format_entity(created))

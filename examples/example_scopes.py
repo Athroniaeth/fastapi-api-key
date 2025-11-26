@@ -3,7 +3,7 @@ from pathlib import Path
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from fastapi_api_key import ApiKey, ApiKeyService
+from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.errors import InvalidScopes
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
@@ -34,12 +34,9 @@ async def main():
 
         svc = ApiKeyService(repo=repo, hasher=hasher)
 
-        # Create an API key without scopes
-        bad_entity = ApiKey(name="no-scope-key", scopes=["read"])
-        good_entity = ApiKey(name="with-scope-key", scopes=["write"])
-
-        _, bad_api_key = await svc.create(bad_entity)
-        _, good_api_key = await svc.create(good_entity)
+        # Create an API key without the required "write" scope
+        _, bad_api_key = await svc.create(name="no-scope-key", scopes=["read"])
+        _, good_api_key = await svc.create(name="with-scope-key", scopes=["write"])
 
         print(f"Bad API Key (no required scopes): '{bad_api_key}'")
         print(f"Good API Key (with required scopes): '{good_api_key}'")

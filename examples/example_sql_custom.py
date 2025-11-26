@@ -124,10 +124,9 @@ async def main():
         await repo.ensure_table()
 
         service = ApiKeyService(repo=repo, hasher=hasher)
-        entity = ApiKey(name="persistent")
 
         # Entity have updated id after creation
-        entity, secret = await service.create(entity)
+        entity, secret = await service.create(name="persistent")
         print("Stored key", entity.id_, "secret", secret)
 
         # Don't forget to commit the session to persist the key

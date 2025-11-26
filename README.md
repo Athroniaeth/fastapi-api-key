@@ -97,16 +97,15 @@ uv pip install -e ".[dev]"
 ```python
 import asyncio
 
-from fastapi_api_key import ApiKeyService, ApiKey
+from fastapi_api_key import ApiKeyService
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 
 
 async def main():
     repo = InMemoryApiKeyRepository()
     service = ApiKeyService(repo=repo)  # default hasher is Argon2 with a default pepper (to be changed in prod)
-    entity = ApiKey(name="docs")
 
-    entity, api_key = await service.create(entity)
+    entity, api_key = await service.create(name="docs")
     print("Give this secret to the client:", api_key)
 
     verified = await service.verify_key(api_key)
