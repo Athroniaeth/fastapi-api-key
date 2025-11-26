@@ -1,3 +1,19 @@
+## 0.10.0 (2025-11-26)
+
+### Feat
+
+- **repo**: add automatic entity<->model mapping via introspection
+- **cli**: add search command with filtering options
+- **api**: add POST /search endpoint with filtering and pagination
+- **svc**: add find() and count() methods to service layer
+- **repo**: add find() and count() methods with ApiKeyFilter
+- **svc**: add entity_factory parameter for custom entity creation
+
+### Refactor
+
+- **domain**: make ApiKeyEntity a pure protocol without implementation
+- **svc**: extract common _verify_key logic into reusable helpers
+
 ## 0.9.0 (2025-11-26)
 
 ### BREAKING CHANGE
