@@ -12,13 +12,13 @@ from datetime import datetime
 from typing import Callable, Generic, Type, TypeVar, List, overload
 from typing import Optional
 
-from sqlalchemy import String, Text, Boolean, DateTime, JSON
+from sqlalchemy import String, Text, Boolean, DateTime, JSON, func
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.repositories.base import AbstractApiKeyRepository
+from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
 from fastapi_api_key.utils import datetime_factory
 
 
@@ -245,3 +245,139 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository[D], Generic[D, M]):
         result = await self._async_session.execute(stmt)
         models = result.scalars().all()
         return [self.to_domain(m, self.domain_cls) for m in models]
+
+    def _apply_filter(self, stmt, filter: ApiKeyFilter):
+        """Apply filter criteria to a SQLAlchemy statement."""
+        # Boolean filters
+        if filter.is_active is not None:
+            stmt = stmt.where(self.model_cls.is_active == filter.is_active)
+
+        # Date filters
+        if filter.expires_before is not None:
+            stmt = stmt.where(self.model_cls.expires_at < filter.expires_before)
+
+        if filter.expires_after is not None:
+            stmt = stmt.where(self.model_cls.expires_at > filter.expires_after)
+
+        if filter.created_before is not None:
+            stmt = stmt.where(self.model_cls.created_at < filter.created_before)
+
+        if filter.created_after is not None:
+            stmt = stmt.where(self.model_cls.created_at > filter.created_after)
+
+        if filter.last_used_before is not None:
+            stmt = stmt.where(self.model_cls.last_used_at < filter.last_used_before)
+
+        if filter.last_used_after is not None:
+            stmt = stmt.where(self.model_cls.last_used_at > filter.last_used_after)
+
+        if filter.never_used is not None:
+            if filter.never_used:
+                stmt = stmt.where(self.model_cls.last_used_at.is_(None))
+            else:
+                stmt = stmt.where(self.model_cls.last_used_at.isnot(None))
+
+        # Scope filters - using JSON operations
+        # Note: SQLite JSON support is limited, we filter in Python for scopes
+        # For production with PostgreSQL, use proper JSONB operators
+
+        # Text filters
+        if filter.name_contains:
+            stmt = stmt.where(self.model_cls.name.ilike(f"%{filter.name_contains}%"))
+
+        if filter.name_exact:
+            stmt = stmt.where(self.model_cls.name == filter.name_exact)
+
+        return stmt
+
+    async def find(self, filter: ApiKeyFilter) -> List[D]:
+        stmt = select(self.model_cls)
+        stmt = self._apply_filter(stmt, filter)
+
+        # Sorting
+        order_column = getattr(self.model_cls, filter.order_by)
+        if filter.order_desc:
+            stmt = stmt.order_by(order_column.desc())
+        else:
+            stmt = stmt.order_by(order_column.asc())
+
+        # Pagination
+        stmt = stmt.limit(filter.limit).offset(filter.offset)
+
+        result = await self._async_session.execute(stmt)
+        models = result.scalars().all()
+        entities = [self.to_domain(m, self.domain_cls) for m in models]
+
+        # Apply scope filters in Python (SQLite JSON support is limited)
+        if filter.scopes_contain_all:
+            entities = [e for e in entities if all(s in e.scopes for s in filter.scopes_contain_all)]
+
+        if filter.scopes_contain_any:
+            entities = [e for e in entities if any(s in e.scopes for s in filter.scopes_contain_any)]
+
+        return entities
+
+    async def count(self, filter: Optional[ApiKeyFilter] = None) -> int:
+        stmt = select(func.count(self.model_cls.id_))
+
+        if filter:
+            # Apply same filters as find() but without pagination
+            # Boolean filters
+            if filter.is_active is not None:
+                stmt = stmt.where(self.model_cls.is_active == filter.is_active)
+
+            if filter.expires_before is not None:
+                stmt = stmt.where(self.model_cls.expires_at < filter.expires_before)
+
+            if filter.expires_after is not None:
+                stmt = stmt.where(self.model_cls.expires_at > filter.expires_after)
+
+            if filter.created_before is not None:
+                stmt = stmt.where(self.model_cls.created_at < filter.created_before)
+
+            if filter.created_after is not None:
+                stmt = stmt.where(self.model_cls.created_at > filter.created_after)
+
+            if filter.last_used_before is not None:
+                stmt = stmt.where(self.model_cls.last_used_at < filter.last_used_before)
+
+            if filter.last_used_after is not None:
+                stmt = stmt.where(self.model_cls.last_used_at > filter.last_used_after)
+
+            if filter.never_used is not None:
+                if filter.never_used:
+                    stmt = stmt.where(self.model_cls.last_used_at.is_(None))
+                else:
+                    stmt = stmt.where(self.model_cls.last_used_at.isnot(None))
+
+            if filter.name_contains:
+                stmt = stmt.where(self.model_cls.name.ilike(f"%{filter.name_contains}%"))
+
+            if filter.name_exact:
+                stmt = stmt.where(self.model_cls.name == filter.name_exact)
+
+            # For scope filters, we need to count differently since we filter in Python
+            if filter.scopes_contain_all or filter.scopes_contain_any:
+                # Fall back to find() and count results
+                entities = await self.find(
+                    ApiKeyFilter(
+                        is_active=filter.is_active,
+                        expires_before=filter.expires_before,
+                        expires_after=filter.expires_after,
+                        created_before=filter.created_before,
+                        created_after=filter.created_after,
+                        last_used_before=filter.last_used_before,
+                        last_used_after=filter.last_used_after,
+                        never_used=filter.never_used,
+                        scopes_contain_all=filter.scopes_contain_all,
+                        scopes_contain_any=filter.scopes_contain_any,
+                        name_contains=filter.name_contains,
+                        name_exact=filter.name_exact,
+                        limit=999999,
+                        offset=0,
+                    )
+                )
+                return len(entities)
+
+        result = await self._async_session.execute(stmt)
+        return result.scalar_one()
