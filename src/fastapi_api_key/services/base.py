@@ -1,11 +1,13 @@
 import asyncio
 import os
+import warnings
+from dataclasses import dataclass
 from datetime import datetime
 from random import SystemRandom
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, Type, Tuple, List, cast
+from typing import Generic, Optional, Type, Tuple, List, cast, Any, Callable
 
-from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key.domain.entities import ApiKey, default_api_key_factory
 from fastapi_api_key.domain.base import D
 from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
@@ -15,14 +17,40 @@ from fastapi_api_key.utils import datetime_factory, key_secret_factory, key_id_f
 
 DEFAULT_SEPARATOR = "-"
 """
-Default separator between key_type, key_id, key_secret in the API key string. 
+Default separator between key_type, key_id, key_secret in the API key string.
 Must be not in `token_urlsafe` alphabet. (like '.', ':', '~", '|')
 """
 DEFAULT_GLOBAL_PREFIX = "ak"
 
 
+@dataclass
+class ParsedApiKey:
+    """Result of parsing an API key string.
+
+    Attributes:
+        global_prefix: The prefix identifying the key type (e.g., "ak").
+        key_id: The public identifier part of the API key.
+        key_secret: The secret part of the API key.
+        raw: The original full API key string.
+    """
+
+    global_prefix: str
+    key_id: str
+    key_secret: str
+    raw: str
+
+
 class AbstractApiKeyService(ABC, Generic[D]):
     """Generic service contract for a domain aggregate.
+
+    Args:
+        repo: Repository for persisting API key entities.
+        hasher: Hasher for hashing secrets. Defaults to Argon2ApiKeyHasher.
+        entity_factory: Factory for creating entities. Defaults to default_api_key_factory.
+        domain_cls: Deprecated. Use entity_factory instead.
+        separator: Separator in API key format. Defaults to "-".
+        global_prefix: Prefix for API keys. Defaults to "ak".
+        rrd: Random response delay for timing attack mitigation. Defaults to 1/3.
 
     Notes:
         The global key_id is pure cosmetic, it is not used for anything else.
@@ -34,6 +62,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
         self,
         repo: AbstractApiKeyRepository[D],
         hasher: Optional[ApiKeyHasher] = None,
+        entity_factory: Optional[Callable[..., D]] = None,
         domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
@@ -45,11 +74,58 @@ class AbstractApiKeyService(ABC, Generic[D]):
 
         self._repo = repo
         self._hasher = hasher or Argon2ApiKeyHasher()
+
+        # Handle entity_factory vs deprecated domain_cls
+        if entity_factory is not None:
+            self._entity_factory: Callable[..., D] = entity_factory
+        elif domain_cls is not None:
+            warnings.warn(
+                "domain_cls is deprecated. Use entity_factory instead. domain_cls will be removed in a future version.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            # Create a wrapper factory for the class
+            self._entity_factory = self._make_factory_from_class(domain_cls)
+        else:
+            self._entity_factory = cast(Callable[..., D], default_api_key_factory)
+
+        # Keep domain_cls for backward compatibility
         self.domain_cls: Type[D] = cast(Type[D], domain_cls or ApiKey)
         self.separator = separator
         self.global_prefix = global_prefix
         self.rrd = rrd
         self._system_random = SystemRandom()
+
+    @staticmethod
+    def _make_factory_from_class(cls: Type[D]) -> Callable[..., D]:
+        """Create a factory function from a domain class.
+
+        This maintains backward compatibility with domain_cls parameter.
+        """
+
+        def factory(
+            key_id: str,
+            key_hash: str,
+            key_secret: str,
+            name: Optional[str] = None,
+            description: Optional[str] = None,
+            is_active: bool = True,
+            expires_at: Optional[datetime] = None,
+            scopes: Optional[List[str]] = None,
+            **kwargs: Any,
+        ) -> D:
+            return cls(
+                key_id=key_id,
+                key_hash=key_hash,
+                _key_secret=key_secret,
+                name=name,
+                description=description,
+                is_active=is_active,
+                expires_at=expires_at,
+                scopes=scopes or [],
+            )
+
+        return factory
 
     @abstractmethod
     async def get_by_id(self, id_: str) -> D:
@@ -198,21 +274,47 @@ class AbstractApiKeyService(ABC, Generic[D]):
 
 
 class ApiKeyService(AbstractApiKeyService[D]):
-    """Generic service contract for a domain aggregate."""
+    """Concrete implementation of the API key service.
+
+    This service handles key creation, verification, and lifecycle management.
+    It uses a factory pattern for entity creation, allowing customization.
+
+    Example:
+        Basic usage::
+
+            repo = InMemoryApiKeyRepository()
+            service = ApiKeyService(repo=repo)
+            entity, key = await service.create(name="my-key")
+
+        With custom factory::
+
+            def tenant_factory(key_id, key_hash, key_secret, tenant_id="default", **kwargs):
+                return TenantApiKey(
+                    key_id=key_id,
+                    key_hash=key_hash,
+                    _key_secret=key_secret,
+                    tenant_id=tenant_id,
+                    **kwargs,
+                )
+
+            service = ApiKeyService(repo=repo, entity_factory=tenant_factory)
+            entity, key = await service.create(name="my-key", tenant_id="tenant-123")
+    """
 
     def __init__(
         self,
         repo: AbstractApiKeyRepository[D],
         hasher: Optional[ApiKeyHasher] = None,
+        entity_factory: Optional[Callable[..., D]] = None,
         domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
         rrd: float = 1 / 3,
     ) -> None:
-        domain_cls = domain_cls or ApiKey
         super().__init__(
             repo=repo,
             hasher=hasher,
+            entity_factory=entity_factory,
             domain_cls=domain_cls,
             separator=separator,
             global_prefix=global_prefix,
@@ -272,7 +374,26 @@ class ApiKeyService(AbstractApiKeyService[D]):
         scopes: Optional[List[str]] = None,
         key_id: Optional[str] = None,
         key_secret: Optional[str] = None,
+        **kwargs: Any,
     ) -> Tuple[D, str]:
+        """Create and persist a new API key.
+
+        Args:
+            name: Optional human-friendly name for the key.
+            description: Optional description of the key's purpose.
+            is_active: Whether the key is active (default True).
+            expires_at: Optional expiration datetime.
+            scopes: Optional list of scopes/permissions.
+            key_id: Optional key identifier to use. If None, a new random one will be generated.
+            key_secret: Optional raw key secret to use. If None, a new random one will be generated.
+            **kwargs: Additional arguments passed to the entity factory.
+
+        Returns:
+            A tuple of the created entity and the full plain key string.
+
+        Raises:
+            ValueError: If expires_at is in the past.
+        """
         if expires_at and expires_at < datetime_factory():
             raise ValueError("Expiration date must be in the future")
 
@@ -280,15 +401,16 @@ class ApiKeyService(AbstractApiKeyService[D]):
         key_secret = key_secret or key_secret_factory()
 
         key_hash = self._hasher.hash(key_secret)
-        entity = self.domain_cls(
+        entity = self._entity_factory(
+            key_id=key_id,
+            key_hash=key_hash,
+            key_secret=key_secret,
             name=name,
             description=description,
             is_active=is_active,
             expires_at=expires_at,
-            scopes=scopes or [],
-            key_id=key_id,
-            key_hash=key_hash,
-            _key_secret=key_secret,
+            scopes=scopes,
+            **kwargs,
         )
 
         full_key_secret = entity.full_key_secret(
@@ -322,25 +444,61 @@ class ApiKeyService(AbstractApiKeyService[D]):
     async def _verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
         required_scopes = required_scopes or []
 
+        parsed = self._parse_and_validate_key(api_key)
+        entity = await self.get_by_key_id(parsed.key_id)
+
+        return await self._verify_entity(entity, parsed.key_secret, required_scopes)
+
+    def _parse_and_validate_key(self, api_key: Optional[str]) -> ParsedApiKey:
+        """Parse and validate the API key format.
+
+        Args:
+            api_key: The raw API key string to parse.
+
+        Returns:
+            ParsedApiKey containing the parsed parts.
+
+        Raises:
+            KeyNotProvided: If the key is None or empty.
+            InvalidKey: If the format or prefix is invalid.
+        """
         if api_key is None:
             raise KeyNotProvided("Api key must be provided (not given)")
 
         if api_key.strip() == "":
             raise KeyNotProvided("Api key must be provided (empty)")
 
-        # Get the key_id part from the plain key
         global_prefix, key_id, key_secret = self._get_parts(api_key)
 
-        # Global key_id "ak" for "api key"
         if global_prefix != self.global_prefix:
             raise InvalidKey("Api key is invalid (wrong global prefix)")
 
-        # Search entity by a key_id (can't brute force hashes)
-        entity = await self.get_by_key_id(key_id)
+        return ParsedApiKey(
+            global_prefix=global_prefix,
+            key_id=key_id,
+            key_secret=key_secret,
+            raw=api_key,
+        )
+
+    async def _verify_entity(self, entity: D, key_secret: str, required_scopes: List[str]) -> D:
+        """Verify that an entity can authenticate with the provided secret.
+
+        Args:
+            entity: The API key entity retrieved from the repository.
+            key_secret: The secret to verify against the stored hash.
+            required_scopes: The required scopes to check.
+
+        Returns:
+            The entity with updated last_used_at.
+
+        Raises:
+            KeyInactive: If the key is disabled.
+            KeyExpired: If the key is expired.
+            InvalidKey: If the hash does not match.
+            InvalidScopes: If scopes are insufficient.
+        """
         assert entity.key_hash is not None, "key_hash must be set for existing API keys"  # nosec B101
 
-        # Check if the entity can be used for authentication
-        # and refresh last_used_at if verified
         entity.ensure_can_authenticate()
 
         if not key_secret:
@@ -349,10 +507,8 @@ class ApiKeyService(AbstractApiKeyService[D]):
         if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
-        # Check required scopes
         entity.ensure_valid_scopes(required_scopes)
 
-        # Api key is valid, update last_used_at
         return await self.touch(entity)
 
     def _get_parts(self, api_key: str) -> Tuple[str, str, str]:
@@ -375,7 +531,6 @@ class ApiKeyService(AbstractApiKeyService[D]):
         if len(parts) != 3:
             raise InvalidKey("API key format is invalid (wrong number of segments).")
 
-        # global_prefix, key_id, key_secret = parts
         return parts[0], parts[1], parts[2]
 
     async def touch(self, entity: D) -> D:
