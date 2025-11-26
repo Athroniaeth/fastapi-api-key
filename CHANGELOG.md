@@ -1,3 +1,23 @@
+## 0.9.0 (2025-11-26)
+
+### BREAKING CHANGE
+
+- please ensure that if you use sql repository to check how do you use delete_by_id method, this method now return entity and not boolean who define his existence
+
+### Fix
+
+- **cached**: use full API key hash to prevent key_id-only cache hits
+
+### Refactor
+
+- **svc**: replace entity parameter with direct args in create method
+- **svc**: create touch method for simplify code of service
+- **domain**: create ensure valid scopes domain method for regroup all verification of scopes
+
+### Perf
+
+- **sql**: remove double call to db for delete method
+
 ## 0.8.3 (2025-11-24)
 
 ### Fix
