@@ -8,6 +8,7 @@ import pytest
 
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.hasher.base import ApiKeyHasher
+from fastapi_api_key.repositories.base import ApiKeyFilter
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.errors import (
@@ -883,3 +884,107 @@ async def test_create_with_custom_factory_default_kwargs(fixed_salt_hasher: ApiK
     # Create with custom rate_limit
     entity2, _ = await service.create(name="custom-rate", rate_limit=5000)
     assert entity2.rate_limit == 5000
+
+
+# --- Service find() and count() tests ---
+
+
+@pytest.mark.asyncio
+async def test_service_find_delegates_to_repo(all_possible_service: AbstractApiKeyService) -> None:
+    """find(): should delegate to repository and return matching entities."""
+    # Create some keys
+    entity1, _ = await all_possible_service.create(name="active-key", is_active=True)
+    entity2, _ = await all_possible_service.create(name="inactive-key", is_active=False)
+
+    # Find active keys
+    result = await all_possible_service.find(ApiKeyFilter(is_active=True))
+    assert len(result) == 1
+    assert result[0].id_ == entity1.id_
+
+
+@pytest.mark.asyncio
+async def test_service_find_with_multiple_filters(all_possible_service: AbstractApiKeyService) -> None:
+    """find(): should apply multiple filters."""
+    now = datetime_factory()
+
+    entity1, _ = await all_possible_service.create(
+        name="Production API",
+        is_active=True,
+        scopes=["admin"],
+        expires_at=now + timedelta(days=5),
+    )
+    entity2, _ = await all_possible_service.create(
+        name="Development API",
+        is_active=True,
+        scopes=["read"],
+        expires_at=now + timedelta(days=30),
+    )
+
+    # Find active keys with "admin" scope expiring before 10 days
+    result = await all_possible_service.find(
+        ApiKeyFilter(
+            is_active=True,
+            scopes_contain_all=["admin"],
+            expires_before=now + timedelta(days=10),
+        )
+    )
+    assert len(result) == 1
+    assert result[0].id_ == entity1.id_
+
+
+@pytest.mark.asyncio
+async def test_service_find_with_name_search(all_possible_service: AbstractApiKeyService) -> None:
+    """find(): should filter by name containing substring."""
+    await all_possible_service.create(name="Production API Key")
+    await all_possible_service.create(name="Development Key")
+    await all_possible_service.create(name="Test API")
+
+    result = await all_possible_service.find(ApiKeyFilter(name_contains="api"))
+    assert len(result) == 2
+
+
+@pytest.mark.asyncio
+async def test_service_find_with_pagination(all_possible_service: AbstractApiKeyService) -> None:
+    """find(): should support pagination."""
+    for i in range(5):
+        await all_possible_service.create(name=f"key-{i}")
+
+    result = await all_possible_service.find(ApiKeyFilter(limit=2, offset=0))
+    assert len(result) == 2
+
+    result = await all_possible_service.find(ApiKeyFilter(limit=2, offset=2))
+    assert len(result) == 2
+
+
+@pytest.mark.asyncio
+async def test_service_count_all(all_possible_service: AbstractApiKeyService) -> None:
+    """count(): should count all keys when no filter provided."""
+    for i in range(3):
+        await all_possible_service.create(name=f"key-{i}")
+
+    count = await all_possible_service.count()
+    assert count == 3
+
+
+@pytest.mark.asyncio
+async def test_service_count_with_filter(all_possible_service: AbstractApiKeyService) -> None:
+    """count(): should count keys matching the filter."""
+    await all_possible_service.create(name="active-1", is_active=True)
+    await all_possible_service.create(name="active-2", is_active=True)
+    await all_possible_service.create(name="inactive", is_active=False)
+
+    count = await all_possible_service.count(ApiKeyFilter(is_active=True))
+    assert count == 2
+
+    count = await all_possible_service.count(ApiKeyFilter(is_active=False))
+    assert count == 1
+
+
+@pytest.mark.asyncio
+async def test_service_count_ignores_pagination(all_possible_service: AbstractApiKeyService) -> None:
+    """count(): should ignore limit and offset from filter."""
+    for i in range(10):
+        await all_possible_service.create(name=f"key-{i}")
+
+    count = await all_possible_service.count(ApiKeyFilter(limit=3, offset=5))
+    assert count == 10

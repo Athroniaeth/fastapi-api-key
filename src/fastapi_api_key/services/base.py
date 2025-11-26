@@ -12,7 +12,7 @@ from fastapi_api_key.domain.base import D
 from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.hasher.base import ApiKeyHasher
-from fastapi_api_key.repositories.base import AbstractApiKeyRepository
+from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
 from fastapi_api_key.utils import datetime_factory, key_secret_factory, key_id_factory
 
 DEFAULT_SEPARATOR = "-"
@@ -211,6 +211,30 @@ class AbstractApiKeyService(ABC, Generic[D]):
     @abstractmethod
     async def list(self, limit: int = 100, offset: int = 0) -> List[D]:
         """List entities with pagination support."""
+        ...
+
+    @abstractmethod
+    async def find(self, filter: ApiKeyFilter) -> List[D]:
+        """Search entities by filtering criteria.
+
+        Args:
+            filter: Filtering criteria and pagination options.
+
+        Returns:
+            List of entities matching the criteria.
+        """
+        ...
+
+    @abstractmethod
+    async def count(self, filter: Optional[ApiKeyFilter] = None) -> int:
+        """Count entities matching the criteria.
+
+        Args:
+            filter: Filtering criteria (pagination is ignored). None = count all.
+
+        Returns:
+            Number of matching entities.
+        """
         ...
 
     async def verify_key(self, api_key: str, required_scopes: Optional[List[str]] = None) -> D:
@@ -440,6 +464,12 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
     async def list(self, limit: int = 100, offset: int = 0) -> list[D]:
         return await self._repo.list(limit=limit, offset=offset)
+
+    async def find(self, filter: ApiKeyFilter) -> List[D]:
+        return await self._repo.find(filter)
+
+    async def count(self, filter: Optional[ApiKeyFilter] = None) -> int:
+        return await self._repo.count(filter)
 
     async def _verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
         required_scopes = required_scopes or []
