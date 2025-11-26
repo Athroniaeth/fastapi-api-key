@@ -20,6 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 
+from fastapi_api_key.repositories.base import ApiKeyFilter
 from fastapi_api_key.services.base import ApiKeyService
 from fastapi_api_key.domain.entities import ApiKey, ApiKeyEntity
 from fastapi_api_key.domain.errors import (
@@ -96,6 +97,50 @@ class ApiKeyCreatedOut(BaseModel):
 
 class DeletedResponse(BaseModel):
     status: Literal["deleted"] = "deleted"
+
+
+class ApiKeySearchIn(BaseModel):
+    """Search criteria for filtering API keys.
+
+    All criteria are optional. Only provided criteria are applied (AND logic).
+    """
+
+    is_active: Optional[bool] = Field(None, description="Filter by active status")
+    expires_before: Optional[datetime] = Field(None, description="Keys expiring before this date")
+    expires_after: Optional[datetime] = Field(None, description="Keys expiring after this date")
+    created_before: Optional[datetime] = Field(None, description="Keys created before this date")
+    created_after: Optional[datetime] = Field(None, description="Keys created after this date")
+    never_used: Optional[bool] = Field(None, description="True = never used keys, False = used keys")
+    scopes_contain_all: Optional[List[str]] = Field(None, description="Keys must have ALL these scopes")
+    scopes_contain_any: Optional[List[str]] = Field(None, description="Keys must have at least ONE of these scopes")
+    name_contains: Optional[str] = Field(None, description="Name contains this substring (case-insensitive)")
+    name_exact: Optional[str] = Field(None, description="Exact name match")
+
+    def to_filter(self, limit: int = 100, offset: int = 0) -> ApiKeyFilter:
+        """Convert to ApiKeyFilter with pagination."""
+        return ApiKeyFilter(
+            is_active=self.is_active,
+            expires_before=self.expires_before,
+            expires_after=self.expires_after,
+            created_before=self.created_before,
+            created_after=self.created_after,
+            never_used=self.never_used,
+            scopes_contain_all=self.scopes_contain_all,
+            scopes_contain_any=self.scopes_contain_any,
+            name_contains=self.name_contains,
+            name_exact=self.name_exact,
+            limit=limit,
+            offset=offset,
+        )
+
+
+class ApiKeySearchOut(BaseModel):
+    """Paginated search results."""
+
+    items: List[ApiKeyOut] = Field(description="List of matching API keys")
+    total: int = Field(description="Total number of matching keys (ignoring pagination)")
+    limit: int = Field(description="Page size used")
+    offset: int = Field(description="Offset used")
 
 
 def _to_out(entity: ApiKey) -> ApiKeyOut:
@@ -177,6 +222,40 @@ def create_api_keys_router(
         """
         items = await svc.list(offset=offset, limit=limit)
         return [_to_out(e) for e in items]
+
+    @router.post(
+        path="/search",
+        response_model=ApiKeySearchOut,
+        status_code=status.HTTP_200_OK,
+        summary="Search API keys with filters",
+    )
+    async def search_api_keys(
+        payload: ApiKeySearchIn,
+        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        offset: Annotated[int, Query(ge=0, description="Items to skip")] = 0,
+        limit: Annotated[int, Query(gt=0, le=100, description="Page size")] = 50,
+    ) -> ApiKeySearchOut:
+        """Search API keys with advanced filtering criteria.
+
+        Args:
+            payload: Search criteria (all optional, AND logic).
+            svc: Injected `ApiKeyService`.
+            offset: Number of items to skip.
+            limit: Max number of items to return.
+
+        Returns:
+            Paginated search results with total count.
+        """
+        filter = payload.to_filter(limit=limit, offset=offset)
+        items = await svc.find(filter)
+        total = await svc.count(filter)
+
+        return ApiKeySearchOut(
+            items=[_to_out(e) for e in items],
+            total=total,
+            limit=limit,
+            offset=offset,
+        )
 
     @router.get(
         "/{api_key_id}",

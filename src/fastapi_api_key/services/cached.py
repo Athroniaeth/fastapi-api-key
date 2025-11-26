@@ -6,14 +6,13 @@ except ModuleNotFoundError as e:
     ) from e
 
 import hashlib
-from typing import Optional, Type, List
+from typing import Optional, Type, List, Callable
 
 import aiocache
 from aiocache import BaseCache
 
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.base import D
-from fastapi_api_key.domain.errors import KeyNotProvided, InvalidKey
 from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.services.base import DEFAULT_SEPARATOR
@@ -55,6 +54,7 @@ class CachedApiKeyService(ApiKeyService[D]):
         cache: Optional[BaseCache] = None,
         cache_prefix: str = "api_key",
         hasher: Optional[ApiKeyHasher] = None,
+        entity_factory: Optional[Callable[..., D]] = None,
         domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
@@ -63,6 +63,7 @@ class CachedApiKeyService(ApiKeyService[D]):
         super().__init__(
             repo=repo,
             hasher=hasher,
+            entity_factory=entity_factory,
             domain_cls=domain_cls,
             separator=separator,
             global_prefix=global_prefix,
@@ -106,21 +107,11 @@ class CachedApiKeyService(ApiKeyService[D]):
     async def _verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
         required_scopes = required_scopes or []
 
-        if api_key is None:
-            raise KeyNotProvided("Api key must be provided (not given)")
-
-        if api_key.strip() == "":
-            raise KeyNotProvided("Api key must be provided (empty)")
-
-        # Get the key_id part from the plain key
-        global_prefix, key_id, key_secret = self._get_parts(api_key)
-
-        # Global key_id "ak" for "api key"
-        if global_prefix != self.global_prefix:
-            raise InvalidKey("Api key is invalid (wrong global prefix)")
+        # Use parent's helper for parsing and validation
+        parsed = self._parse_and_validate_key(api_key)
 
         # Compute cache key from the full API key (secure: requires complete key)
-        cache_key = _compute_cache_key(api_key)
+        cache_key = _compute_cache_key(parsed.raw)
         cached_entity = await self.cache.get(cache_key)
 
         if cached_entity:
@@ -129,25 +120,13 @@ class CachedApiKeyService(ApiKeyService[D]):
             cached_entity.ensure_valid_scopes(required_scopes)
             return await self.touch(cached_entity)
 
-        # Cache miss: perform full verification (Argon2/bcrypt)
-        entity = await self.get_by_key_id(key_id)
-        entity.ensure_can_authenticate()
-
-        assert entity.key_hash is not None, "key_hash must be set for existing API keys"  # nosec B101
-
-        if not key_secret:
-            raise InvalidKey("API key is invalid (empty secret)")
-
-        if not self._hasher.verify(entity.key_hash, key_secret):
-            raise InvalidKey("API key is invalid (hash mismatch)")
-
-        # Verify required scopes
-        entity.ensure_valid_scopes(required_scopes)
+        # Cache miss: perform full verification via parent's helper
+        entity = await self.get_by_key_id(parsed.key_id)
+        entity = await self._verify_entity(entity, parsed.key_secret, required_scopes)
 
         # Store in cache + create secondary index for invalidation
-        index_key = self._get_index_key(key_id)
+        index_key = self._get_index_key(parsed.key_id)
         await self.cache.set(cache_key, entity)
         await self.cache.set(index_key, cache_key)
 
-        # Api key is valid, update last_used_at
-        return await self.touch(entity)
+        return entity

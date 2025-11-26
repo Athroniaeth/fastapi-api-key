@@ -1,111 +1,96 @@
+"""Example: Custom API Key with additional fields.
+
+This example demonstrates how to extend the default ApiKey entity and model
+with custom fields. Thanks to automatic introspection, you only need to:
+
+1. Create a custom dataclass extending ApiKey
+2. Create a custom SQLAlchemy model extending ApiKeyModelMixin
+3. Pass them to the repository - no need to override to_model/to_domain!
+
+The automatic mapping handles all common fields plus your custom ones.
+"""
+
+import asyncio
 import os
-from dataclasses import field, dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional, Type
+from typing import Optional
 
 from sqlalchemy import String
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
 from fastapi_api_key import ApiKeyService
-from fastapi_api_key.domain.entities import ApiKey as OldApiKey
+from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.sql import (
     SqlAlchemyApiKeyRepository,
     ApiKeyModelMixin,
 )
-import asyncio
 
 
+# 1. Define your custom SQLAlchemy Base
 class Base(DeclarativeBase): ...
 
 
+# 2. Create a custom domain entity with additional fields
 @dataclass
-class ApiKey(OldApiKey):
+class TenantApiKey(ApiKey):
+    """API Key with tenant isolation support."""
+
+    tenant_id: Optional[str] = field(default=None)
     notes: Optional[str] = field(default=None)
 
 
-class ApiKeyModel(Base, ApiKeyModelMixin):
+# 3. Create a custom SQLAlchemy model with matching columns
+class TenantApiKeyModel(Base, ApiKeyModelMixin):
+    """SQLAlchemy model with tenant support."""
+
+    tenant_id: Mapped[Optional[str]] = mapped_column(
+        String(64),
+        nullable=True,
+        index=True,  # Index for efficient tenant queries
+    )
     notes: Mapped[Optional[str]] = mapped_column(
-        String(128),
+        String(512),
         nullable=True,
     )
 
 
-class ApiKeyRepository(SqlAlchemyApiKeyRepository[ApiKey, ApiKeyModel]):
-    def __init__(
-        self,
-        async_session: AsyncSession,
-        model_cls: Type[ApiKeyModel] = ApiKeyModel,
-        domain_cls: Type[ApiKey] = ApiKey,
-    ) -> None:
-        super().__init__(
-            async_session=async_session,
-            model_cls=model_cls,
-            domain_cls=domain_cls,
-        )
-
-    @staticmethod
-    def to_model(
-        entity: ApiKey,
-        model_cls: Type[ApiKeyModel],
-        target: Optional[ApiKeyModel] = None,
-    ) -> ApiKeyModel:
-        if target is None:
-            return model_cls(
-                id_=entity.id_,
-                name=entity.name,
-                description=entity.description,
-                is_active=entity.is_active,
-                expires_at=entity.expires_at,
-                created_at=entity.created_at,
-                last_used_at=entity.last_used_at,
-                key_id=entity.key_id,
-                key_hash=entity.key_hash,
-                notes=entity.notes,
-            )
-
-        # Update existing model
-        target.name = entity.name
-        target.description = entity.description
-        target.is_active = entity.is_active
-        target.expires_at = entity.expires_at
-        target.last_used_at = entity.last_used_at
-        target.key_id = entity.key_id
-        target.key_hash = entity.key_hash  # type: ignore[invalid-assignment]
-        target.notes = entity.notes
-
-        return target
-
-    def to_domain(
-        self,
-        model: Optional[ApiKeyModel],
-        model_cls: Type[ApiKey],
-    ) -> Optional[ApiKey]:
-        if model is None:
-            return None
-
-        return model_cls(
-            id_=model.id_,
-            name=model.name,
-            description=model.description,
-            is_active=model.is_active,
-            expires_at=model.expires_at,
-            created_at=model.created_at,
-            last_used_at=model.last_used_at,
-            key_id=model.key_id,
-            key_hash=model.key_hash,
-            notes=model.notes,
-        )
+# 4. Create a factory function for your custom entity
+def tenant_api_key_factory(
+    key_id: str,
+    key_hash: str,
+    key_secret: str,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    is_active: bool = True,
+    expires_at=None,
+    scopes=None,
+    tenant_id: Optional[str] = None,
+    notes: Optional[str] = None,
+    **kwargs,
+) -> TenantApiKey:
+    """Factory for creating TenantApiKey entities."""
+    return TenantApiKey(
+        key_id=key_id,
+        key_hash=key_hash,
+        _key_secret=key_secret,
+        name=name,
+        description=description,
+        is_active=is_active,
+        expires_at=expires_at,
+        scopes=scopes or [],
+        tenant_id=tenant_id,
+        notes=notes,
+    )
 
 
-# Set env var to override default pepper
-# Using a strong, unique pepper is crucial for security
-# Default pepper is insecure and should not be used in production
+# Configuration
 pepper = os.getenv("API_KEY_PEPPER")
 hasher = Argon2ApiKeyHasher(pepper=pepper)
 
-path = Path(__file__).parent / "db.sqlite3"
+path = Path(__file__).parent / "db_custom.sqlite3"
 database_url = os.environ.get("DATABASE_URL", f"sqlite+aiosqlite:///{path}")
 
 async_engine = create_async_engine(database_url, future=True)
@@ -117,21 +102,45 @@ async_session_maker = async_sessionmaker(
 
 
 async def main():
+    # Create tables
+    async with async_engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
     async with async_session_maker() as session:
-        repo = SqlAlchemyApiKeyRepository(session)
+        # Create repository with custom model and domain classes
+        # No need to override to_model/to_domain - automatic mapping handles it!
+        repo = SqlAlchemyApiKeyRepository(
+            async_session=session,
+            model_cls=TenantApiKeyModel,
+            domain_cls=TenantApiKey,
+        )
 
-        # Don't need to create Base and ApiKeyModel, the repository does it for you
-        await repo.ensure_table()
+        # Create service with custom factory
+        service = ApiKeyService(
+            repo=repo,
+            hasher=hasher,
+            entity_factory=tenant_api_key_factory,
+        )
 
-        service = ApiKeyService(repo=repo, hasher=hasher)
+        # Create an API key with custom fields
+        entity, secret = await service.create(
+            name="tenant-key",
+            description="API key for tenant operations",
+            scopes=["read", "write"],
+            tenant_id="tenant-123",
+            notes="Created for demo purposes",
+        )
 
-        # Entity have updated id after creation
-        entity, secret = await service.create(name="persistent")
-        print("Stored key", entity.id_, "secret", secret)
+        print(f"Created key for tenant: {entity.tenant_id}")
+        print(f"Notes: {entity.notes}")
+        print(f"Secret (store securely!): {secret}")
 
-        # Don't forget to commit the session to persist the key
-        # You can also use a transaction `async with session.begin():`
         await session.commit()
 
+        # Verify the key works
+        verified = await service.verify_key(secret)
+        print(f"\nVerified! Tenant: {verified.tenant_id}")
 
-asyncio.run(main())
+
+if __name__ == "__main__":
+    asyncio.run(main())

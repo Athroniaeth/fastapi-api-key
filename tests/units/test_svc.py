@@ -8,6 +8,7 @@ import pytest
 
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.hasher.base import ApiKeyHasher
+from fastapi_api_key.repositories.base import ApiKeyFilter
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.errors import (
@@ -359,7 +360,6 @@ def test_constructor_separator_in_gp_raises(hasher: ApiKeyHasher) -> None:
         ApiKeyService(
             repo=InMemoryApiKeyRepository(),
             hasher=hasher,
-            domain_cls=ApiKey,
             separator=".",
             global_prefix="ak.",  # invalid: contains separator ('.' sep in 'ak.')
             rrd=0,
@@ -373,7 +373,6 @@ async def test_create_custom_success(hasher: ApiKeyHasher) -> None:
     svc = ApiKeyService(
         repo=repo,
         hasher=hasher,
-        domain_cls=ApiKey,
         separator=":",
         global_prefix="APIKEY",
         rrd=0,
@@ -457,7 +456,6 @@ async def test_verify_key_hashes_full_key_and_writes_to_cache_on_miss(
         cache=cache,
         cache_prefix="api_key",
         hasher=fixed_salt_hasher,
-        domain_cls=ApiKey,
         separator=DEFAULT_SEPARATOR,
         global_prefix="ak",
         rrd=0,
@@ -773,3 +771,220 @@ async def test_cache_invalidation_handles_missing_index(
     # Only index lookup should happen, no deletes
     cache.get.assert_awaited_once()
     cache.delete.assert_not_awaited()
+
+
+# --- Custom factory tests ---
+
+
+@pytest.mark.asyncio
+async def test_create_with_custom_factory(fixed_salt_hasher: ApiKeyHasher) -> None:
+    """create(): should use custom entity_factory when provided."""
+    from dataclasses import dataclass
+    from fastapi_api_key.domain.entities import ApiKey
+
+    @dataclass
+    class TenantApiKey(ApiKey):
+        """Custom API key with tenant support."""
+
+        tenant_id: str = ""
+
+    def tenant_factory(
+        key_id: str,
+        key_hash: str,
+        key_secret: str,
+        name=None,
+        description=None,
+        is_active=True,
+        expires_at=None,
+        scopes=None,
+        tenant_id: str = "default",
+        **kwargs,
+    ) -> TenantApiKey:
+        return TenantApiKey(
+            key_id=key_id,
+            key_hash=key_hash,
+            _key_secret=key_secret,
+            name=name,
+            description=description,
+            is_active=is_active,
+            expires_at=expires_at,
+            scopes=scopes or [],
+            tenant_id=tenant_id,
+        )
+
+    repo = InMemoryApiKeyRepository()
+    service = ApiKeyService(
+        repo=repo,
+        hasher=fixed_salt_hasher,
+        entity_factory=tenant_factory,
+        rrd=0,
+    )
+
+    # Create with custom tenant_id via kwargs
+    entity, api_key = await service.create(name="tenant-key", tenant_id="tenant-123")
+
+    assert isinstance(entity, TenantApiKey)
+    assert entity.tenant_id == "tenant-123"
+    assert entity.name == "tenant-key"
+
+    # Verify the key works
+    verified = await service.verify_key(api_key)
+    assert isinstance(verified, TenantApiKey)
+    assert verified.tenant_id == "tenant-123"
+
+
+@pytest.mark.asyncio
+async def test_create_with_custom_factory_default_kwargs(fixed_salt_hasher: ApiKeyHasher) -> None:
+    """create(): custom factory should use default values when kwargs not provided."""
+    from dataclasses import dataclass
+    from fastapi_api_key.domain.entities import ApiKey
+
+    @dataclass
+    class RateLimitedApiKey(ApiKey):
+        """Custom API key with rate limit."""
+
+        rate_limit: int = 1000
+
+    def rate_limited_factory(
+        key_id: str,
+        key_hash: str,
+        key_secret: str,
+        name=None,
+        description=None,
+        is_active=True,
+        expires_at=None,
+        scopes=None,
+        rate_limit: int = 1000,
+        **kwargs,
+    ) -> RateLimitedApiKey:
+        return RateLimitedApiKey(
+            key_id=key_id,
+            key_hash=key_hash,
+            _key_secret=key_secret,
+            name=name,
+            description=description,
+            is_active=is_active,
+            expires_at=expires_at,
+            scopes=scopes or [],
+            rate_limit=rate_limit,
+        )
+
+    repo = InMemoryApiKeyRepository()
+    service = ApiKeyService(
+        repo=repo,
+        hasher=fixed_salt_hasher,
+        entity_factory=rate_limited_factory,
+        rrd=0,
+    )
+
+    # Create without custom kwargs - should use default rate_limit
+    entity, _ = await service.create(name="default-rate")
+    assert entity.rate_limit == 1000
+
+    # Create with custom rate_limit
+    entity2, _ = await service.create(name="custom-rate", rate_limit=5000)
+    assert entity2.rate_limit == 5000
+
+
+# --- Service find() and count() tests ---
+
+
+@pytest.mark.asyncio
+async def test_service_find_delegates_to_repo(all_possible_service: AbstractApiKeyService) -> None:
+    """find(): should delegate to repository and return matching entities."""
+    # Create some keys
+    entity1, _ = await all_possible_service.create(name="active-key", is_active=True)
+    entity2, _ = await all_possible_service.create(name="inactive-key", is_active=False)
+
+    # Find active keys
+    result = await all_possible_service.find(ApiKeyFilter(is_active=True))
+    assert len(result) == 1
+    assert result[0].id_ == entity1.id_
+
+
+@pytest.mark.asyncio
+async def test_service_find_with_multiple_filters(all_possible_service: AbstractApiKeyService) -> None:
+    """find(): should apply multiple filters."""
+    now = datetime_factory()
+
+    entity1, _ = await all_possible_service.create(
+        name="Production API",
+        is_active=True,
+        scopes=["admin"],
+        expires_at=now + timedelta(days=5),
+    )
+    entity2, _ = await all_possible_service.create(
+        name="Development API",
+        is_active=True,
+        scopes=["read"],
+        expires_at=now + timedelta(days=30),
+    )
+
+    # Find active keys with "admin" scope expiring before 10 days
+    result = await all_possible_service.find(
+        ApiKeyFilter(
+            is_active=True,
+            scopes_contain_all=["admin"],
+            expires_before=now + timedelta(days=10),
+        )
+    )
+    assert len(result) == 1
+    assert result[0].id_ == entity1.id_
+
+
+@pytest.mark.asyncio
+async def test_service_find_with_name_search(all_possible_service: AbstractApiKeyService) -> None:
+    """find(): should filter by name containing substring."""
+    await all_possible_service.create(name="Production API Key")
+    await all_possible_service.create(name="Development Key")
+    await all_possible_service.create(name="Test API")
+
+    result = await all_possible_service.find(ApiKeyFilter(name_contains="api"))
+    assert len(result) == 2
+
+
+@pytest.mark.asyncio
+async def test_service_find_with_pagination(all_possible_service: AbstractApiKeyService) -> None:
+    """find(): should support pagination."""
+    for i in range(5):
+        await all_possible_service.create(name=f"key-{i}")
+
+    result = await all_possible_service.find(ApiKeyFilter(limit=2, offset=0))
+    assert len(result) == 2
+
+    result = await all_possible_service.find(ApiKeyFilter(limit=2, offset=2))
+    assert len(result) == 2
+
+
+@pytest.mark.asyncio
+async def test_service_count_all(all_possible_service: AbstractApiKeyService) -> None:
+    """count(): should count all keys when no filter provided."""
+    for i in range(3):
+        await all_possible_service.create(name=f"key-{i}")
+
+    count = await all_possible_service.count()
+    assert count == 3
+
+
+@pytest.mark.asyncio
+async def test_service_count_with_filter(all_possible_service: AbstractApiKeyService) -> None:
+    """count(): should count keys matching the filter."""
+    await all_possible_service.create(name="active-1", is_active=True)
+    await all_possible_service.create(name="active-2", is_active=True)
+    await all_possible_service.create(name="inactive", is_active=False)
+
+    count = await all_possible_service.count(ApiKeyFilter(is_active=True))
+    assert count == 2
+
+    count = await all_possible_service.count(ApiKeyFilter(is_active=False))
+    assert count == 1
+
+
+@pytest.mark.asyncio
+async def test_service_count_ignores_pagination(all_possible_service: AbstractApiKeyService) -> None:
+    """count(): should ignore limit and offset from filter."""
+    for i in range(10):
+        await all_possible_service.create(name=f"key-{i}")
+
+    count = await all_possible_service.count(ApiKeyFilter(limit=3, offset=5))
+    assert count == 10

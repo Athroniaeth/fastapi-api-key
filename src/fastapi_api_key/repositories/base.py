@@ -1,7 +1,55 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Generic, Optional, List
 
 from fastapi_api_key.domain.base import D
+
+
+@dataclass
+class ApiKeyFilter:
+    """Filtering criteria for searching API keys.
+
+    All criteria are optional. Only non-None criteria are applied (AND logic).
+
+    Example:
+        ```python
+        # Find active keys with "admin" scope
+        filter = ApiKeyFilter(
+            is_active=True,
+            scopes_contain_all=["admin"],
+        )
+        keys = await repo.find(filter)
+        ```
+    """
+
+    # Boolean filters
+    is_active: Optional[bool] = None
+
+    # Date filters
+    expires_before: Optional[datetime] = None
+    expires_after: Optional[datetime] = None
+    created_before: Optional[datetime] = None
+    created_after: Optional[datetime] = None
+    last_used_before: Optional[datetime] = None
+    last_used_after: Optional[datetime] = None
+    never_used: Optional[bool] = None  # True = last_used_at IS NULL
+
+    # Scope filters
+    scopes_contain_all: Optional[List[str]] = None  # AND: must have all these scopes
+    scopes_contain_any: Optional[List[str]] = None  # OR: must have at least one scope
+
+    # Text filters
+    name_contains: Optional[str] = None  # LIKE %name% (case-insensitive)
+    name_exact: Optional[str] = None  # = name (exact match)
+
+    # Pagination
+    limit: int = 100
+    offset: int = 0
+
+    # Sorting
+    order_by: str = "created_at"  # Field to sort by
+    order_desc: bool = True  # True = DESC, False = ASC
 
 
 class AbstractApiKeyRepository(ABC, Generic[D]):
@@ -50,4 +98,40 @@ class AbstractApiKeyRepository(ABC, Generic[D]):
     @abstractmethod
     async def list(self, limit: int = 100, offset: int = 0) -> List[D]:
         """List entities with pagination support."""
+        ...
+
+    @abstractmethod
+    async def find(self, filter: ApiKeyFilter) -> List[D]:
+        """Search entities by filtering criteria.
+
+        Args:
+            filter: Filtering criteria and pagination options.
+
+        Returns:
+            List of entities matching the criteria.
+
+        Example:
+            ```python
+            # Find active keys expiring in the next 7 days
+            soon = datetime.now(timezone.utc) + timedelta(days=7)
+            filter = ApiKeyFilter(
+                is_active=True,
+                expires_before=soon,
+                expires_after=datetime.now(timezone.utc),
+            )
+            expiring_keys = await repo.find(filter)
+            ```
+        """
+        ...
+
+    @abstractmethod
+    async def count(self, filter: Optional[ApiKeyFilter] = None) -> int:
+        """Count entities matching the criteria.
+
+        Args:
+            filter: Filtering criteria (pagination is ignored). None = count all.
+
+        Returns:
+            Number of matching entities.
+        """
         ...

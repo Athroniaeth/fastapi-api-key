@@ -2,8 +2,9 @@ import asyncio
 import json
 from dataclasses import asdict, is_dataclass
 from datetime import datetime, timezone
-from typing import Any, Awaitable, Callable, Optional
+from typing import Any, Awaitable, Callable, List, Optional
 from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key.repositories.base import ApiKeyFilter
 from fastapi_api_key.domain.errors import (
     InvalidKey,
     KeyExpired,
@@ -111,6 +112,74 @@ def create_api_keys_cli(
                     typer.echo("-" * 40)
 
         _execute_with_handling(run_async, _list, typer)
+
+    @cli.command("search")
+    def search_keys(  # type: ignore[misc]
+        limit: int = typer.Option(20, "--limit", "-l", min=1, help="Maximum number of keys to display."),
+        offset: int = typer.Option(0, "--offset", "-o", min=0, help="Skip the first N keys."),
+        active: Optional[bool] = typer.Option(None, "--active/--inactive", help="Filter by active status."),
+        name: Optional[str] = typer.Option(None, "--name", "-n", help="Filter by name containing (case-insensitive)."),
+        name_exact: Optional[str] = typer.Option(None, "--name-exact", help="Filter by exact name match."),
+        scopes: Optional[str] = typer.Option(
+            None, "--scopes", "-s", help="Filter by scopes (comma-separated, keys must have ALL)."
+        ),
+        scopes_any: Optional[str] = typer.Option(
+            None, "--scopes-any", help="Filter by scopes (comma-separated, keys must have at least ONE)."
+        ),
+        expires_before: Optional[str] = typer.Option(
+            None, "--expires-before", help="Keys expiring before this ISO datetime."
+        ),
+        expires_after: Optional[str] = typer.Option(
+            None, "--expires-after", help="Keys expiring after this ISO datetime."
+        ),
+        never_used: Optional[bool] = typer.Option(None, "--never-used/--used", help="Filter by usage status."),
+        count_only: bool = typer.Option(False, "--count", "-c", help="Only show the count of matching keys."),
+    ) -> None:
+        """Search API keys with advanced filters."""
+
+        async def _search() -> None:
+            async with service_factory() as service:
+                # Parse scopes
+                scopes_all: Optional[List[str]] = None
+                if scopes:
+                    scopes_all = [s.strip() for s in scopes.split(",") if s.strip()]
+
+                scopes_contain_any: Optional[List[str]] = None
+                if scopes_any:
+                    scopes_contain_any = [s.strip() for s in scopes_any.split(",") if s.strip()]
+
+                # Build filter
+                filter = ApiKeyFilter(
+                    is_active=active,
+                    name_contains=name,
+                    name_exact=name_exact,
+                    scopes_contain_all=scopes_all,
+                    scopes_contain_any=scopes_contain_any,
+                    expires_before=_parse_datetime(expires_before) if expires_before else None,
+                    expires_after=_parse_datetime(expires_after) if expires_after else None,
+                    never_used=never_used,
+                    limit=limit,
+                    offset=offset,
+                )
+
+                # Count or list
+                total = await service.count(filter)
+
+                if count_only:
+                    typer.secho(f"Total matching keys: {total}", fg=typer.colors.BLUE)
+                    return
+
+                items = await service.find(filter)
+                if not items:
+                    typer.echo("No API keys found matching the criteria.")
+                    return
+
+                typer.secho(f"Found {len(items)} of {total} matching API key(s):", fg=typer.colors.BLUE)
+                for entity in items:
+                    typer.echo(_format_entity(entity))
+                    typer.echo("-" * 40)
+
+        _execute_with_handling(run_async, _search, typer)
 
     @cli.command("show")
     def show_key(  # type: ignore[misc]

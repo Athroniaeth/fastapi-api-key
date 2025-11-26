@@ -20,7 +20,7 @@ from fastapi_api_key.domain.errors import KeyNotFound, KeyInactive, KeyExpired, 
 from fastapi_api_key.hasher.bcrypt import BcryptApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, Base
-from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key.domain.entities import ApiKey, default_api_key_factory
 from fastapi_api_key.hasher.argon2 import (
     Argon2ApiKeyHasher,
 )
@@ -219,14 +219,13 @@ def service(
     hasher: ApiKeyHasher,
 ) -> Iterator[AbstractApiKeyService[D]]:
     """Fixture to provide different AbstractApiKeyRepository implementations."""
-    domain_cls = ApiKey
     separator = "."
     global_prefix = "ak"
 
     yield service_class(
         repo=InMemoryApiKeyRepository(),
         hasher=hasher,
-        domain_cls=domain_cls,
+        entity_factory=default_api_key_factory,
         separator=separator,
         global_prefix=global_prefix,
         rrd=0,
@@ -240,14 +239,13 @@ def all_possible_service(
     fixed_salt_hasher: ApiKeyHasher,
 ) -> Iterator[AbstractApiKeyService[D]]:
     """Fixture to provide all possible AbstractApiKeyRepository implementations."""
-    domain_cls = ApiKey
     separator = "."
     global_prefix = "ak"
 
     yield service_class(
         repo=repository,
         hasher=fixed_salt_hasher,
-        domain_cls=domain_cls,
+        entity_factory=default_api_key_factory,
         separator=separator,
         global_prefix=global_prefix,
         rrd=0,

@@ -1,6 +1,6 @@
 from dataclasses import field, dataclass
 from datetime import datetime, timezone
-from typing import Optional, List
+from typing import Optional, List, Any
 
 from fastapi_api_key.domain.base import ApiKeyEntity
 from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes
@@ -63,6 +63,18 @@ class ApiKey(ApiKeyEntity):
         self.last_used_at = _normalize_datetime(self.last_used_at)
 
     @property
+    def key_secret(self) -> Optional[str]:
+        """The secret part of the API key, only available at creation time.
+
+        Warning:
+            This property clears the secret after first access for security.
+            The secret will only be returned once.
+        """
+        key_secret = self._key_secret
+        self._key_secret = None  # Clear after first access
+        return key_secret
+
+    @property
     def key_secret_first(self) -> str:
         """First part of the secret for display purposes/give the user a clue as to which key we are talking about."""
         if self._key_secret_first is not None:
@@ -116,3 +128,45 @@ class ApiKey(ApiKeyEntity):
             missing_scopes_str = ", ".join(missing_scopes)
             if missing_scopes:
                 raise InvalidScopes(f"API key is missing required scopes: {missing_scopes_str}")
+
+
+def default_api_key_factory(
+    key_id: str,
+    key_hash: str,
+    key_secret: str,
+    name: Optional[str] = None,
+    description: Optional[str] = None,
+    is_active: bool = True,
+    expires_at: Optional[datetime] = None,
+    scopes: Optional[List[str]] = None,
+    **kwargs: Any,
+) -> ApiKey:
+    """Default factory for creating ApiKey entities.
+
+    This factory is used by ApiKeyService when no custom factory is provided.
+    Extra kwargs are ignored to maintain compatibility.
+
+    Args:
+        key_id: Public identifier for the key.
+        key_hash: Hashed secret (computed by the service).
+        key_secret: Plain secret (will be cleared after first access).
+        name: Human-friendly name.
+        description: Description of the key's purpose.
+        is_active: Whether the key is active.
+        expires_at: Expiration datetime.
+        scopes: List of scopes/permissions.
+        **kwargs: Ignored (for forward compatibility).
+
+    Returns:
+        A new ApiKey instance.
+    """
+    return ApiKey(
+        key_id=key_id,
+        key_hash=key_hash,
+        _key_secret=key_secret,
+        name=name,
+        description=description,
+        is_active=is_active,
+        expires_at=expires_at,
+        scopes=scopes or [],
+    )
