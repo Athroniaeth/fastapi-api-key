@@ -1,7 +1,7 @@
 import asyncio
 import os
 
-from fastapi_api_key import ApiKeyService, ApiKey
+from fastapi_api_key import ApiKeyService
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 
@@ -20,8 +20,7 @@ service = ApiKeyService(
 
 
 async def main():
-    entity = ApiKey(name="development")
-    entity, api_key = await service.create(entity)
+    entity, api_key = await service.create(name="development")
     print("Give this secret to the client:", api_key)
 
     verified = await service.verify_key(api_key)

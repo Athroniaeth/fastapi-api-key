@@ -26,14 +26,21 @@ def _normalize_datetime(value: Optional[datetime]) -> Optional[datetime]:
 class ApiKey(ApiKeyEntity):
     """Domain entity representing an API key.
 
-    Notes:
-        The key hash must be computed in service, if this attribute is None,
-        the entity is considered invalid for storage.
+    Important:
+        Use ``ApiKeyService.create()`` to create new API keys. The service handles
+        key_id generation, secret hashing, and ensures the entity is valid for storage.
 
+    Notes:
         The full API key is not stored in the database for security reasons.
         Instead, a key_id and a hashed version of the key (key_hash) are stored.
         The full key is constructed as: {global_prefix}{separator}{key_id}{separator}{key_secret}
         where key_secret is the secret part known only to the user.
+
+    Example::
+
+        service = ApiKeyService(repo=repo, hasher=hasher)
+        entity, api_key = await service.create(name="my-key", scopes=["read"])
+        print(api_key)  # Give this to the user (shown only once)
     """
 
     id_: str = field(default_factory=uuid_factory)

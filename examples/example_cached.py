@@ -4,7 +4,7 @@ import os
 import time
 from contextlib import contextmanager
 
-from fastapi_api_key import ApiKeyService, ApiKey
+from fastapi_api_key import ApiKeyService
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.services.cached import CachedApiKeyService
@@ -42,8 +42,7 @@ async def main():
         print(f"{service.__class__.__name__}")
         print("- First operation (uncached):")
 
-        entity = ApiKey(name="dev")
-        _, api_key = await service.create(entity)
+        _, api_key = await service.create(name="dev")
 
         with benchmark(1):
             await service.verify_key(api_key)

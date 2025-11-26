@@ -1,8 +1,9 @@
 import asyncio
 import os
+from datetime import datetime
 from random import SystemRandom
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, Type, Tuple, List
+from typing import Generic, Optional, Type, Tuple, List, cast
 
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.base import D
@@ -44,7 +45,7 @@ class AbstractApiKeyService(ABC, Generic[D]):
 
         self._repo = repo
         self._hasher = hasher or Argon2ApiKeyHasher()
-        self.domain_cls = domain_cls or D
+        self.domain_cls: Type[D] = cast(Type[D], domain_cls or ApiKey)
         self.separator = separator
         self.global_prefix = global_prefix
         self.rrd = rrd
@@ -85,12 +86,25 @@ class AbstractApiKeyService(ABC, Generic[D]):
         """
 
     @abstractmethod
-    async def create(self, entity: D, key_id: Optional[str] = None, key_secret: Optional[str] = None) -> Tuple[D, str]:
+    async def create(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        is_active: bool = True,
+        expires_at: Optional[datetime] = None,
+        scopes: Optional[List[str]] = None,
+        key_id: Optional[str] = None,
+        key_secret: Optional[str] = None,
+    ) -> Tuple[D, str]:
         """Create and persist a new API key.
 
         Args:
-            entity: The entity api to create.
-            key_id: Optional raw key ID to use. If None, a new random one will be generated.
+            name: Optional human-friendly name for the key.
+            description: Optional description of the key's purpose.
+            is_active: Whether the key is active (default True).
+            expires_at: Optional expiration datetime.
+            scopes: Optional list of scopes/permissions.
+            key_id: Optional key identifier to use. If None, a new random one will be generated.
             key_secret: Optional raw key secret to use. If None, a new random one will be generated.
 
         Notes:
@@ -222,10 +236,8 @@ class ApiKeyService(AbstractApiKeyService[D]):
                 api_key,
             )
 
-            entity = ApiKey(name=key)
             await self.create(
-                entity,
-                key_id=key_id,
+                name=key,
                 key_secret=key_secret,
             )
 
@@ -251,12 +263,33 @@ class ApiKeyService(AbstractApiKeyService[D]):
 
         return entity
 
-    async def create(self, entity: D, key_id: Optional[str] = None, key_secret: Optional[str] = None) -> Tuple[D, str]:
-        if entity.expires_at and entity.expires_at < datetime_factory():
+    async def create(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        is_active: bool = True,
+        expires_at: Optional[datetime] = None,
+        scopes: Optional[List[str]] = None,
+        key_id: Optional[str] = None,
+        key_secret: Optional[str] = None,
+    ) -> Tuple[D, str]:
+        if expires_at and expires_at < datetime_factory():
             raise ValueError("Expiration date must be in the future")
 
-        key_id = key_id or entity.key_id or key_id_factory()
-        key_secret = key_secret or entity.key_secret or key_secret_factory()
+        key_id = key_id or key_id_factory()
+        key_secret = key_secret or key_secret_factory()
+
+        key_hash = self._hasher.hash(key_secret)
+        entity = self.domain_cls(
+            name=name,
+            description=description,
+            is_active=is_active,
+            expires_at=expires_at,
+            scopes=scopes or [],
+            key_id=key_id,
+            key_hash=key_hash,
+            _key_secret=key_secret,
+        )
 
         full_key_secret = entity.full_key_secret(
             global_prefix=self.global_prefix,
@@ -264,9 +297,7 @@ class ApiKeyService(AbstractApiKeyService[D]):
             key_secret=key_secret,
             separator=self.separator,
         )
-        entity.key_id = key_id
-        entity.key_hash = self._hasher.hash(key_secret)
-        entity._key_secret = key_secret
+
         return await self._repo.create(entity), full_key_secret
 
     async def update(self, entity: D) -> D:
