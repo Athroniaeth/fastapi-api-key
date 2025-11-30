@@ -1,13 +1,12 @@
 import asyncio
 import os
-import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from random import SystemRandom
 from abc import ABC, abstractmethod
-from typing import Generic, Optional, Type, Tuple, List, cast, Any, Callable
+from typing import Generic, Optional, Tuple, List, Any, Callable
 
-from fastapi_api_key.domain.entities import ApiKey, default_api_key_factory
+from fastapi_api_key.domain.entities import default_api_key_factory
 from fastapi_api_key.domain.base import D
 from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
@@ -47,7 +46,6 @@ class AbstractApiKeyService(ABC, Generic[D]):
         repo: Repository for persisting API key entities.
         hasher: Hasher for hashing secrets. Defaults to Argon2ApiKeyHasher.
         entity_factory: Factory for creating entities. Defaults to default_api_key_factory.
-        domain_cls: Deprecated. Use entity_factory instead.
         separator: Separator in API key format. Defaults to "-".
         global_prefix: Prefix for API keys. Defaults to "ak".
         rrd: Random response delay for timing attack mitigation. Defaults to 1/3.
@@ -63,7 +61,6 @@ class AbstractApiKeyService(ABC, Generic[D]):
         repo: AbstractApiKeyRepository[D],
         hasher: Optional[ApiKeyHasher] = None,
         entity_factory: Optional[Callable[..., D]] = None,
-        domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
         rrd: float = 1 / 3,
@@ -74,58 +71,12 @@ class AbstractApiKeyService(ABC, Generic[D]):
 
         self._repo = repo
         self._hasher = hasher or Argon2ApiKeyHasher()
+        self._entity_factory: Callable[..., D] = entity_factory or default_api_key_factory
 
-        # Handle entity_factory vs deprecated domain_cls
-        if entity_factory is not None:
-            self._entity_factory: Callable[..., D] = entity_factory
-        elif domain_cls is not None:
-            warnings.warn(
-                "domain_cls is deprecated. Use entity_factory instead. domain_cls will be removed in a future version.",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-            # Create a wrapper factory for the class
-            self._entity_factory = self._make_factory_from_class(domain_cls)
-        else:
-            self._entity_factory = cast(Callable[..., D], default_api_key_factory)
-
-        # Keep domain_cls for backward compatibility
-        self.domain_cls: Type[D] = cast(Type[D], domain_cls or ApiKey)
         self.separator = separator
         self.global_prefix = global_prefix
         self.rrd = rrd
         self._system_random = SystemRandom()
-
-    @staticmethod
-    def _make_factory_from_class(cls: Type[D]) -> Callable[..., D]:
-        """Create a factory function from a domain class.
-
-        This maintains backward compatibility with domain_cls parameter.
-        """
-
-        def factory(
-            key_id: str,
-            key_hash: str,
-            key_secret: str,
-            name: Optional[str] = None,
-            description: Optional[str] = None,
-            is_active: bool = True,
-            expires_at: Optional[datetime] = None,
-            scopes: Optional[List[str]] = None,
-            **kwargs: Any,
-        ) -> D:
-            return cls(
-                key_id=key_id,
-                key_hash=key_hash,
-                _key_secret=key_secret,
-                name=name,
-                description=description,
-                is_active=is_active,
-                expires_at=expires_at,
-                scopes=scopes or [],
-            )
-
-        return factory
 
     @abstractmethod
     async def get_by_id(self, id_: str) -> D:
@@ -330,7 +281,6 @@ class ApiKeyService(AbstractApiKeyService[D]):
         repo: AbstractApiKeyRepository[D],
         hasher: Optional[ApiKeyHasher] = None,
         entity_factory: Optional[Callable[..., D]] = None,
-        domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
         rrd: float = 1 / 3,
@@ -339,7 +289,6 @@ class ApiKeyService(AbstractApiKeyService[D]):
             repo=repo,
             hasher=hasher,
             entity_factory=entity_factory,
-            domain_cls=domain_cls,
             separator=separator,
             global_prefix=global_prefix,
             rrd=rrd,

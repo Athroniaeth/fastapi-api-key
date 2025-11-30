@@ -77,8 +77,8 @@ class ApiKeyRepository(SqlAlchemyApiKeyRepository[ApiKey, ApiKeyModel]):
 
         return target
 
-    @staticmethod
     def to_domain(
+        self,
         model: Optional[ApiKeyModel],
         model_cls: Type[ApiKey],
     ) -> Optional[ApiKey]:
@@ -145,7 +145,6 @@ async def inject_svc_api_keys(async_session: AsyncSession = Depends(inject_async
     return ApiKeyService(
         repo=repo,
         hasher=hasher,
-        domain_cls=ApiKey,
     )
 
 

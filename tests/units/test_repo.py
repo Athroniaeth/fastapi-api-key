@@ -574,7 +574,7 @@ async def test_auto_mapping_with_custom_fields() -> None:
     )
 
     async with async_session_maker() as session:
-        repo = SqlAlchemyApiKeyRepository(
+        repo: AbstractApiKeyRepository[CustomApiKey] = SqlAlchemyApiKeyRepository(
             async_session=session,
             model_cls=CustomApiKeyModel,
             domain_cls=CustomApiKey,
@@ -615,6 +615,7 @@ async def test_auto_mapping_with_custom_fields() -> None:
         retrieved.custom_field = "updated-value"
         updated = await repo.update(retrieved)
 
+        assert updated is not None, "Update did not return an entity"
         assert updated.tenant_id == "tenant-xyz"
         assert updated.custom_field == "updated-value"
 

@@ -6,7 +6,7 @@ except ModuleNotFoundError as e:
     ) from e
 
 import hashlib
-from typing import Optional, Type, List, Callable
+from typing import Optional, List, Callable
 
 import aiocache
 from aiocache import BaseCache
@@ -55,7 +55,6 @@ class CachedApiKeyService(ApiKeyService[D]):
         cache_prefix: str = "api_key",
         hasher: Optional[ApiKeyHasher] = None,
         entity_factory: Optional[Callable[..., D]] = None,
-        domain_cls: Optional[Type[D]] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
         rrd: float = 1 / 3,
@@ -64,7 +63,6 @@ class CachedApiKeyService(ApiKeyService[D]):
             repo=repo,
             hasher=hasher,
             entity_factory=entity_factory,
-            domain_cls=domain_cls,
             separator=separator,
             global_prefix=global_prefix,
             rrd=rrd,
