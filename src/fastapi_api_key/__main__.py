@@ -45,7 +45,7 @@ def generate(
         key_secret=key_secret,
         separator=separator,
     )
-    typer.echo(f'Set in your .env : "API_KEY_DEV: {api_key}"')
+    typer.echo(f'Set in your .env : "API_KEY_DEV={api_key}"')
     return api_key
 
 
