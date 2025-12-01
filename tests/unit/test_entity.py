@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes
+from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes, KeyHashNotSet
 from fastapi_api_key.utils import datetime_factory
 
 
@@ -219,10 +219,10 @@ class TestKeyHash:
         assert key.key_hash == "hashed-value"
 
     def test_key_hash_raises_when_not_set(self):
-        """key_hash raises ValueError when not set."""
+        """key_hash raises KeyHashNotSet when not set."""
         key = ApiKey()
 
-        with pytest.raises(ValueError, match="Key hash is not set"):
+        with pytest.raises(KeyHashNotSet, match="Key hash is not set"):
             _ = key.key_hash
 
 
