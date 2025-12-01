@@ -303,10 +303,14 @@ def create_api_keys_router(
         except KeyNotFound as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found") from exc
 
-        current.name = payload.name or current.name
-        current.description = payload.description or current.description
-        current.is_active = payload.is_active if payload.is_active is not None else current.is_active
-        current.scopes = payload.scopes if payload.scopes is not None else current.scopes
+        if payload.name is not None:
+            current.name = payload.name
+        if payload.description is not None:
+            current.description = payload.description
+        if payload.is_active is not None:
+            current.is_active = payload.is_active
+        if payload.scopes is not None:
+            current.scopes = payload.scopes
 
         try:
             updated = await svc.update(current)
