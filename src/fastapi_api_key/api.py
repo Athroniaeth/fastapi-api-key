@@ -14,7 +14,7 @@ except ModuleNotFoundError as e:
     ) from e
 
 from datetime import datetime
-from typing import Annotated, Awaitable, Callable, List, Optional, Literal, Union
+from typing import Annotated, Awaitable, Callable, List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
@@ -91,10 +91,6 @@ class ApiKeyCreatedOut(BaseModel):
 
     api_key: str
     entity: ApiKeyOut
-
-
-class DeletedResponse(BaseModel):
-    status: Literal["deleted"] = "deleted"
 
 
 class ApiKeySearchIn(BaseModel):
@@ -321,13 +317,13 @@ def create_api_keys_router(
 
     @router.delete(
         "/{api_key_id}",
-        status_code=status.HTTP_200_OK,
+        status_code=status.HTTP_204_NO_CONTENT,
         summary="Delete an API key",
     )
     async def delete_api_key(
         api_key_id: str,
         svc: ApiKeyService = Depends(depends_svc_api_keys),
-    ) -> DeletedResponse:
+    ) -> None:
         """Delete an API key by ID.
 
         Args:
@@ -341,8 +337,6 @@ def create_api_keys_router(
             await svc.delete_by_id(api_key_id)
         except KeyNotFound as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found") from exc
-
-        return DeletedResponse()
 
     @router.post("/{api_key_id}/activate", response_model=ApiKeyOut)
     async def activate_api_key(
