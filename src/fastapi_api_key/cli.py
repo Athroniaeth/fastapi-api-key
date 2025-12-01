@@ -301,8 +301,6 @@ def _execute_with_handling(
     except DomainErrors as exc:
         typer_mod.secho(str(exc), fg=typer_mod.colors.RED, err=True)
         raise typer_mod.Exit(1) from exc
-    except Exception as exc:  # pragma: no cover - defensive fallback
-        raise exc
 
 
 def _parse_datetime(value: str) -> datetime:
