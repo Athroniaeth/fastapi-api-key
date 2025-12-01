@@ -14,7 +14,7 @@ except ModuleNotFoundError as e:
     ) from e
 
 from datetime import datetime
-from typing import Annotated, Awaitable, Callable, List, Optional, TypeVar, Literal, Union
+from typing import Annotated, Awaitable, Callable, List, Optional, Literal, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
@@ -22,7 +22,7 @@ from pydantic import BaseModel, Field
 
 from fastapi_api_key.repositories.base import ApiKeyFilter
 from fastapi_api_key.services.base import ApiKeyService
-from fastapi_api_key.domain.entities import ApiKey, ApiKeyEntity
+from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.errors import (
     InvalidKey,
     KeyExpired,
@@ -31,8 +31,6 @@ from fastapi_api_key.domain.errors import (
     KeyNotProvided,
     InvalidScopes,
 )
-
-D = TypeVar("D", bound=ApiKeyEntity)
 
 
 class ApiKeyCreateIn(BaseModel):
@@ -157,7 +155,7 @@ def _to_out(entity: ApiKey) -> ApiKeyOut:
 
 
 def create_api_keys_router(
-    depends_svc_api_keys: Callable[[...], Awaitable[AbstractApiKeyService[D]]],
+    depends_svc_api_keys: Callable[..., Awaitable[AbstractApiKeyService]],
     router: Optional[APIRouter] = None,
 ) -> APIRouter:
     """Create and configure the API Keys router.
@@ -398,19 +396,15 @@ def create_api_keys_router(
         updated = await svc.update(entity)
         return _to_out(updated)
 
-    # @router.post("/{api_key_id}/rotate", response_model=ApiKeyCreatedOut)
-    # async def rotate_api_key(api_key_id: str, svc: ApiKeyService = Depends(get_service)) -> ApiKeyCreatedOut:
-    #     ...
-
     return router
 
 
 async def _handle_verify_key(
-    svc: AbstractApiKeyService[D],
+    svc: AbstractApiKeyService,
     api_key: str,
     scheme_name: str = "API Key",
     required_scopes: Optional[List[str]] = None,
-) -> D:
+) -> ApiKey:
     """Async context manager to handle key verification errors."""
     try:
         return await svc.verify_key(api_key, required_scopes=required_scopes)
@@ -450,7 +444,7 @@ async def _handle_verify_key(
 
 
 def create_depends_api_key(
-    depends_svc_api_keys: Callable[[...], Awaitable[AbstractApiKeyService[D]]],
+    depends_svc_api_keys: Callable[..., Awaitable[AbstractApiKeyService]],
     security: Optional[Union[HTTPBearer, APIKeyHeader]] = None,
     required_scopes: Optional[List[str]] = None,
 ) -> Union[SecurityHTTPBearer, SecurityAPIKeyHeader]:
@@ -482,8 +476,8 @@ def create_depends_api_key(
 
         async def _valid_api_key(
             api_key: str = Security(security),
-            svc: AbstractApiKeyService[D] = Depends(depends_svc_api_keys),
-        ) -> D:
+            svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
+        ) -> ApiKey:
             # Faster check for missing key (avoid prepare transaction etc)
             if not api_key:
                 raise HTTPException(
@@ -503,8 +497,8 @@ def create_depends_api_key(
 
         async def _valid_api_key(
             api_key: HTTPAuthorizationCredentials = Security(security),
-            svc: AbstractApiKeyService[D] = Depends(depends_svc_api_keys),
-        ) -> D:
+            svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
+        ) -> ApiKey:
             # Faster check for missing key (avoid prepare transaction etc)
             if not api_key:
                 raise HTTPException(

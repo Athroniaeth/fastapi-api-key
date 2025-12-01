@@ -1,6 +1,7 @@
+import typing
 from dataclasses import field, dataclass
 from datetime import datetime, timezone
-from typing import Optional, List, Any
+from typing import Optional, List
 
 from fastapi_api_key.domain.base import ApiKeyEntity
 from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes
@@ -9,6 +10,14 @@ from fastapi_api_key.utils import (
     datetime_factory,
     key_id_factory,
 )
+
+
+@typing.overload
+def _normalize_datetime(value: None) -> None: ...
+
+
+@typing.overload
+def _normalize_datetime(value: datetime) -> datetime: ...
 
 
 def _normalize_datetime(value: Optional[datetime]) -> Optional[datetime]:
@@ -51,16 +60,52 @@ class ApiKey(ApiKeyEntity):
     created_at: datetime = field(default_factory=datetime_factory)
     last_used_at: Optional[datetime] = None
     key_id: str = field(default_factory=key_id_factory)
-    key_hash: Optional[str] = field(default=None)
     scopes: List[str] = field(default_factory=list)
-    _key_secret: Optional[str] = field(default=None, repr=False)
-    _key_secret_first: Optional[str] = field(default=None, repr=False)
-    _key_secret_last: Optional[str] = field(default=None, repr=False)
 
-    def __post_init__(self) -> None:
-        self.created_at = _normalize_datetime(self.created_at) or datetime_factory()
-        self.expires_at = _normalize_datetime(self.expires_at)
-        self.last_used_at = _normalize_datetime(self.last_used_at)
+    # Init aliases: use public names (key_hash, key_secret, etc.) at init,
+    # stored internally as private attributes
+    _key_hash: Optional[str] = field(default=None, metadata={"alias": "key_hash"})
+    _key_secret: Optional[str] = field(default=None, repr=False, metadata={"alias": "key_secret"})
+    _key_secret_first: Optional[str] = field(default=None, repr=False, metadata={"alias": "key_secret_first"})
+    _key_secret_last: Optional[str] = field(default=None, repr=False, metadata={"alias": "key_secret_last"})
+
+    def __init__(
+        self,
+        id_: Optional[str] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        is_active: bool = True,
+        expires_at: Optional[datetime] = None,
+        created_at: Optional[datetime] = None,
+        last_used_at: Optional[datetime] = None,
+        key_id: Optional[str] = None,
+        scopes: Optional[List[str]] = None,
+        key_hash: Optional[str] = None,
+        key_secret: Optional[str] = None,
+        key_secret_first: Optional[str] = None,
+        key_secret_last: Optional[str] = None,
+    ) -> None:
+        self.id_ = id_ or uuid_factory()
+        self.name = name
+        self.description = description
+        self.is_active = is_active
+        self.expires_at = _normalize_datetime(expires_at)
+        self.created_at = _normalize_datetime(created_at) or datetime_factory()
+        self.last_used_at = _normalize_datetime(last_used_at)
+        self.key_id = key_id or key_id_factory()
+        self.scopes = scopes or []
+        self._key_hash = key_hash
+        self._key_secret = key_secret
+        self._key_secret_first = key_secret_first
+        self._key_secret_last = key_secret_last
+
+    @property
+    def key_hash(self) -> str:
+        """The hashed part of the API key used for verification."""
+        if self._key_hash is not None:
+            return self._key_hash
+
+        raise ValueError("Key hash is not set")
 
     @property
     def key_secret(self) -> Optional[str]:
@@ -97,7 +142,7 @@ class ApiKey(ApiKeyEntity):
         raise ValueError("Key secret is not set")
 
     @staticmethod
-    def full_key_secret(
+    def get_api_key(
         global_prefix: str,
         key_id: str,
         key_secret: str,
@@ -129,44 +174,13 @@ class ApiKey(ApiKeyEntity):
             if missing_scopes:
                 raise InvalidScopes(f"API key is missing required scopes: {missing_scopes_str}")
 
+    def __repr__(self):
+        return (
+            f"ApiKey(id_={self.id_!r}, name={self.name!r}, description={self.description!r}, "
+            f"is_active={self.is_active!r}, expires_at={self.expires_at!r}, created_at={self.created_at!r}, "
+            f"last_used_at={self.last_used_at!r}, key_id={self.key_id!r}, scopes={self.scopes!r}, "
+            f"key_hash={'*****...' if self._key_hash else None})"
+        )
 
-def default_api_key_factory(
-    key_id: str,
-    key_hash: str,
-    key_secret: str,
-    name: Optional[str] = None,
-    description: Optional[str] = None,
-    is_active: bool = True,
-    expires_at: Optional[datetime] = None,
-    scopes: Optional[List[str]] = None,
-    **kwargs: Any,
-) -> ApiKey:
-    """Default factory for creating ApiKey entities.
-
-    This factory is used by ApiKeyService when no custom factory is provided.
-    Extra kwargs are ignored to maintain compatibility.
-
-    Args:
-        key_id: Public identifier for the key.
-        key_hash: Hashed secret (computed by the service).
-        key_secret: Plain secret (will be cleared after first access).
-        name: Human-friendly name.
-        description: Description of the key's purpose.
-        is_active: Whether the key is active.
-        expires_at: Expiration datetime.
-        scopes: List of scopes/permissions.
-        **kwargs: Ignored (for forward compatibility).
-
-    Returns:
-        A new ApiKey instance.
-    """
-    return ApiKey(
-        key_id=key_id,
-        key_hash=key_hash,
-        _key_secret=key_secret,
-        name=name,
-        description=description,
-        is_active=is_active,
-        expires_at=expires_at,
-        scopes=scopes or [],
-    )
+    def __str__(self):
+        return self.__repr__()

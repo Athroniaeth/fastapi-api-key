@@ -13,11 +13,11 @@ class ApiKeyHasher(Protocol):
 
     _pepper: str
 
-    def hash(self, api_key: str) -> str:
+    def hash(self, key_secret: str) -> str:
         """Hash an API key into a storable string representation."""
         ...
 
-    def verify(self, stored_hash: str, supplied_key: str) -> bool:
+    def verify(self, key_hash: str, key_secret: str) -> bool:
         """Verify the supplied API key against the stored hash."""
         ...
 
@@ -45,12 +45,12 @@ class BaseApiKeyHasher(ApiKeyHasher, ABC):
         self._pepper = pepper
 
     @abstractmethod
-    def hash(self, api_key: str) -> str:
+    def hash(self, key_secret: str) -> str:
         """Hash an API key into a storable string representation."""
         ...
 
     @abstractmethod
-    def verify(self, stored_hash: str, supplied_key: str) -> bool:
+    def verify(self, key_hash: str, key_secret: str) -> bool:
         """Verify the supplied API key against the stored hash."""
         ...
 
@@ -97,38 +97,38 @@ class MockApiKeyHasher(BaseApiKeyHasher):
         """
         return f"{api_key}{self._pepper}"
 
-    def hash(self, api_key: str) -> str:
+    def hash(self, key_secret: str) -> str:
         """Generate a mock hash of the API key.
 
         This function simulates hashing by concatenating a random salt,
         the API key, and the pepper. No cryptographic operation is performed.
 
         Args:
-            api_key (str): The plain API key to "hash".
+            key_secret (str): The plain API key to "hash".
 
         Returns:
             str: A string formatted as "<salt>$<api_key_with_pepper>".
         """
         salt = _generate_salt()
-        return f"{salt}${self._apply_pepper(api_key)}"
+        return f"{salt}${self._apply_pepper(key_secret)}"
 
-    def verify(self, stored_hash: str, supplied_key: str) -> bool:
+    def verify(self, key_hash: str, key_secret: str) -> bool:
         """Verify if the supplied API key matches the stored mock hash.
 
         The method extracts the salt and the stored value, then rebuilds
         the expected mock hash format and compares it directly.
 
         Args:
-            stored_hash (str): The stored mock hash string in "<salt>$<value>" format.
-            supplied_key (str): The API key to verify.
+            key_hash (str): The stored mock hash string in "<salt>$<value>" format.
+            key_secret (str): The API key to verify.
 
         Returns:
             bool: True if the key matches the stored mock hash, False otherwise.
         """
         try:
-            salt, stored_value = stored_hash.split("$", 1)
+            salt, stored_value = key_hash.split("$", 1)
         except ValueError:
             return False
 
-        expected_value = self._apply_pepper(supplied_key)
+        expected_value = self._apply_pepper(key_secret)
         return stored_value == expected_value

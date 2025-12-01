@@ -8,7 +8,7 @@ fak generate
 ```
 
 ```bash
-Set in your .env : "API_KEY_DEV: ak-e71947d5509e48e9-Dryc0fsQRaTv9Gl7mTScMFARDE6FgwZPUnm38MlX1OSJZCYCkKi4jsoTXxEtGGNC"
+Set in your .env : "API_KEY_DEV=ak-dcde9fa8eec44aa2-n8JK2HPXoosH6UXPL5h2YeO3OdW55WESb97CKc7mbVUzFpWFQYLuDD7Xs8fbco5d"
 ```
 
 ## Example
