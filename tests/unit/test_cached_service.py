@@ -255,6 +255,61 @@ class TestCacheSecurity:
             await service.verify_key(wrong_key)
 
 
+class TestCacheTTL:
+    """Tests for cache TTL behavior."""
+
+    @pytest.mark.asyncio
+    async def test_cache_set_uses_default_ttl(
+        self,
+        mock_cache: AsyncMock,
+    ):
+        """cache.set() is called with default TTL (300 seconds)."""
+        service = CachedApiKeyService(
+            repo=InMemoryApiKeyRepository(),
+            cache=mock_cache,
+            hasher=MockApiKeyHasher(pepper="test"),
+            rrd=0,
+        )
+        entity, api_key = await service.create(name="test")
+        mock_cache.get.return_value = None  # Cache miss
+
+        await service.verify_key(api_key)
+
+        # Both cache.set calls should include ttl=300
+        for call in mock_cache.set.await_args_list:
+            assert call.kwargs.get("ttl") == 300
+
+    @pytest.mark.asyncio
+    async def test_cache_set_uses_custom_ttl(
+        self,
+        mock_cache: AsyncMock,
+    ):
+        """cache.set() uses custom TTL when provided."""
+        service = CachedApiKeyService(
+            repo=InMemoryApiKeyRepository(),
+            cache=mock_cache,
+            cache_ttl=60,
+            hasher=MockApiKeyHasher(pepper="test"),
+            rrd=0,
+        )
+        entity, api_key = await service.create(name="test")
+        mock_cache.get.return_value = None
+
+        await service.verify_key(api_key)
+
+        for call in mock_cache.set.await_args_list:
+            assert call.kwargs.get("ttl") == 60
+
+    def test_default_ttl_is_300(self):
+        """Default cache_ttl is 300 seconds (5 minutes)."""
+        service = CachedApiKeyService(
+            repo=InMemoryApiKeyRepository(),
+            hasher=MockApiKeyHasher(pepper="test"),
+            rrd=0,
+        )
+        assert service.cache_ttl == 300
+
+
 class TestDefaultCache:
     """Tests for default cache behavior."""
 
