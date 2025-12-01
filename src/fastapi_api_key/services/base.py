@@ -420,9 +420,6 @@ class ApiKeyService(AbstractApiKeyService):
         if api_key is None:
             raise KeyNotProvided("Api key must be provided (not given)")
 
-        if api_key.strip() == "":
-            raise KeyNotProvided("Api key must be provided (empty)")
-
         global_prefix, key_id, key_secret = self._get_parts(api_key)
 
         if global_prefix != self.global_prefix:
@@ -456,9 +453,6 @@ class ApiKeyService(AbstractApiKeyService):
 
         entity.ensure_can_authenticate()
 
-        if not key_secret:
-            raise InvalidKey("API key is invalid (empty secret)")
-
         if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
@@ -482,6 +476,9 @@ class ApiKeyService(AbstractApiKeyService):
 
         if len(parts) != 3:
             raise InvalidKey("API key format is invalid (wrong number of segments).")
+
+        if not all(parts):
+            raise InvalidKey("API key format is invalid (empty segment).")
 
         return parts[0], parts[1], parts[2]
 

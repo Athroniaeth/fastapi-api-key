@@ -215,8 +215,8 @@ class TestServiceVerifyKey:
 
     @pytest.mark.asyncio
     async def test_verify_empty_raises(self, service: ApiKeyService):
-        """verify_key() raises KeyNotProvided for empty string."""
-        with pytest.raises(KeyNotProvided, match="empty"):
+        """verify_key() raises InvalidKey for empty/whitespace string."""
+        with pytest.raises(InvalidKey, match="wrong number of segments"):
             await service.verify_key("   ")
 
     @pytest.mark.asyncio
@@ -230,6 +230,18 @@ class TestServiceVerifyKey:
         """verify_key() raises InvalidKey for malformed key."""
         with pytest.raises(InvalidKey, match="wrong number of segments"):
             await service.verify_key("ak.too.many.segments")
+
+    @pytest.mark.asyncio
+    async def test_verify_empty_segment_raises(self, service: ApiKeyService):
+        """verify_key() raises InvalidKey for empty segments."""
+        with pytest.raises(InvalidKey, match="empty segment"):
+            await service.verify_key("ak..secret")  # empty key_id
+
+        with pytest.raises(InvalidKey, match="empty segment"):
+            await service.verify_key(".key_id.secret")  # empty prefix
+
+        with pytest.raises(InvalidKey, match="empty segment"):
+            await service.verify_key("ak.key_id.")  # empty secret
 
     @pytest.mark.asyncio
     async def test_verify_not_found_raises(self, service: ApiKeyService):
