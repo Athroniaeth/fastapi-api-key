@@ -1,160 +1,233 @@
 """Unit tests for API key hashers.
 
-Tests each hasher implementation:
+Tests each hasher implementation with mocked backends:
 - MockApiKeyHasher (for tests)
 - Argon2ApiKeyHasher
 - BcryptApiKeyHasher
 
-All hashers must satisfy the ApiKeyHasher protocol:
-- hash() produces a non-empty string
-- verify() returns True for correct key
-- verify() returns False for wrong key
-- Different hashes for same input (salting)
-- Different pepper causes verification failure
+Focus: Testing OUR code (pepper application, error handling, parameter validation),
+NOT the underlying crypto libraries.
 """
+
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fastapi_api_key.hasher.base import ApiKeyHasher, MockApiKeyHasher, DEFAULT_PEPPER
+from fastapi_api_key.hasher.base import MockApiKeyHasher, DEFAULT_PEPPER
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.hasher.bcrypt import BcryptApiKeyHasher
 
 
+class TestMockHasher:
+    """Tests for MockApiKeyHasher."""
 
+    def test_hash_applies_pepper(self):
+        """hash() applies pepper to the key."""
+        hasher = MockApiKeyHasher(pepper="my-pepper")
+        result = hasher.hash("api-key")
 
-@pytest.fixture(params=["mock", "argon2", "bcrypt"])
-def hasher(request: pytest.FixtureRequest) -> ApiKeyHasher:
-    """Parameterized fixture providing all hasher implementations."""
-    pepper = "test-pepper-12345"
+        # Format: <salt>$<key><pepper>
+        assert "$api-keymy-pepper" in result
 
-    if request.param == "mock":
-        return MockApiKeyHasher(pepper=pepper)
-    elif request.param == "argon2":
-        return Argon2ApiKeyHasher(pepper=pepper)
-    else:
-        return BcryptApiKeyHasher(pepper=pepper, rounds=4)  # Fast for tests
+    def test_hash_includes_salt(self):
+        """hash() includes a random salt."""
+        hasher = MockApiKeyHasher(pepper="pepper")
 
+        hash1 = hasher.hash("key")
+        hash2 = hasher.hash("key")
 
+        # Different salts produce different hashes
+        assert hash1 != hash2
 
-
-class TestHasherProtocol:
-    """Tests that all hashers satisfy the ApiKeyHasher protocol."""
-
-    def test_hash_returns_non_empty_string(self, hasher: ApiKeyHasher):
-        """hash() returns a non-empty string."""
-        result = hasher.hash("my-api-key")
-
-        assert isinstance(result, str)
-        assert len(result) > 0
-
-    def test_hash_does_not_contain_raw_key(self, hasher: ApiKeyHasher):
-        """hash() output should not contain the raw key (except mock hasher)."""
-        raw_key = "my-secret-api-key-123"
-        hashed = hasher.hash(raw_key)
-
-        # MockApiKeyHasher includes key+pepper for testing purposes, skip this check
-        if isinstance(hasher, MockApiKeyHasher):
-            pytest.skip("MockApiKeyHasher intentionally includes key for testing")
-
-        assert raw_key not in hashed
-
-    def test_verify_correct_key(self, hasher: ApiKeyHasher):
+    def test_verify_correct_key(self):
         """verify() returns True for correct key."""
-        api_key = "correct-api-key"
-        hashed = hasher.hash(api_key)
+        hasher = MockApiKeyHasher(pepper="pepper")
+        hashed = hasher.hash("my-key")
 
-        assert hasher.verify(hashed, api_key) is True
+        assert hasher.verify(hashed, "my-key") is True
 
-    def test_verify_wrong_key(self, hasher: ApiKeyHasher):
+    def test_verify_wrong_key(self):
         """verify() returns False for wrong key."""
+        hasher = MockApiKeyHasher(pepper="pepper")
         hashed = hasher.hash("correct-key")
 
         assert hasher.verify(hashed, "wrong-key") is False
 
-    def test_salting_produces_different_hashes(self, hasher: ApiKeyHasher):
-        """Same key produces different hashes (salting)."""
-        api_key = "my-api-key"
+    def test_verify_invalid_format(self):
+        """verify() returns False for invalid hash format."""
+        hasher = MockApiKeyHasher(pepper="pepper")
 
-        hash1 = hasher.hash(api_key)
-        hash2 = hasher.hash(api_key)
+        assert hasher.verify("no-dollar-sign", "key") is False
 
-        assert hash1 != hash2
-
-    def test_both_hashes_verify(self, hasher: ApiKeyHasher):
-        """Both different hashes verify against same key."""
-        api_key = "my-api-key"
-
-        hash1 = hasher.hash(api_key)
-        hash2 = hasher.hash(api_key)
-
-        assert hasher.verify(hash1, api_key) is True
-        assert hasher.verify(hash2, api_key) is True
-
-
-
-
-class TestPepper:
-    """Tests for pepper behavior."""
-
-    def test_different_pepper_fails_verification(self):
+    def test_different_pepper_fails(self):
         """Hash with one pepper cannot verify with different pepper."""
         hasher1 = MockApiKeyHasher(pepper="pepper-one")
         hasher2 = MockApiKeyHasher(pepper="pepper-two")
 
-        api_key = "my-api-key"
-        hashed = hasher1.hash(api_key)
+        hashed = hasher1.hash("my-key")
 
-        assert hasher1.verify(hashed, api_key) is True
-        assert hasher2.verify(hashed, api_key) is False
+        assert hasher1.verify(hashed, "my-key") is True
+        assert hasher2.verify(hashed, "my-key") is False
 
-    def test_default_pepper_warning(self):
+
+class TestArgon2Hasher:
+    """Tests for Argon2ApiKeyHasher with mocked PasswordHasher."""
+
+    def test_hash_applies_pepper(self):
+        """hash() passes peppered key to PasswordHasher."""
+        mock_ph = MagicMock()
+        mock_ph.hash.return_value = "hashed-value"
+
+        hasher = Argon2ApiKeyHasher(pepper="my-pepper", password_hasher=mock_ph)
+        result = hasher.hash("api-key")
+
+        mock_ph.hash.assert_called_once_with("api-keymy-pepper")
+        assert result == "hashed-value"
+
+    def test_verify_applies_pepper(self):
+        """verify() passes peppered key to PasswordHasher.verify."""
+        mock_ph = MagicMock()
+        mock_ph.verify.return_value = True
+
+        hasher = Argon2ApiKeyHasher(pepper="my-pepper", password_hasher=mock_ph)
+        result = hasher.verify("stored-hash", "api-key")
+
+        mock_ph.verify.assert_called_once_with("stored-hash", "api-keymy-pepper")
+        assert result is True
+
+    def test_verify_returns_false_on_mismatch(self):
+        """verify() returns False when PasswordHasher raises VerifyMismatchError."""
+        from argon2.exceptions import VerifyMismatchError
+
+        mock_ph = MagicMock()
+        mock_ph.verify.side_effect = VerifyMismatchError()
+
+        hasher = Argon2ApiKeyHasher(pepper="pepper", password_hasher=mock_ph)
+        result = hasher.verify("hash", "wrong-key")
+
+        assert result is False
+
+    def test_verify_returns_false_on_verification_error(self):
+        """verify() returns False when PasswordHasher raises VerificationError."""
+        from argon2.exceptions import VerificationError
+
+        mock_ph = MagicMock()
+        mock_ph.verify.side_effect = VerificationError()
+
+        hasher = Argon2ApiKeyHasher(pepper="pepper", password_hasher=mock_ph)
+        result = hasher.verify("hash", "key")
+
+        assert result is False
+
+    def test_verify_returns_false_on_invalid_hash(self):
+        """verify() returns False when PasswordHasher raises InvalidHashError."""
+        from argon2.exceptions import InvalidHashError
+
+        mock_ph = MagicMock()
+        mock_ph.verify.side_effect = InvalidHashError()
+
+        hasher = Argon2ApiKeyHasher(pepper="pepper", password_hasher=mock_ph)
+        result = hasher.verify("invalid-hash", "key")
+
+        assert result is False
+
+    def test_uses_default_password_hasher_if_not_provided(self):
+        """Constructor creates default PasswordHasher if not provided."""
+        from argon2 import PasswordHasher
+
+        hasher = Argon2ApiKeyHasher(pepper="pepper")
+
+        assert isinstance(hasher._ph, PasswordHasher)
+
+
+class TestBcryptHasher:
+    """Tests for BcryptApiKeyHasher with mocked bcrypt module."""
+
+    @patch("fastapi_api_key.hasher.bcrypt.bcrypt")
+    def test_hash_applies_pepper(self, mock_bcrypt):
+        """hash() passes peppered key to bcrypt.hashpw."""
+        mock_bcrypt.gensalt.return_value = b"$2b$04$salt"
+        mock_bcrypt.hashpw.return_value = b"hashed-value"
+
+        hasher = BcryptApiKeyHasher(pepper="my-pepper", rounds=4)
+        result = hasher.hash("api-key")
+
+        # Check pepper was applied
+        call_args = mock_bcrypt.hashpw.call_args[0]
+        assert call_args[0] == b"api-keymy-pepper"
+        assert result == "hashed-value"
+
+    @patch("fastapi_api_key.hasher.bcrypt.bcrypt")
+    def test_hash_truncates_long_keys(self, mock_bcrypt):
+        """hash() truncates keys longer than 72 bytes."""
+        mock_bcrypt.gensalt.return_value = b"$2b$04$salt"
+        mock_bcrypt.hashpw.return_value = b"hashed"
+
+        hasher = BcryptApiKeyHasher(pepper="pepper", rounds=4)
+        long_key = "a" * 100
+
+        hasher.hash(long_key)
+
+        call_args = mock_bcrypt.hashpw.call_args[0]
+        assert len(call_args[0]) == 72
+
+    @patch("fastapi_api_key.hasher.bcrypt.bcrypt")
+    def test_verify_applies_pepper(self, mock_bcrypt):
+        """verify() passes peppered key to bcrypt.checkpw."""
+        mock_bcrypt.checkpw.return_value = True
+
+        hasher = BcryptApiKeyHasher(pepper="my-pepper", rounds=4)
+        result = hasher.verify("stored-hash", "api-key")
+
+        call_args = mock_bcrypt.checkpw.call_args[0]
+        assert call_args[0] == b"api-keymy-pepper"
+        assert call_args[1] == b"stored-hash"
+        assert result is True
+
+    @patch("fastapi_api_key.hasher.bcrypt.bcrypt")
+    def test_verify_truncates_long_keys(self, mock_bcrypt):
+        """verify() truncates keys longer than 72 bytes."""
+        mock_bcrypt.checkpw.return_value = True
+
+        hasher = BcryptApiKeyHasher(pepper="pepper", rounds=4)
+        long_key = "a" * 100
+
+        hasher.verify("hash", long_key)
+
+        call_args = mock_bcrypt.checkpw.call_args[0]
+        assert len(call_args[0]) == 72
+
+    def test_rounds_too_low_raises(self):
+        """Rounds below 4 raises ValueError."""
+        with pytest.raises(ValueError, match="between 4 and 31"):
+            BcryptApiKeyHasher(pepper="pepper", rounds=3)
+
+    def test_rounds_too_high_raises(self):
+        """Rounds above 31 raises ValueError."""
+        with pytest.raises(ValueError, match="between 4 and 31"):
+            BcryptApiKeyHasher(pepper="pepper", rounds=32)
+
+    def test_valid_rounds_boundary(self):
+        """Valid rounds at boundaries are accepted."""
+        hasher_min = BcryptApiKeyHasher(pepper="pepper", rounds=4)
+        hasher_max = BcryptApiKeyHasher(pepper="pepper", rounds=31)
+
+        assert hasher_min._rounds == 4
+        assert hasher_max._rounds == 31
+
+
+class TestPepperWarning:
+    """Tests for pepper warning behavior."""
+
+    def test_default_pepper_emits_warning(self):
         """Using default pepper raises a warning."""
         with pytest.warns(UserWarning, match="insecure"):
             MockApiKeyHasher(pepper=DEFAULT_PEPPER)
 
+    def test_custom_pepper_no_warning(self, recwarn):
+        """Custom pepper does not raise warning."""
+        MockApiKeyHasher(pepper="custom-secure-pepper")
 
-
-
-class TestBcryptSpecific:
-    """Tests specific to BcryptApiKeyHasher."""
-
-    def test_rounds_too_low(self):
-        """Rounds below 4 raises ValueError."""
-        with pytest.raises(ValueError, match="between 4 and 31"):
-            BcryptApiKeyHasher(pepper="test", rounds=3)
-
-    def test_rounds_too_high(self):
-        """Rounds above 31 raises ValueError."""
-        with pytest.raises(ValueError, match="between 4 and 31"):
-            BcryptApiKeyHasher(pepper="test", rounds=32)
-
-    def test_valid_rounds_accepted(self):
-        """Valid rounds (4-31) are accepted."""
-        hasher = BcryptApiKeyHasher(pepper="test", rounds=4)
-        assert hasher._rounds == 4
-
-        hasher = BcryptApiKeyHasher(pepper="test", rounds=31)
-        assert hasher._rounds == 31
-
-    def test_long_key_truncation(self):
-        """Keys longer than 72 bytes are truncated consistently."""
-        hasher = BcryptApiKeyHasher(pepper="test", rounds=4)
-
-        # Create a key longer than 72 bytes
-        long_key = "a" * 100
-        hashed = hasher.hash(long_key)
-
-        # Should still verify correctly (both hash and verify truncate)
-        assert hasher.verify(hashed, long_key) is True
-
-
-
-class TestMockHasherSpecific:
-    """Tests specific to MockApiKeyHasher."""
-
-    def test_invalid_hash_format(self):
-        """verify() returns False for invalid hash format."""
-        hasher = MockApiKeyHasher(pepper="test")
-
-        # Missing $ separator
-        assert hasher.verify("invalid-hash", "key") is False
+        # No warnings should be emitted
+        pepper_warnings = [w for w in recwarn if "insecure" in str(w.message)]
+        assert len(pepper_warnings) == 0

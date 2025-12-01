@@ -1,3 +1,5 @@
+import typing
+
 try:
     import sqlalchemy  # noqa: F401
 except ModuleNotFoundError as e:
@@ -7,7 +9,7 @@ except ModuleNotFoundError as e:
 
 
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 from sqlalchemy import String, Text, Boolean, DateTime, JSON, func
 from sqlalchemy import select
@@ -17,6 +19,8 @@ from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
 from fastapi_api_key.utils import datetime_factory
+
+NoneType = type(None)
 
 
 class Base(DeclarativeBase): ...
@@ -134,6 +138,14 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
         return target
 
     @staticmethod
+    @typing.overload
+    def _to_domain(model: NoneType) -> None: ...
+
+    @staticmethod
+    @typing.overload
+    def _to_domain(model: ApiKeyModel) -> ApiKey: ...
+
+    @staticmethod
     def _to_domain(model: Optional[ApiKeyModel]) -> Optional[ApiKey]:
         """Convert a SQLAlchemy model instance to a domain entity."""
         if model is None:
@@ -170,8 +182,9 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
         model = self._to_model(entity)
         self._async_session.add(model)
         await self._async_session.flush()
+
         result = self._to_domain(model)
-        assert result is not None  # nosec B101 - Model was just created, domain entity must exist
+        assert result is not None, "Model was just created, domain entity must exist"  # nosec B101
         return result
 
     async def update(self, entity: ApiKey) -> Optional[ApiKey]:
@@ -204,132 +217,104 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
         stmt = select(ApiKeyModel).order_by(ApiKeyModel.created_at.desc())
         stmt = stmt.limit(limit).offset(offset)
         result = await self._async_session.execute(stmt)
-        models = result.scalars().all()
-        return [self._to_domain(m) for m in models]
+        models: Sequence[ApiKeyModel] = result.scalars().all()
 
-    def _apply_filter(self, stmt, filter: ApiKeyFilter):
+        entities = [self._to_domain(m) for m in models]
+        return entities
+
+    def _apply_filter(self, stmt: sqlalchemy.Select, filter_: ApiKeyFilter) -> sqlalchemy.Select:
         """Apply filter criteria to a SQLAlchemy statement."""
         # Boolean filters
-        if filter.is_active is not None:
-            stmt = stmt.where(ApiKeyModel.is_active == filter.is_active)
+        if filter_.is_active is not None:
+            stmt = stmt.where(ApiKeyModel.is_active == filter_.is_active)
 
         # Date filters
-        if filter.expires_before is not None:
-            stmt = stmt.where(ApiKeyModel.expires_at < filter.expires_before)
+        if filter_.expires_before is not None:
+            stmt = stmt.where(ApiKeyModel.expires_at < filter_.expires_before)
 
-        if filter.expires_after is not None:
-            stmt = stmt.where(ApiKeyModel.expires_at > filter.expires_after)
+        if filter_.expires_after is not None:
+            stmt = stmt.where(ApiKeyModel.expires_at > filter_.expires_after)
 
-        if filter.created_before is not None:
-            stmt = stmt.where(ApiKeyModel.created_at < filter.created_before)
+        if filter_.created_before is not None:
+            stmt = stmt.where(ApiKeyModel.created_at < filter_.created_before)
 
-        if filter.created_after is not None:
-            stmt = stmt.where(ApiKeyModel.created_at > filter.created_after)
+        if filter_.created_after is not None:
+            stmt = stmt.where(ApiKeyModel.created_at > filter_.created_after)
 
-        if filter.last_used_before is not None:
-            stmt = stmt.where(ApiKeyModel.last_used_at < filter.last_used_before)
+        if filter_.last_used_before is not None:
+            stmt = stmt.where(ApiKeyModel.last_used_at < filter_.last_used_before)
 
-        if filter.last_used_after is not None:
-            stmt = stmt.where(ApiKeyModel.last_used_at > filter.last_used_after)
+        if filter_.last_used_after is not None:
+            stmt = stmt.where(ApiKeyModel.last_used_at > filter_.last_used_after)
 
-        if filter.never_used is not None:
-            if filter.never_used:
+        if filter_.never_used is not None:
+            if filter_.never_used:
                 stmt = stmt.where(ApiKeyModel.last_used_at.is_(None))
             else:
                 stmt = stmt.where(ApiKeyModel.last_used_at.isnot(None))
 
         # Text filters
-        if filter.name_contains:
-            stmt = stmt.where(ApiKeyModel.name.ilike(f"%{filter.name_contains}%"))
+        if filter_.name_contains:
+            stmt = stmt.where(ApiKeyModel.name.ilike(f"%{filter_.name_contains}%"))
 
-        if filter.name_exact:
-            stmt = stmt.where(ApiKeyModel.name == filter.name_exact)
+        if filter_.name_exact:
+            stmt = stmt.where(ApiKeyModel.name == filter_.name_exact)
 
         return stmt
 
-    async def find(self, filter: ApiKeyFilter) -> List[ApiKey]:
+    async def find(self, filter_: ApiKeyFilter) -> List[ApiKey]:
         stmt = select(ApiKeyModel)
-        stmt = self._apply_filter(stmt, filter)
+        stmt = self._apply_filter(stmt, filter_)
 
         # Sorting
-        order_column = getattr(ApiKeyModel, filter.order_by)
-        if filter.order_desc:
+        order_column = getattr(ApiKeyModel, filter_.order_by)
+        if filter_.order_desc:
             stmt = stmt.order_by(order_column.desc())
         else:
             stmt = stmt.order_by(order_column.asc())
 
         # Pagination
-        stmt = stmt.limit(filter.limit).offset(filter.offset)
+        stmt = stmt.limit(filter_.limit).offset(filter_.offset)
 
         result = await self._async_session.execute(stmt)
-        models = result.scalars().all()
+        models: Sequence[ApiKeyModel] = result.scalars().all()
         entities = [self._to_domain(m) for m in models]
 
         # Apply scope filters in Python (SQLite JSON support is limited)
-        if filter.scopes_contain_all:
-            entities = [e for e in entities if all(s in e.scopes for s in filter.scopes_contain_all)]
+        if filter_.scopes_contain_all:
+            entities = [e for e in entities if all(s in e.scopes for s in filter_.scopes_contain_all)]
 
-        if filter.scopes_contain_any:
-            entities = [e for e in entities if any(s in e.scopes for s in filter.scopes_contain_any)]
+        if filter_.scopes_contain_any:
+            entities = [e for e in entities if any(s in e.scopes for s in filter_.scopes_contain_any)]
 
         return entities
 
-    async def count(self, filter: Optional[ApiKeyFilter] = None) -> int:
-        stmt = select(func.count(ApiKeyModel.id_))
+    async def count(self, filter_: Optional[ApiKeyFilter] = None) -> int:
+        stmt = func.count(ApiKeyModel.id_)
+        stmt = select(stmt)
 
-        if filter:
+        if filter_:
             # Apply same filters as find() but without pagination
             # Boolean filters
-            if filter.is_active is not None:
-                stmt = stmt.where(ApiKeyModel.is_active == filter.is_active)
-
-            if filter.expires_before is not None:
-                stmt = stmt.where(ApiKeyModel.expires_at < filter.expires_before)
-
-            if filter.expires_after is not None:
-                stmt = stmt.where(ApiKeyModel.expires_at > filter.expires_after)
-
-            if filter.created_before is not None:
-                stmt = stmt.where(ApiKeyModel.created_at < filter.created_before)
-
-            if filter.created_after is not None:
-                stmt = stmt.where(ApiKeyModel.created_at > filter.created_after)
-
-            if filter.last_used_before is not None:
-                stmt = stmt.where(ApiKeyModel.last_used_at < filter.last_used_before)
-
-            if filter.last_used_after is not None:
-                stmt = stmt.where(ApiKeyModel.last_used_at > filter.last_used_after)
-
-            if filter.never_used is not None:
-                if filter.never_used:
-                    stmt = stmt.where(ApiKeyModel.last_used_at.is_(None))
-                else:
-                    stmt = stmt.where(ApiKeyModel.last_used_at.isnot(None))
-
-            if filter.name_contains:
-                stmt = stmt.where(ApiKeyModel.name.ilike(f"%{filter.name_contains}%"))
-
-            if filter.name_exact:
-                stmt = stmt.where(ApiKeyModel.name == filter.name_exact)
+            stmt = self._apply_filter(stmt, filter_)
 
             # For scope filters, we need to count differently since we filter in Python
-            if filter.scopes_contain_all or filter.scopes_contain_any:
+            if filter_.scopes_contain_all or filter_.scopes_contain_any:
                 # Fall back to find() and count results
                 entities = await self.find(
                     ApiKeyFilter(
-                        is_active=filter.is_active,
-                        expires_before=filter.expires_before,
-                        expires_after=filter.expires_after,
-                        created_before=filter.created_before,
-                        created_after=filter.created_after,
-                        last_used_before=filter.last_used_before,
-                        last_used_after=filter.last_used_after,
-                        never_used=filter.never_used,
-                        scopes_contain_all=filter.scopes_contain_all,
-                        scopes_contain_any=filter.scopes_contain_any,
-                        name_contains=filter.name_contains,
-                        name_exact=filter.name_exact,
+                        is_active=filter_.is_active,
+                        expires_before=filter_.expires_before,
+                        expires_after=filter_.expires_after,
+                        created_before=filter_.created_before,
+                        created_after=filter_.created_after,
+                        last_used_before=filter_.last_used_before,
+                        last_used_after=filter_.last_used_after,
+                        never_used=filter_.never_used,
+                        scopes_contain_all=filter_.scopes_contain_all,
+                        scopes_contain_any=filter_.scopes_contain_any,
+                        name_contains=filter_.name_contains,
+                        name_exact=filter_.name_exact,
                         limit=999999,
                         offset=0,
                     )
