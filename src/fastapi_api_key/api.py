@@ -21,7 +21,6 @@ from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredenti
 from pydantic import BaseModel, Field
 
 from fastapi_api_key.repositories.base import ApiKeyFilter
-from fastapi_api_key.services.base import ApiKeyService
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.errors import (
     InvalidKey,
@@ -173,13 +172,13 @@ def create_api_keys_router(
     )
     async def create_api_key(
         payload: ApiKeyCreateIn,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyCreatedOut:
         """Create an API key and return the plaintext secret once.
 
         Args:
             payload: Creation parameters.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Returns:
             `ApiKeyCreatedOut` with the plaintext API key and the created entity.
@@ -200,14 +199,14 @@ def create_api_keys_router(
         summary="List API keys",
     )
     async def list_api_keys(
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
         offset: Annotated[int, Query(ge=0, description="Items to skip")] = 0,
         limit: Annotated[int, Query(gt=0, le=100, description="Page size")] = 50,
     ) -> List[ApiKeyOut]:
         """List API keys with basic offset/limit pagination.
 
         Args:
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
             offset: Number of items to skip.
             limit: Max number of items to return.
 
@@ -225,7 +224,7 @@ def create_api_keys_router(
     )
     async def search_api_keys(
         payload: ApiKeySearchIn,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
         offset: Annotated[int, Query(ge=0, description="Items to skip")] = 0,
         limit: Annotated[int, Query(gt=0, le=100, description="Page size")] = 50,
     ) -> ApiKeySearchOut:
@@ -233,7 +232,7 @@ def create_api_keys_router(
 
         Args:
             payload: Search criteria (all optional, AND logic).
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
             offset: Number of items to skip.
             limit: Max number of items to return.
 
@@ -259,13 +258,13 @@ def create_api_keys_router(
     )
     async def get_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Retrieve an API key by its identifier.
 
         Args:
             api_key_id: Unique identifier of the API key.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Raises:
             HTTPException: 404 if the key does not exist.
@@ -286,14 +285,14 @@ def create_api_keys_router(
     async def update_api_key(
         api_key_id: str,
         payload: ApiKeyUpdateIn,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Partially update an API key.
 
         Args:
             api_key_id: Unique identifier of the API key to update.
             payload: Fields to update.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Raises:
             HTTPException: 404 if the key does not exist.
@@ -326,13 +325,13 @@ def create_api_keys_router(
     )
     async def delete_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
     ) -> None:
         """Delete an API key by ID.
 
         Args:
             api_key_id: Unique identifier of the API key to delete.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Raises:
             HTTPException: 404 if the key does not exist.
@@ -345,13 +344,13 @@ def create_api_keys_router(
     @router.post("/{api_key_id}/activate", response_model=ApiKeyOut)
     async def activate_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Activate an API key by ID.
 
         Args:
             api_key_id: Unique identifier of the API key to activate.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Raises:
             HTTPException: 404 if the key does not exist.
@@ -371,13 +370,13 @@ def create_api_keys_router(
     @router.post("/{api_key_id}/deactivate", response_model=ApiKeyOut)
     async def deactivate_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Deactivate an API key by ID.
 
         Args:
             api_key_id: Unique identifier of the API key to deactivate.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Raises:
             HTTPException: 404 if the key does not exist.
