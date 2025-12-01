@@ -1,11 +1,11 @@
 from datetime import datetime
 from typing import Optional, List
 
-from fastapi_api_key.domain.base import D
+from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
 
 
-class InMemoryApiKeyRepository(AbstractApiKeyRepository[D]):
+class InMemoryApiKeyRepository(AbstractApiKeyRepository):
     """In-memory implementation of the AbstractApiKeyRepository.
 
     Notes:
@@ -16,19 +16,19 @@ class InMemoryApiKeyRepository(AbstractApiKeyRepository[D]):
     """
 
     def __init__(self) -> None:
-        self._store: dict[str, D] = {}
+        self._store: dict[str, ApiKey] = {}
 
-    async def get_by_id(self, id_: str) -> Optional[D]:
+    async def get_by_id(self, id_: str) -> Optional[ApiKey]:
         return self._store.get(id_)
 
-    async def get_by_key_id(self, key_id: str) -> Optional[D]:
+    async def get_by_key_id(self, key_id: str) -> Optional[ApiKey]:
         for v in self._store.values():
             if v.key_id == key_id:
                 return v
 
         return None
 
-    async def create(self, entity: D) -> D:
+    async def create(self, entity: ApiKey) -> ApiKey:
         # Ensure that any existing entity with the same key_id is overwritten
         if entity.id_ in self._store:
             raise ValueError(f"Entity with id {entity.id_} already exists.")
@@ -39,14 +39,14 @@ class InMemoryApiKeyRepository(AbstractApiKeyRepository[D]):
         self._store[entity.id_] = entity
         return entity
 
-    async def update(self, entity: D) -> Optional[D]:
+    async def update(self, entity: ApiKey) -> Optional[ApiKey]:
         if entity.id_ not in self._store:
             return None
 
         self._store[entity.id_] = entity
         return entity
 
-    async def delete_by_id(self, id_: str) -> Optional[D]:
+    async def delete_by_id(self, id_: str) -> Optional[ApiKey]:
         if id_ not in self._store:
             return None
 
@@ -54,7 +54,7 @@ class InMemoryApiKeyRepository(AbstractApiKeyRepository[D]):
         del self._store[id_]
         return entity
 
-    async def list(self, limit: int = 100, offset: int = 0) -> List[D]:
+    async def list(self, limit: int = 100, offset: int = 0) -> List[ApiKey]:
         items = list(
             sorted(
                 self._store.values(),
@@ -64,7 +64,7 @@ class InMemoryApiKeyRepository(AbstractApiKeyRepository[D]):
         )
         return items[offset : offset + limit]
 
-    async def find(self, filter: ApiKeyFilter) -> List[D]:
+    async def find(self, filter: ApiKeyFilter) -> List[ApiKey]:
         results = list(self._store.values())
 
         # Boolean filters

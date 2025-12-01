@@ -1,16 +1,12 @@
-from dataclasses import dataclass, field
 from datetime import timedelta
-from typing import Optional
 
 import pytest
-from sqlalchemy import String
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
-from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
 
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
-from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, ApiKeyModelMixin
+from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
 from fastapi_api_key.utils import key_id_factory, datetime_factory
 from tests.conftest import make_api_key
 
@@ -534,140 +530,3 @@ async def test_count_ignores_pagination(repository: AbstractApiKeyRepository) ->
     # Count should return total, not limited count
     count = await repository.count(ApiKeyFilter(limit=3, offset=5))
     assert count == 10
-
-
-# =============================================================================
-# Tests for automatic mapping with custom fields
-# =============================================================================
-
-
-class CustomBase(DeclarativeBase): ...
-
-
-@dataclass
-class CustomApiKey(ApiKey):
-    """Custom API key with additional fields for testing."""
-
-    tenant_id: Optional[str] = field(default=None)
-    custom_field: Optional[str] = field(default=None)
-
-
-class CustomApiKeyModel(CustomBase, ApiKeyModelMixin):
-    """Custom SQLAlchemy model with additional columns."""
-
-    tenant_id: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
-    custom_field: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
-
-
-@pytest.mark.asyncio
-async def test_auto_mapping_with_custom_fields() -> None:
-    """to_model/to_domain: should automatically map custom fields."""
-    async_engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
-
-    async with async_engine.begin() as conn:
-        await conn.run_sync(CustomBase.metadata.create_all)
-
-    async_session_maker = async_sessionmaker(
-        async_engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
-
-    async with async_session_maker() as session:
-        repo: AbstractApiKeyRepository[CustomApiKey] = SqlAlchemyApiKeyRepository(
-            async_session=session,
-            model_cls=CustomApiKeyModel,
-            domain_cls=CustomApiKey,
-        )
-
-        # Create entity with custom fields
-        original = make_api_key()
-        custom_entity = CustomApiKey(
-            id_=original.id_,
-            name=original.name,
-            description=original.description,
-            is_active=original.is_active,
-            expires_at=original.expires_at,
-            created_at=original.created_at,
-            key_id=original.key_id,
-            key_hash=original.key_hash,
-            _key_secret=original._key_secret,
-            scopes=original.scopes,
-            tenant_id="tenant-abc",
-            custom_field="custom-value",
-        )
-
-        # Create and retrieve
-        created = await repo.create(custom_entity)
-
-        assert isinstance(created, CustomApiKey)
-        assert created.tenant_id == "tenant-abc"
-        assert created.custom_field == "custom-value"
-
-        # Verify retrieval
-        retrieved = await repo.get_by_id(created.id_)
-        assert isinstance(retrieved, CustomApiKey)
-        assert retrieved.tenant_id == "tenant-abc"
-        assert retrieved.custom_field == "custom-value"
-
-        # Verify update
-        retrieved.tenant_id = "tenant-xyz"
-        retrieved.custom_field = "updated-value"
-        updated = await repo.update(retrieved)
-
-        assert updated is not None, "Update did not return an entity"
-        assert updated.tenant_id == "tenant-xyz"
-        assert updated.custom_field == "updated-value"
-
-    await async_engine.dispose()
-
-
-@pytest.mark.asyncio
-async def test_auto_mapping_preserves_base_fields() -> None:
-    """to_model/to_domain: custom fields should not break base field mapping."""
-    async_engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
-
-    async with async_engine.begin() as conn:
-        await conn.run_sync(CustomBase.metadata.create_all)
-
-    async_session_maker = async_sessionmaker(
-        async_engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
-
-    async with async_session_maker() as session:
-        repo = SqlAlchemyApiKeyRepository(
-            async_session=session,
-            model_cls=CustomApiKeyModel,
-            domain_cls=CustomApiKey,
-        )
-
-        original = make_api_key()
-        custom_entity = CustomApiKey(
-            id_=original.id_,
-            name="test-name",
-            description="test-description",
-            is_active=True,
-            expires_at=original.expires_at,
-            created_at=original.created_at,
-            key_id=original.key_id,
-            key_hash=original.key_hash,
-            _key_secret=original._key_secret,
-            scopes=["read", "write", "admin"],
-            tenant_id="tenant-123",
-            custom_field=None,
-        )
-
-        created = await repo.create(custom_entity)
-
-        # Verify all base fields are preserved
-        assert created.id_ == original.id_
-        assert created.name == "test-name"
-        assert created.description == "test-description"
-        assert created.is_active is True
-        assert created.key_id == original.key_id
-        assert created.key_hash == original.key_hash
-        assert created.scopes == ["read", "write", "admin"]
-
-    await async_engine.dispose()

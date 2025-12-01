@@ -143,12 +143,9 @@ async def test_update_success(all_possible_service: AbstractApiKeyService) -> No
     entity.name = "updated-name"
     entity.scopes = ["read", "write"]
 
-    # Imagine that user make rotation, so we set these for display purposes
-    entity._key_secret_first = "xxxx"
-    entity._key_secret_last = "xxxx"
-
     updated = await all_possible_service.update(entity)
-    assert updated == entity
+    assert updated.name == "updated-name"
+    assert updated.scopes == ["read", "write"]
 
 
 @pytest.mark.asyncio
@@ -771,119 +768,6 @@ async def test_cache_invalidation_handles_missing_index(
     # Only index lookup should happen, no deletes
     cache.get.assert_awaited_once()
     cache.delete.assert_not_awaited()
-
-
-# --- Custom factory tests ---
-
-
-@pytest.mark.asyncio
-async def test_create_with_custom_factory(fixed_salt_hasher: ApiKeyHasher) -> None:
-    """create(): should use custom entity_factory when provided."""
-    from dataclasses import dataclass
-    from fastapi_api_key.domain.entities import ApiKey
-
-    @dataclass
-    class TenantApiKey(ApiKey):
-        """Custom API key with tenant support."""
-
-        tenant_id: str = ""
-
-    def tenant_factory(
-        key_id: str,
-        key_hash: str,
-        key_secret: str,
-        name=None,
-        description=None,
-        is_active=True,
-        expires_at=None,
-        scopes=None,
-        tenant_id: str = "default",
-        **kwargs,
-    ) -> TenantApiKey:
-        return TenantApiKey(
-            key_id=key_id,
-            key_hash=key_hash,
-            _key_secret=key_secret,
-            name=name,
-            description=description,
-            is_active=is_active,
-            expires_at=expires_at,
-            scopes=scopes or [],
-            tenant_id=tenant_id,
-        )
-
-    repo = InMemoryApiKeyRepository()
-    service = ApiKeyService(
-        repo=repo,
-        hasher=fixed_salt_hasher,
-        entity_factory=tenant_factory,
-        rrd=0,
-    )
-
-    # Create with custom tenant_id via kwargs
-    entity, api_key = await service.create(name="tenant-key", tenant_id="tenant-123")
-
-    assert isinstance(entity, TenantApiKey)
-    assert entity.tenant_id == "tenant-123"
-    assert entity.name == "tenant-key"
-
-    # Verify the key works
-    verified = await service.verify_key(api_key)
-    assert isinstance(verified, TenantApiKey)
-    assert verified.tenant_id == "tenant-123"
-
-
-@pytest.mark.asyncio
-async def test_create_with_custom_factory_default_kwargs(fixed_salt_hasher: ApiKeyHasher) -> None:
-    """create(): custom factory should use default values when kwargs not provided."""
-    from dataclasses import dataclass
-    from fastapi_api_key.domain.entities import ApiKey
-
-    @dataclass
-    class RateLimitedApiKey(ApiKey):
-        """Custom API key with rate limit."""
-
-        rate_limit: int = 1000
-
-    def rate_limited_factory(
-        key_id: str,
-        key_hash: str,
-        key_secret: str,
-        name=None,
-        description=None,
-        is_active=True,
-        expires_at=None,
-        scopes=None,
-        rate_limit: int = 1000,
-        **kwargs,
-    ) -> RateLimitedApiKey:
-        return RateLimitedApiKey(
-            key_id=key_id,
-            key_hash=key_hash,
-            _key_secret=key_secret,
-            name=name,
-            description=description,
-            is_active=is_active,
-            expires_at=expires_at,
-            scopes=scopes or [],
-            rate_limit=rate_limit,
-        )
-
-    repo = InMemoryApiKeyRepository()
-    service = ApiKeyService(
-        repo=repo,
-        hasher=fixed_salt_hasher,
-        entity_factory=rate_limited_factory,
-        rrd=0,
-    )
-
-    # Create without custom kwargs - should use default rate_limit
-    entity, _ = await service.create(name="default-rate")
-    assert entity.rate_limit == 1000
-
-    # Create with custom rate_limit
-    entity2, _ = await service.create(name="custom-rate", rate_limit=5000)
-    assert entity2.rate_limit == 5000
 
 
 # --- Service find() and count() tests ---

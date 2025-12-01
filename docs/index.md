@@ -22,14 +22,10 @@ keys.
 
 - **Security-first**: secrets are hashed with a salt and a pepper, and never logged or returned after creation
 - **Prod-ready**: services and repositories are async, and battle-tested
-
-- **Agnostic hasher**: you can use any async-compatible hashing strategy (default: Argon2)
-- **Agnostic backend**: you can use any async-compatible database (default: SQLAlchemy)
-- **Connector**: create a Typer, FastAPI router wired to api key systems
-
-
+- **Agnostic hasher**: choose between Argon2 (default) or Bcrypt hashing strategies
+- **Agnostic backend**: abstract repository pattern, currently with SQLAlchemy implementation
+- **Connectors**: FastAPI router and Typer CLI for API key management
 - **Envvar support**: easily configure peppers and other secrets via environment variables
-- **Extensible**: customize models, repositories, hashers, and services to fit your needs
 - **Scopes support**: assign scopes to API keys for fine-grained access control
 
 ## Standards compliance
@@ -80,4 +76,4 @@ Here is a diagram showing what happens after you initialize your API key service
 ## What to read next
 
 1. Head to the [Quickstart](quickstart.md) to wire the service in a REPL or script.
-2. Browse the [Usage](usage/custom/) section to reuse the example applications that ship with the project.
+2. Browse the [Usage](usage/fastapi.md) section to see example applications that ship with the project.

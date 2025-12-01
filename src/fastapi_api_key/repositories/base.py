@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Generic, Optional, List
+from typing import Optional, List
 
-from fastapi_api_key.domain.base import D
+from fastapi_api_key.domain.entities import ApiKey
 
 
 @dataclass
@@ -52,16 +52,16 @@ class ApiKeyFilter:
     order_desc: bool = True  # True = DESC, False = ASC
 
 
-class AbstractApiKeyRepository(ABC, Generic[D]):
-    """Generic repository contract for a domain aggregate."""
+class AbstractApiKeyRepository(ABC):
+    """Repository contract for API key persistence."""
 
     @abstractmethod
-    async def get_by_id(self, id_: str) -> Optional[D]:
+    async def get_by_id(self, id_: str) -> Optional[ApiKey]:
         """Get the entity by its ID, or None if not found."""
         ...
 
     @abstractmethod
-    async def get_by_key_id(self, key_id: str) -> Optional[D]:
+    async def get_by_key_id(self, key_id: str) -> Optional[ApiKey]:
         """Get the entity by its key_id, or None if not found.
 
         Notes:
@@ -76,12 +76,12 @@ class AbstractApiKeyRepository(ABC, Generic[D]):
         ...
 
     @abstractmethod
-    async def create(self, entity: D) -> D:
+    async def create(self, entity: ApiKey) -> ApiKey:
         """Create a new entity and return the created version."""
         ...
 
     @abstractmethod
-    async def update(self, entity: D) -> Optional[D]:
+    async def update(self, entity: ApiKey) -> Optional[ApiKey]:
         """Update an existing entity and return the updated version, or None if it failed.
 
         Notes:
@@ -91,17 +91,17 @@ class AbstractApiKeyRepository(ABC, Generic[D]):
         ...
 
     @abstractmethod
-    async def delete_by_id(self, id_: str) -> Optional[D]:
+    async def delete_by_id(self, id_: str) -> Optional[ApiKey]:
         """Delete the model by ID and return the deleted entity, or None if not found."""
         ...
 
     @abstractmethod
-    async def list(self, limit: int = 100, offset: int = 0) -> List[D]:
+    async def list(self, limit: int = 100, offset: int = 0) -> List[ApiKey]:
         """List entities with pagination support."""
         ...
 
     @abstractmethod
-    async def find(self, filter: ApiKeyFilter) -> List[D]:
+    async def find(self, filter: ApiKeyFilter) -> List[ApiKey]:
         """Search entities by filtering criteria.
 
         Args:

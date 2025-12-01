@@ -6,13 +6,13 @@ except ModuleNotFoundError as e:
     ) from e
 
 import hashlib
-from typing import Optional, List, Callable
+from typing import Optional, List
 
 import aiocache
 from aiocache import BaseCache
 
 from fastapi_api_key import ApiKeyService
-from fastapi_api_key.domain.base import D
+from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository
 from fastapi_api_key.services.base import DEFAULT_SEPARATOR
@@ -32,7 +32,7 @@ def _compute_cache_key(full_api_key: str) -> str:
     return hashlib.sha256(buffer).hexdigest()
 
 
-class CachedApiKeyService(ApiKeyService[D]):
+class CachedApiKeyService(ApiKeyService):
     """API Key service with caching support (only for verify_key).
 
     Security Model:
@@ -50,11 +50,10 @@ class CachedApiKeyService(ApiKeyService[D]):
 
     def __init__(
         self,
-        repo: AbstractApiKeyRepository[D],
+        repo: AbstractApiKeyRepository,
         cache: Optional[BaseCache] = None,
         cache_prefix: str = "api_key",
         hasher: Optional[ApiKeyHasher] = None,
-        entity_factory: Optional[Callable[..., D]] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
         rrd: float = 1 / 3,
@@ -62,7 +61,6 @@ class CachedApiKeyService(ApiKeyService[D]):
         super().__init__(
             repo=repo,
             hasher=hasher,
-            entity_factory=entity_factory,
             separator=separator,
             global_prefix=global_prefix,
             rrd=rrd,
@@ -90,19 +88,19 @@ class CachedApiKeyService(ApiKeyService[D]):
             await self.cache.delete(cache_key)
             await self.cache.delete(index_key)
 
-    async def update(self, entity: D) -> D:
+    async def update(self, entity: ApiKey) -> ApiKey:
         # Delete cache entry on update (useful when changing scopes or disabling)
         entity = await super().update(entity)
         await self._invalidate_cache(entity.key_id)
         return entity
 
-    async def delete_by_id(self, id_: str) -> D:
+    async def delete_by_id(self, id_: str) -> ApiKey:
         # Delete cache entry on delete
         entity = await super().delete_by_id(id_)
         await self._invalidate_cache(entity.key_id)
         return entity
 
-    async def _verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> D:
+    async def _verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> ApiKey:
         required_scopes = required_scopes or []
 
         # Use parent's helper for parsing and validation

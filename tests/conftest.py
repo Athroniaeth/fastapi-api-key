@@ -15,12 +15,11 @@ from sqlalchemy.ext.asyncio import (
 )
 
 from fastapi_api_key import ApiKeyService
-from fastapi_api_key.domain.base import D
 from fastapi_api_key.domain.errors import KeyNotFound, KeyInactive, KeyExpired, InvalidKey, InvalidScopes
 from fastapi_api_key.hasher.bcrypt import BcryptApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, Base
-from fastapi_api_key.domain.entities import ApiKey, default_api_key_factory
+from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.hasher.argon2 import (
     Argon2ApiKeyHasher,
 )
@@ -192,7 +191,7 @@ def fixed_salt_hasher(request: pytest.FixtureRequest) -> ApiKeyHasher:
 
 
 @pytest.fixture(params=["memory", "sqlalchemy"], scope="function")
-def repository(request: pytest.FixtureRequest, async_session: AsyncSession) -> Iterator[AbstractApiKeyRepository[D]]:
+def repository(request: pytest.FixtureRequest, async_session: AsyncSession) -> Iterator[AbstractApiKeyRepository]:
     """Fixture to provide different AbstractApiKeyRepository implementations."""
     if request.param == "memory":
         yield InMemoryApiKeyRepository()
@@ -203,7 +202,7 @@ def repository(request: pytest.FixtureRequest, async_session: AsyncSession) -> I
 
 
 @pytest.fixture(params=["base", "cached"], scope="function")
-def service_class(request: pytest.FixtureRequest) -> Type[AbstractApiKeyService[D]]:
+def service_class(request: pytest.FixtureRequest) -> Type[AbstractApiKeyService]:
     """Helper to get the service class from the request parameter."""
     if request.param == "base":
         return ApiKeyService
@@ -215,9 +214,9 @@ def service_class(request: pytest.FixtureRequest) -> Type[AbstractApiKeyService[
 
 @pytest.fixture
 def service(
-    service_class: Type[AbstractApiKeyService[D]],
+    service_class: Type[AbstractApiKeyService],
     hasher: ApiKeyHasher,
-) -> Iterator[AbstractApiKeyService[D]]:
+) -> Iterator[AbstractApiKeyService]:
     """Fixture to provide different AbstractApiKeyRepository implementations."""
     separator = "."
     global_prefix = "ak"
@@ -225,7 +224,6 @@ def service(
     yield service_class(
         repo=InMemoryApiKeyRepository(),
         hasher=hasher,
-        entity_factory=default_api_key_factory,
         separator=separator,
         global_prefix=global_prefix,
         rrd=0,
@@ -234,10 +232,10 @@ def service(
 
 @pytest.fixture
 def all_possible_service(
-    service_class: Type[AbstractApiKeyService[D]],
-    repository: AbstractApiKeyRepository[D],
+    service_class: Type[AbstractApiKeyService],
+    repository: AbstractApiKeyRepository,
     fixed_salt_hasher: ApiKeyHasher,
-) -> Iterator[AbstractApiKeyService[D]]:
+) -> Iterator[AbstractApiKeyService]:
     """Fixture to provide all possible AbstractApiKeyRepository implementations."""
     separator = "."
     global_prefix = "ak"
@@ -245,7 +243,6 @@ def all_possible_service(
     yield service_class(
         repo=repository,
         hasher=fixed_salt_hasher,
-        entity_factory=default_api_key_factory,
         separator=separator,
         global_prefix=global_prefix,
         rrd=0,

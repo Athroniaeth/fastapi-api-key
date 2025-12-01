@@ -67,7 +67,6 @@ nav:
       - FastAPI: usage/fastapi.md
       - Scopes: usage/scopes.md
       - Typer: usage/typer.md
-      - Custom: usage/custom.md
 extra:
   social:
     - icon: fontawesome/brands/github
