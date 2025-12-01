@@ -39,7 +39,7 @@ def generate(
     key_id = key_id or key_id or key_id_factory()
     key_secret = key_secret or key_secret or key_secret_factory()
 
-    api_key = ApiKey.full_key_secret(
+    api_key = ApiKey.get_api_key(
         global_prefix=global_prefix,
         key_id=key_id,
         key_secret=key_secret,

@@ -27,11 +27,6 @@ from fastapi_api_key._types import AsyncSessionMaker
 from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
 
 
-# =============================================================================
-# Database Fixtures
-# =============================================================================
-
-
 @pytest_asyncio.fixture(scope="session")
 async def async_engine() -> AsyncIterator[AsyncEngine]:
     """Create an in-memory SQLite async engine for the test session."""
@@ -108,7 +103,7 @@ def make_api_key(
         expires_at=datetime_factory() + timedelta(days=30),
         created_at=datetime_factory(),
         key_id=key_id,
-        _key_secret=key_secret,
+        key_secret=key_secret,
         key_hash=key_hash,
         scopes=scopes if scopes is not None else ["read", "write"],
     )

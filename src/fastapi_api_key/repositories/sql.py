@@ -20,8 +20,6 @@ from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
 from fastapi_api_key.utils import datetime_factory
 
-NoneType = type(None)
-
 
 class Base(DeclarativeBase): ...
 
@@ -139,7 +137,7 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
 
     @staticmethod
     @typing.overload
-    def _to_domain(model: NoneType) -> None: ...
+    def _to_domain(model: None) -> None: ...
 
     @staticmethod
     @typing.overload
@@ -161,8 +159,8 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
             last_used_at=model.last_used_at,
             key_id=model.key_id,
             key_hash=model.key_hash,
-            _key_secret_first=model.key_secret_first,
-            _key_secret_last=model.key_secret_last,
+            key_secret_first=model.key_secret_first,
+            key_secret_last=model.key_secret_last,
             scopes=model.scopes,
         )
 

@@ -18,11 +18,6 @@ from fastapi_api_key.services.cached import CachedApiKeyService, _compute_cache_
 from fastapi_api_key.utils import key_secret_factory
 
 
-# =============================================================================
-# Fixtures
-# =============================================================================
-
-
 @pytest.fixture
 def mock_cache() -> AsyncMock:
     """Create a mock cache with async methods."""

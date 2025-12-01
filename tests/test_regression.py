@@ -26,11 +26,6 @@ from fastapi_api_key.utils import (
 )
 
 
-# =============================================================================
-# Public API Import Tests
-# =============================================================================
-
-
 class TestPublicApiImports:
     """Ensure public API remains importable."""
 

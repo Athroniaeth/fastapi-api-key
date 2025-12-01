@@ -36,7 +36,7 @@ class TestApiKeyStructure:
         assert isinstance(key.created_at, datetime)
         assert key.last_used_at is None
         assert isinstance(key.key_id, str)
-        assert key.key_hash is None
+        assert key._key_hash is None
         assert key.scopes == []
 
     def test_created_at_is_utc(self):
@@ -58,6 +58,73 @@ class TestApiKeyStructure:
         key = ApiKey(expires_at=aware_dt)
 
         assert key.expires_at == aware_dt
+
+
+# =============================================================================
+# Repr/Str Security Tests
+# =============================================================================
+
+
+class TestApiKeyReprSecurity:
+    """Tests that repr() and str() don't leak sensitive information."""
+
+    @pytest.mark.parametrize("str_method", [repr, str])
+    def test_does_not_contain_key_hash(self, str_method):
+        """String representation should not contain the actual key_hash value."""
+        secret_hash = "argon2id$v=19$m=65536,t=3,p=4$secret_salt$secret_hash_value"
+        key = ApiKey(key_hash=secret_hash)
+
+        result = str_method(key)
+
+        assert secret_hash not in result
+        assert "secret_hash_value" not in result
+
+    @pytest.mark.parametrize("str_method", [repr, str])
+    def test_does_not_contain_key_secret(self, str_method):
+        """String representation should not contain the key_secret value."""
+        secret = "super-secret-api-key-value-12345"
+        key = ApiKey(key_secret=secret)
+
+        result = str_method(key)
+
+        assert secret not in result
+
+    @pytest.mark.parametrize("str_method", [repr, str])
+    def test_does_not_contain_key_secret_first(self, str_method):
+        """String representation should not contain the key_secret_first value."""
+        key = ApiKey(key_secret_first="abcd")
+
+        result = str_method(key)
+
+        assert "abcd" not in result
+
+    @pytest.mark.parametrize("str_method", [repr, str])
+    def test_does_not_contain_key_secret_last(self, str_method):
+        """String representation should not contain the key_secret_last value."""
+        key = ApiKey(key_secret_last="wxyz")
+
+        result = str_method(key)
+
+        assert "wxyz" not in result
+
+    @pytest.mark.parametrize("str_method", [repr, str])
+    def test_contains_masked_key_hash_indicator(self, str_method):
+        """String representation should indicate key_hash is set but masked."""
+        key = ApiKey(key_hash="some-hash")
+
+        result = str_method(key)
+
+        assert "key_hash=" in result
+        assert "*" in result or "..." in result  # Some masking indicator
+
+    @pytest.mark.parametrize("str_method", [repr, str])
+    def test_shows_none_when_key_hash_not_set(self, str_method):
+        """String representation should show None when key_hash is not set."""
+        key = ApiKey()
+
+        result = str_method(key)
+
+        assert "key_hash=None" in result
 
 
 # =============================================================================
@@ -173,12 +240,28 @@ class TestEnsureValidScopes:
 # =============================================================================
 
 
+class TestKeyHash:
+    """Tests for key_hash property."""
+
+    def test_key_hash_returns_value_when_set(self):
+        """key_hash returns the hash when set."""
+        key = ApiKey(key_hash="hashed-value")
+        assert key.key_hash == "hashed-value"
+
+    def test_key_hash_raises_when_not_set(self):
+        """key_hash raises ValueError when not set."""
+        key = ApiKey()
+
+        with pytest.raises(ValueError, match="Key hash is not set"):
+            _ = key.key_hash
+
+
 class TestKeySecret:
     """Tests for key_secret property and related methods."""
 
     def test_key_secret_cleared_after_access(self):
         """key_secret is cleared after first access."""
-        key = ApiKey(_key_secret="secret123")
+        key = ApiKey(key_secret="secret123")
 
         first_access = key.key_secret
         assert first_access == "secret123"
@@ -188,22 +271,22 @@ class TestKeySecret:
 
     def test_key_secret_first_from_secret(self):
         """key_secret_first returns first 4 chars of secret."""
-        key = ApiKey(_key_secret="abcd1234efgh")
+        key = ApiKey(key_secret="abcd1234efgh")
         assert key.key_secret_first == "abcd"
 
     def test_key_secret_last_from_secret(self):
         """key_secret_last returns last 4 chars of secret."""
-        key = ApiKey(_key_secret="abcd1234efgh")
+        key = ApiKey(key_secret="abcd1234efgh")
         assert key.key_secret_last == "efgh"
 
     def test_key_secret_first_from_stored(self):
         """key_secret_first uses stored value if available."""
-        key = ApiKey(_key_secret_first="XXXX")
+        key = ApiKey(key_secret_first="XXXX")
         assert key.key_secret_first == "XXXX"
 
     def test_key_secret_last_from_stored(self):
         """key_secret_last uses stored value if available."""
-        key = ApiKey(_key_secret_last="YYYY")
+        key = ApiKey(key_secret_last="YYYY")
         assert key.key_secret_last == "YYYY"
 
     def test_key_secret_first_raises_when_unavailable(self):
@@ -231,7 +314,7 @@ class TestFullKeySecret:
 
     def test_full_key_format(self):
         """full_key_secret constructs correct format."""
-        result = ApiKey.full_key_secret(
+        result = ApiKey.get_api_key(
             global_prefix="ak",
             key_id="abc123",
             key_secret="secretXYZ",
@@ -241,7 +324,7 @@ class TestFullKeySecret:
 
     def test_custom_separator(self):
         """full_key_secret works with custom separator."""
-        result = ApiKey.full_key_secret(
+        result = ApiKey.get_api_key(
             global_prefix="key",
             key_id="id",
             key_secret="secret",

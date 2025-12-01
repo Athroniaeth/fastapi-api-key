@@ -33,7 +33,7 @@ class ApiKeyEntity(Protocol):
     last_used_at: Optional[datetime]
     scopes: List[str]
     key_id: str
-    key_hash: Optional[str]
+    _key_hash: Optional[str]
 
     # Required properties
     @property
@@ -57,7 +57,7 @@ class ApiKeyEntity(Protocol):
 
     # Required methods
     @staticmethod
-    def full_key_secret(
+    def get_api_key(
         global_prefix: str,
         key_id: str,
         key_secret: str,

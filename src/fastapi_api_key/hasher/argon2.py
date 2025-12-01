@@ -30,14 +30,14 @@ class Argon2ApiKeyHasher(BaseApiKeyHasher):
     def _apply_pepper(self, api_key: str) -> str:
         return f"{api_key}{self._pepper}"
 
-    def hash(self, api_key: str) -> str:
-        return self._ph.hash(self._apply_pepper(api_key))
+    def hash(self, key_secret: str) -> str:
+        return self._ph.hash(self._apply_pepper(key_secret))
 
-    def verify(self, stored_hash: str, supplied_key: str) -> bool:
+    def verify(self, key_hash: str, key_secret: str) -> bool:
         try:
             return self._ph.verify(
-                stored_hash,
-                self._apply_pepper(supplied_key),
+                key_hash,
+                self._apply_pepper(key_secret),
             )
         except (
             VerifyMismatchError,

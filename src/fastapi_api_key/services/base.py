@@ -161,11 +161,11 @@ class AbstractApiKeyService(ABC):
         ...
 
     @abstractmethod
-    async def find(self, filter: ApiKeyFilter) -> List[ApiKey]:
+    async def find(self, filter_: ApiKeyFilter) -> List[ApiKey]:
         """Search entities by filtering criteria.
 
         Args:
-            filter: Filtering criteria and pagination options.
+            filter_: Filtering criteria and pagination options.
 
         Returns:
             List of entities matching the criteria.
@@ -173,11 +173,11 @@ class AbstractApiKeyService(ABC):
         ...
 
     @abstractmethod
-    async def count(self, filter: Optional[ApiKeyFilter] = None) -> int:
+    async def count(self, filter_: Optional[ApiKeyFilter] = None) -> int:
         """Count entities matching the criteria.
 
         Args:
-            filter: Filtering criteria (pagination is ignored). None = count all.
+            filter_: Filtering criteria (pagination is ignored). None = count all.
 
         Returns:
             Number of matching entities.
@@ -346,22 +346,23 @@ class ApiKeyService(AbstractApiKeyService):
         if expires_at and expires_at < datetime_factory():
             raise ValueError("Expiration date must be in the future")
 
+        scopes = scopes or []
         key_id = key_id or key_id_factory()
         key_secret = key_secret or key_secret_factory()
+        key_hash = self._hasher.hash(key_secret=key_secret)
 
-        key_hash = self._hasher.hash(key_secret)
         entity = ApiKey(
             key_id=key_id,
             key_hash=key_hash,
-            _key_secret=key_secret,
+            key_secret=key_secret,
             name=name,
             description=description,
             is_active=is_active,
             expires_at=expires_at,
-            scopes=scopes or [],
+            scopes=scopes,
         )
 
-        full_key_secret = entity.full_key_secret(
+        full_key_secret = entity.get_api_key(
             global_prefix=self.global_prefix,
             key_id=key_id,
             key_secret=key_secret,
@@ -389,11 +390,11 @@ class ApiKeyService(AbstractApiKeyService):
     async def list(self, limit: int = 100, offset: int = 0) -> list[ApiKey]:
         return await self._repo.list(limit=limit, offset=offset)
 
-    async def find(self, filter: ApiKeyFilter) -> List[ApiKey]:
-        return await self._repo.find(filter)
+    async def find(self, filter_: ApiKeyFilter) -> List[ApiKey]:
+        return await self._repo.find(filter_)
 
-    async def count(self, filter: Optional[ApiKeyFilter] = None) -> int:
-        return await self._repo.count(filter)
+    async def count(self, filter_: Optional[ApiKeyFilter] = None) -> int:
+        return await self._repo.count(filter_)
 
     async def _verify_key(self, api_key: Optional[str] = None, required_scopes: Optional[List[str]] = None) -> ApiKey:
         required_scopes = required_scopes or []

@@ -15,11 +15,6 @@ from fastapi_api_key.utils import datetime_factory
 from tests.conftest import make_api_key
 
 
-# =============================================================================
-# Fixtures
-# =============================================================================
-
-
 @pytest_asyncio.fixture(scope="function")
 async def sql_repo():
     """Create a fresh SQLAlchemy repository with in-memory database."""

@@ -26,11 +26,6 @@ from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
 
 
-# =============================================================================
-# Fixtures
-# =============================================================================
-
-
 @pytest.fixture
 def service() -> ApiKeyService:
     """Create a service with mock hasher and in-memory repo."""
