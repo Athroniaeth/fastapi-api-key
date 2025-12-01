@@ -63,6 +63,7 @@ nav:
   - Quickstart: quickstart.md
   - Usage:
       - Dotenv: usage/dotenv.md
+      - Database: usage/database.md
       - Cache: usage/cache.md
       - FastAPI: usage/fastapi.md
       - Scopes: usage/scopes.md
