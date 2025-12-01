@@ -477,10 +477,7 @@ class ApiKeyService(AbstractApiKeyService):
         Raises:
             InvalidKey: If the API key format is invalid.
         """
-        try:
-            parts = api_key.split(self.separator)
-        except Exception as e:
-            raise InvalidKey(f"API key format is invalid: {e}") from e
+        parts = api_key.split(self.separator)
 
         if len(parts) != 3:
             raise InvalidKey("API key format is invalid (wrong number of segments).")

@@ -137,5 +137,8 @@ testpaths = ["src", "tests"]
 
 
 [tool.coverage.run]
-omit = ["src/fastapi_api_key/__init__.py"]
+omit = [
+    "src/fastapi_api_key/__init__.py",
+    "src/fastapi_api_key/__main__.py",
+]
 branch = true
