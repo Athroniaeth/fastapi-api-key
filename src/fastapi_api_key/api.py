@@ -76,7 +76,7 @@ class ApiKeyOut(BaseModel):
     description: Optional[str] = None
     is_active: bool
     created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    last_used_at: Optional[datetime] = None
     scopes: List[str] = Field(default_factory=list)
 
 
@@ -145,7 +145,7 @@ def _to_out(entity: ApiKey) -> ApiKeyOut:
         description=entity.description,
         is_active=entity.is_active,
         created_at=entity.created_at,
-        updated_at=entity.last_used_at,
+        last_used_at=entity.last_used_at,
         scopes=entity.scopes,
     )
 
