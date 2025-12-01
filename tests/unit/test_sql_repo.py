@@ -32,11 +32,6 @@ async def sql_repo():
     await engine.dispose()
 
 
-# =============================================================================
-# CRUD Tests
-# =============================================================================
-
-
 class TestSqlRepositoryCRUD:
     """Tests for basic CRUD operations."""
 
@@ -102,11 +97,6 @@ class TestSqlRepositoryCRUD:
         assert len(result) == 2
 
 
-# =============================================================================
-# Not Found Tests
-# =============================================================================
-
-
 class TestSqlRepositoryNotFound:
     """Tests for operations on non-existent entities."""
 
@@ -134,11 +124,6 @@ class TestSqlRepositoryNotFound:
         """delete_by_id() returns None for non-existent ID."""
         result = await sql_repo.delete_by_id("non-existent")
         assert result is None
-
-
-# =============================================================================
-# Find Tests
-# =============================================================================
 
 
 class TestSqlRepositoryFind:
@@ -338,11 +323,6 @@ class TestSqlRepositoryFind:
         assert result[0].created_at <= result[1].created_at
 
 
-# =============================================================================
-# Count Tests
-# =============================================================================
-
-
 class TestSqlRepositoryCount:
     """Tests for count() method."""
 
@@ -449,11 +429,6 @@ class TestSqlRepositoryCount:
         assert await sql_repo.count(ApiKeyFilter(name_exact="Development")) == 1
 
 
-# =============================================================================
-# Ensure Table Tests
-# =============================================================================
-
-
 class TestSqlRepositoryEnsureTable:
     """Tests for ensure_table() method."""
 
@@ -481,11 +456,6 @@ class TestSqlRepositoryEnsureTable:
             assert created.id_ == entity.id_
 
         await engine.dispose()
-
-
-# =============================================================================
-# Model Conversion Tests
-# =============================================================================
 
 
 class TestSqlRepositoryConversion:

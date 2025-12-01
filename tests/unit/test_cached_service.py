@@ -42,11 +42,6 @@ def service(mock_cache: AsyncMock) -> CachedApiKeyService:
     )
 
 
-# =============================================================================
-# Cache Key Computation Tests
-# =============================================================================
-
-
 class TestCacheKeyComputation:
     """Tests for _compute_cache_key function."""
 
@@ -63,11 +58,6 @@ class TestCacheKeyComputation:
         key1 = _compute_cache_key("ak-abc-secret1")
         key2 = _compute_cache_key("ak-abc-secret2")
         assert key1 != key2
-
-
-# =============================================================================
-# Cache Miss Tests
-# =============================================================================
 
 
 class TestCacheMiss:
@@ -113,11 +103,6 @@ class TestCacheMiss:
         bad_key = f"ak-{entity.key_id}-wrongsecret"
         with pytest.raises(InvalidKey):
             await service.verify_key(bad_key)
-
-
-# =============================================================================
-# Cache Hit Tests
-# =============================================================================
 
 
 class TestCacheHit:
@@ -170,11 +155,6 @@ class TestCacheHit:
 
         with pytest.raises(InvalidScopes, match="write"):
             await service.verify_key(api_key, required_scopes=["read", "write"])
-
-
-# =============================================================================
-# Cache Invalidation Tests
-# =============================================================================
 
 
 class TestCacheInvalidation:
@@ -242,11 +222,6 @@ class TestCacheInvalidation:
         mock_cache.delete.assert_not_awaited()
 
 
-# =============================================================================
-# Security Tests
-# =============================================================================
-
-
 class TestCacheSecurity:
     """Tests for cache security properties."""
 
@@ -278,11 +253,6 @@ class TestCacheSecurity:
 
         with pytest.raises(InvalidKey, match="hash mismatch"):
             await service.verify_key(wrong_key)
-
-
-# =============================================================================
-# Default Cache Tests
-# =============================================================================
 
 
 class TestDefaultCache:

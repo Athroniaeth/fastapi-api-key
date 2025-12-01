@@ -8,7 +8,7 @@ Provides:
 
 from collections.abc import AsyncIterator
 from datetime import timedelta
-from typing import Iterator
+from typing import Iterator, Optional
 import hashlib
 
 import pytest
@@ -61,26 +61,17 @@ async def async_session(async_session_maker: AsyncSessionMaker) -> AsyncIterator
         yield session
 
 
-# =============================================================================
-# Hasher Fixture
-# =============================================================================
-
-
 @pytest.fixture
 def hasher() -> Iterator[ApiKeyHasher]:
     """Provide a fast MockApiKeyHasher for unit tests."""
     yield MockApiKeyHasher(pepper="test-pepper")
 
 
-# =============================================================================
-# Factory Functions
-# =============================================================================
-
-
+#
 def make_api_key(
-    key_id: str | None = None,
+    key_id: Optional[str] = None,
     is_active: bool = True,
-    scopes: list[str] | None = None,
+    scopes: Optional[list[str]] = None,
 ) -> ApiKey:
     """Create a fresh ApiKey domain entity with unique key_id/hash.
 

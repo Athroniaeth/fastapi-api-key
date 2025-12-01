@@ -43,11 +43,6 @@ def _full_key(key_id: str, key_secret: str) -> str:
     return f"ak.{key_id}.{key_secret}"
 
 
-# =============================================================================
-# Create Tests
-# =============================================================================
-
-
 class TestServiceCreate:
     """Tests for create() method."""
 
@@ -83,11 +78,6 @@ class TestServiceCreate:
 
         with pytest.raises(ValueError, match="future"):
             await service.create(name="expired", expires_at=past)
-
-
-# =============================================================================
-# Get Tests
-# =============================================================================
 
 
 class TestServiceGet:
@@ -134,11 +124,6 @@ class TestServiceGet:
             await service.get_by_key_id("   ")
 
 
-# =============================================================================
-# Update Tests
-# =============================================================================
-
-
 class TestServiceUpdate:
     """Tests for update() method."""
 
@@ -178,11 +163,6 @@ class TestServiceUpdate:
             await service.update(fake_entity)
 
 
-# =============================================================================
-# Delete Tests
-# =============================================================================
-
-
 class TestServiceDelete:
     """Tests for delete_by_id() method."""
 
@@ -202,11 +182,6 @@ class TestServiceDelete:
         """delete_by_id() raises KeyNotFound for missing ID."""
         with pytest.raises(KeyNotFound):
             await service.delete_by_id("missing")
-
-
-# =============================================================================
-# Verify Key Tests
-# =============================================================================
 
 
 class TestServiceVerifyKey:
@@ -297,11 +272,6 @@ class TestServiceVerifyKey:
             await service.verify_key(full_key)
 
 
-# =============================================================================
-# Scope Verification Tests
-# =============================================================================
-
-
 class TestServiceScopeVerification:
     """Tests for scope verification in verify_key()."""
 
@@ -338,11 +308,6 @@ class TestServiceScopeVerification:
         assert result.id_ == entity.id_
 
 
-# =============================================================================
-# Timing Attack Mitigation Tests
-# =============================================================================
-
-
 class TestServiceTimingAttackMitigation:
     """Tests for RRD (random response delay) timing attack mitigation."""
 
@@ -362,11 +327,6 @@ class TestServiceTimingAttackMitigation:
             mock_sleep.assert_awaited_once()
             delay = mock_sleep.await_args.args[0]
             assert 0.1 <= delay <= 0.2  # Between rrd and rrd*2
-
-
-# =============================================================================
-# Constructor Tests
-# =============================================================================
 
 
 class TestServiceConstructor:
@@ -392,11 +352,6 @@ class TestServiceConstructor:
         )
         assert service.separator == ":"
         assert service.global_prefix == "KEY"
-
-
-# =============================================================================
-# List, Find, Count Tests
-# =============================================================================
 
 
 class TestServiceListFindCount:
@@ -449,11 +404,6 @@ class TestServiceListFindCount:
         from fastapi_api_key.repositories.base import ApiKeyFilter
 
         assert await service.count(ApiKeyFilter(is_active=True)) == 1
-
-
-# =============================================================================
-# Load Dotenv Tests
-# =============================================================================
 
 
 class TestServiceLoadDotenv:
@@ -519,11 +469,6 @@ class TestServiceLoadDotenv:
         keys = await service.list()
         assert len(keys) == 1
         assert keys[0].name == "MYAPP_KEY_TEST"
-
-
-# =============================================================================
-# Edge Cases Tests
-# =============================================================================
 
 
 class TestServiceEdgeCases:

@@ -16,11 +16,6 @@ from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes
 from fastapi_api_key.utils import datetime_factory
 
 
-# =============================================================================
-# Structure Tests
-# =============================================================================
-
-
 class TestApiKeyStructure:
     """Tests for ApiKey field types and defaults."""
 
@@ -58,11 +53,6 @@ class TestApiKeyStructure:
         key = ApiKey(expires_at=aware_dt)
 
         assert key.expires_at == aware_dt
-
-
-# =============================================================================
-# Repr/Str Security Tests
-# =============================================================================
 
 
 class TestApiKeyReprSecurity:
@@ -127,11 +117,6 @@ class TestApiKeyReprSecurity:
         assert "key_hash=None" in result
 
 
-# =============================================================================
-# State Methods Tests
-# =============================================================================
-
-
 class TestApiKeyStateMethods:
     """Tests for enable, disable, touch methods."""
 
@@ -163,11 +148,6 @@ class TestApiKeyStateMethods:
         assert delta < 2  # Within 2 seconds
 
 
-# =============================================================================
-# Authentication Validation Tests
-# =============================================================================
-
-
 class TestEnsureCanAuthenticate:
     """Tests for ensure_can_authenticate method."""
 
@@ -194,11 +174,6 @@ class TestEnsureCanAuthenticate:
         """Active key with future expiration passes."""
         key = ApiKey(expires_at=datetime_factory() + timedelta(days=1))
         key.ensure_can_authenticate()  # Should not raise
-
-
-# =============================================================================
-# Scope Validation Tests
-# =============================================================================
 
 
 class TestEnsureValidScopes:
@@ -233,11 +208,6 @@ class TestEnsureValidScopes:
         error_msg = str(exc_info.value)
         assert "read" in error_msg
         assert "write" in error_msg
-
-
-# =============================================================================
-# Key Secret Handling Tests
-# =============================================================================
 
 
 class TestKeyHash:
@@ -302,11 +272,6 @@ class TestKeySecret:
 
         with pytest.raises(ValueError, match="Key secret is not set"):
             _ = key.key_secret_last
-
-
-# =============================================================================
-# Full Key Construction Tests
-# =============================================================================
 
 
 class TestFullKeySecret:

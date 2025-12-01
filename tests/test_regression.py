@@ -12,6 +12,7 @@ import sys
 import re
 import string
 from datetime import datetime, timezone
+from typing import Optional
 
 import pytest
 
@@ -46,16 +47,11 @@ class TestPublicApiImports:
             ("hasher.argon2", "Argon2ApiKeyHasher"),
         ],
     )
-    def test_import_public_api(self, module_path: str | None, attr: str):
+    def test_import_public_api(self, module_path: Optional[str], attr: str):
         """Public API attributes are importable."""
         module_name = "fastapi_api_key" if module_path is None else f"fastapi_api_key.{module_path}"
         module = importlib.import_module(module_name)
         assert hasattr(module, attr)
-
-
-# =============================================================================
-# Optional Dependency Error Tests
-# =============================================================================
 
 
 class TestOptionalDependencyErrors:
@@ -87,11 +83,6 @@ class TestOptionalDependencyErrors:
         assert expected in str(exc_info.value)
 
 
-# =============================================================================
-# Security Warning Tests
-# =============================================================================
-
-
 class TestSecurityWarnings:
     """Ensure security warnings work correctly."""
 
@@ -106,11 +97,6 @@ class TestSecurityWarnings:
                 hasher_class(pepper=DEFAULT_PEPPER, rounds=4)
             else:
                 hasher_class(pepper=DEFAULT_PEPPER)
-
-
-# =============================================================================
-# Utility Factory Tests
-# =============================================================================
 
 
 class TestUtilityFactories:

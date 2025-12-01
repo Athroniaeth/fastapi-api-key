@@ -14,11 +14,6 @@ from fastapi_api_key.utils import datetime_factory, key_id_factory
 from tests.conftest import make_api_key
 
 
-# =============================================================================
-# CRUD Tests
-# =============================================================================
-
-
 class TestRepositoryCRUD:
     """Tests for basic CRUD operations."""
 
@@ -93,11 +88,6 @@ class TestRepositoryCRUD:
         assert len(result) == 2
 
 
-# =============================================================================
-# Not Found Tests
-# =============================================================================
-
-
 class TestRepositoryNotFound:
     """Tests for operations on non-existent entities."""
 
@@ -144,11 +134,6 @@ class TestRepositoryNotFound:
         assert result is None
 
 
-# =============================================================================
-# Duplicate Key Tests
-# =============================================================================
-
-
 class TestRepositoryConstraints:
     """Tests for repository constraints."""
 
@@ -180,11 +165,6 @@ class TestRepositoryConstraints:
 
         with pytest.raises(ValueError, match="id"):
             await repo.create(entity2)
-
-
-# =============================================================================
-# Find and Count Tests
-# =============================================================================
 
 
 class TestRepositoryFindAndCount:
