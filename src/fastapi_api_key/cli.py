@@ -332,7 +332,7 @@ def print_keys_table(console: Any, entities: List[ApiKey], title: str) -> None:
 
     for entity in entities:
         table.add_row(
-            entity.id_[:12] + "...",
+            entity.id_,
             entity.name or "[dim]-[/dim]",
             format_status(entity.is_active),
             format_expires(entity.expires_at),

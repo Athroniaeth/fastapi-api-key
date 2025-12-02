@@ -154,15 +154,15 @@ class TestListCommand:
         assert "key-1" in result.stdout
         assert "key-2" in result.stdout
 
-    def test_list_shows_id(self, runner: CliRunner, cli, service):
-        """List shows key IDs."""
+    def test_list_shows_full_id(self, runner: CliRunner, cli, service):
+        """List shows full key IDs."""
         entity, _ = asyncio.run(service.create(name="test"))
 
         result = runner.invoke(cli, ["list"])
 
         assert result.exit_code == 0
-        # Should show at least part of the ID
-        assert entity.id_[:8] in result.stdout or entity.key_id in result.stdout
+        # Should show the full ID
+        assert entity.id_ in result.stdout
 
     def test_list_shows_expiration_info(self, runner: CliRunner, cli, service):
         """List shows expiration information."""
