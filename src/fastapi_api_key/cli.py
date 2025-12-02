@@ -212,21 +212,6 @@ def create_api_keys_cli(
 
         handle_errors(_run)
 
-    @cli.command("revoke")
-    def revoke_key(
-        id_: str = typer.Argument(..., help="ID of the key to revoke."),
-    ) -> None:
-        """Revoke (deactivate) an API key."""
-
-        async def _run() -> None:
-            async with service_factory() as service:
-                entity = await service.get_by_id(id_)
-                entity.disable()
-                await service.update(entity)
-                console.print(f"[green]API key '{id_}' revoked.[/green]")
-
-        handle_errors(_run)
-
     @cli.command("search")
     def search_keys(
         limit: int = typer.Option(20, "--limit", "-l", min=1, help="Max keys to show."),

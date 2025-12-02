@@ -328,21 +328,6 @@ class TestDeactivateCommand:
         assert result.exit_code == 0
 
 
-class TestRevokeCommand:
-    """Tests for 'revoke' command (alias for deactivate)."""
-
-    def test_revoke_is_alias_for_deactivate(self, runner: CliRunner, cli, service):
-        """Revoke behaves like deactivate."""
-        entity, _ = asyncio.run(service.create(name="to-revoke", is_active=True))
-
-        result = runner.invoke(cli, ["revoke", entity.id_])
-
-        assert result.exit_code == 0
-        assert "revoked" in result.stdout.lower()
-        # Should NOT contain JSON
-        assert "{" not in result.stdout
-
-
 class TestSearchCommand:
     """Tests for 'search' command."""
 
