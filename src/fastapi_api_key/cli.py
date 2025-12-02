@@ -1,34 +1,21 @@
 """CLI module for managing API keys via Typer.
 
 Provides commands for CRUD operations on API keys using the service layer.
+Uses Rich for beautiful terminal output.
 """
 
 import asyncio
-import json
 from datetime import datetime, timezone
 from typing import Any, Callable, Coroutine, List, Optional
 
 from fastapi_api_key._types import ServiceFactory
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import (
-    ApiKeyError,
-    InvalidKey,
-    KeyExpired,
-    KeyInactive,
-    KeyNotFound,
-    KeyNotProvided,
-)
+from fastapi_api_key.domain.errors import ApiKeyError
 from fastapi_api_key.repositories.base import ApiKeyFilter
+from fastapi_api_key.utils import datetime_factory
 
 # Domain errors that should result in exit code 1
-DomainErrors = (
-    InvalidKey,
-    KeyExpired,
-    KeyInactive,
-    KeyNotFound,
-    KeyNotProvided,
-    ApiKeyError,
-)
+DomainErrors = (ApiKeyError,)
 
 
 def create_api_keys_cli(
@@ -45,6 +32,8 @@ def create_api_keys_cli(
         A configured Typer application with API key management commands.
     """
     typer = _import_typer()
+    console = _import_console()
+
     cli = app or typer.Typer(
         help="Manage API keys.",
         no_args_is_help=True,
@@ -69,26 +58,14 @@ def create_api_keys_cli(
         try:
             run_async(func())
         except DomainErrors as exc:
-            typer.secho(str(exc), fg=typer.colors.RED, err=True)
+            console.print(f"[red]Error:[/red] {exc}")
             raise typer.Exit(1) from exc
-
-    def output_entity(entity: ApiKey, message: Optional[str] = None) -> None:
-        """Output an entity as JSON with optional message."""
-        if message:
-            typer.secho(message, fg=typer.colors.GREEN)
-        typer.echo(format_entity(entity))
-
-    def output_entities(entities: List[ApiKey], message: Optional[str] = None) -> None:
-        """Output multiple entities as JSON array."""
-        if message:
-            typer.secho(message, fg=typer.colors.BLUE)
-        typer.echo(json.dumps([serialize_entity(e) for e in entities], indent=2))
 
     # --- Commands ---
 
-    @cli.command("create")
+    @cli.command("create", no_args_is_help=True)
     def create_key(
-        name: Optional[str] = typer.Option(None, "--name", "-n", help="Human-readable name."),
+        name: str = typer.Option(..., "--name", "-n", help="Human-readable name."),
         description: Optional[str] = typer.Option(None, "--description", "-d", help="Description."),
         inactive: bool = typer.Option(False, "--inactive/--active", help="Create as inactive."),
         expires_at: Optional[str] = typer.Option(None, "--expires-at", help="ISO datetime expiration."),
@@ -109,12 +86,10 @@ def create_api_keys_cli(
                     scopes=parsed_scopes,
                 )
 
-                output_entity(entity, "API key created successfully.")
-                typer.secho(
-                    "Plain secret (store securely, shown only once):",
-                    fg=typer.colors.YELLOW,
-                )
-                typer.echo(api_key)
+                console.print("[green]API key created successfully.[/green]\n")
+                print_entity_detail(console, entity)
+                console.print("\n[yellow]Plain secret (store securely, shown only once):[/yellow]")
+                console.print(f"[bold cyan]{api_key}[/bold cyan]")
 
         handle_errors(_run)
 
@@ -129,9 +104,9 @@ def create_api_keys_cli(
             async with service_factory() as service:
                 items = await service.list(limit=limit, offset=offset)
                 if not items:
-                    typer.echo("No API keys found.")
+                    console.print("[yellow]No API keys found.[/yellow]")
                     return
-                output_entities(items, f"Found {len(items)} API key(s):")
+                print_keys_table(console, items, f"API Keys ({len(items)} shown)")
 
         handle_errors(_run)
 
@@ -144,7 +119,7 @@ def create_api_keys_cli(
         async def _run() -> None:
             async with service_factory() as service:
                 entity = await service.get_by_id(id_)
-                output_entity(entity)
+                print_entity_detail(console, entity)
 
         handle_errors(_run)
 
@@ -157,7 +132,7 @@ def create_api_keys_cli(
         async def _run() -> None:
             async with service_factory() as service:
                 await service.delete_by_id(id_)
-                typer.secho(f"Deleted API key '{id_}'.", fg=typer.colors.GREEN)
+                console.print(f"[green]Deleted API key '{id_}'.[/green]")
 
         handle_errors(_run)
 
@@ -170,8 +145,8 @@ def create_api_keys_cli(
         async def _run() -> None:
             async with service_factory() as service:
                 entity = await service.verify_key(api_key)
-                typer.secho("API key verified.", fg=typer.colors.GREEN)
-                output_entity(entity)
+                console.print("[green]API key is valid.[/green]\n")
+                print_entity_detail(console, entity)
 
         handle_errors(_run)
 
@@ -199,10 +174,11 @@ def create_api_keys_cli(
                 if clear_expires:
                     entity.expires_at = None
                 if scopes is not None:
-                    entity.scopes = parse_scopes(scopes)
+                    entity.scopes = parse_scopes(scopes) or []
 
                 updated = await service.update(entity)
-                output_entity(updated, "API key updated.")
+                console.print("[green]API key updated.[/green]\n")
+                print_entity_detail(console, updated)
 
         handle_errors(_run)
 
@@ -216,8 +192,8 @@ def create_api_keys_cli(
             async with service_factory() as service:
                 entity = await service.get_by_id(id_)
                 entity.enable()
-                updated = await service.update(entity)
-                output_entity(updated, "API key activated.")
+                await service.update(entity)
+                console.print(f"[green]API key '{id_}' activated.[/green]")
 
         handle_errors(_run)
 
@@ -231,8 +207,8 @@ def create_api_keys_cli(
             async with service_factory() as service:
                 entity = await service.get_by_id(id_)
                 entity.disable()
-                updated = await service.update(entity)
-                output_entity(updated, "API key deactivated.")
+                await service.update(entity)
+                console.print(f"[green]API key '{id_}' deactivated.[/green]")
 
         handle_errors(_run)
 
@@ -246,8 +222,8 @@ def create_api_keys_cli(
             async with service_factory() as service:
                 entity = await service.get_by_id(id_)
                 entity.disable()
-                updated = await service.update(entity)
-                output_entity(updated, "API key revoked.")
+                await service.update(entity)
+                console.print(f"[green]API key '{id_}' revoked.[/green]")
 
         handle_errors(_run)
 
@@ -276,10 +252,10 @@ def create_api_keys_cli(
                 total = await service.count(filter_)
 
                 if not items:
-                    typer.echo("No API keys found.")
+                    console.print("[yellow]No API keys found.[/yellow]")
                     return
 
-                output_entities(items, f"Found {len(items)} of {total} matching key(s):")
+                print_keys_table(console, items, f"Search Results ({len(items)} of {total})")
 
         handle_errors(_run)
 
@@ -299,7 +275,7 @@ def create_api_keys_cli(
                     never_used=never_used,
                 )
                 total = await service.count(filter_)
-                typer.secho(f"Total: {total}", fg=typer.colors.BLUE)
+                console.print(f"[blue]Total API keys: {total}[/blue]")
 
         handle_errors(_run)
 
@@ -324,27 +300,81 @@ def parse_scopes(value: Optional[str]) -> Optional[List[str]]:
     return [s.strip() for s in value.split(",") if s.strip()]
 
 
-def serialize_entity(entity: ApiKey) -> dict[str, Any]:
-    """Serialize ApiKey to dict for JSON output.
-
-    Excludes sensitive fields like key_hash.
-    """
-    return {
-        "id": entity.id_,
-        "name": entity.name,
-        "description": entity.description,
-        "is_active": entity.is_active,
-        "expires_at": entity.expires_at.isoformat() if entity.expires_at else None,
-        "created_at": entity.created_at.isoformat() if entity.created_at else None,
-        "last_used_at": entity.last_used_at.isoformat() if entity.last_used_at else None,
-        "key_id": entity.key_id,
-        "scopes": entity.scopes,
-    }
+def format_status(is_active: bool) -> str:
+    """Format active status with color."""
+    return "[green]Active[/green]" if is_active else "[red]Inactive[/red]"
 
 
-def format_entity(entity: ApiKey) -> str:
-    """Format ApiKey as JSON string."""
-    return json.dumps(serialize_entity(entity), indent=2)
+def format_expires(expires_at: Optional[datetime]) -> str:
+    """Format expiration with days remaining."""
+    if expires_at is None:
+        return "[dim]Never[/dim]"
+
+    now = datetime_factory()
+    delta = expires_at - now
+
+    if delta.total_seconds() < 0:
+        return "[red]Expired[/red]"
+
+    days = delta.days
+    if days == 0:
+        hours = int(delta.total_seconds() // 3600)
+        return f"[yellow]{hours}h[/yellow]"
+    if days <= 7:
+        return f"[yellow]{days}d[/yellow]"
+    if days <= 30:
+        return f"[blue]{days}d[/blue]"
+    return f"[green]{days}d[/green]"
+
+
+def format_datetime(dt: Optional[datetime]) -> str:
+    """Format datetime for display."""
+    if dt is None:
+        return "[dim]-[/dim]"
+    return dt.strftime("%Y-%m-%d %H:%M")
+
+
+def print_keys_table(console: Any, entities: List[ApiKey], title: str) -> None:
+    """Print a table of API keys."""
+    Table = _import_table()
+    table = Table(title=title, show_header=True, header_style="bold")
+
+    table.add_column("ID", style="cyan", no_wrap=True)
+    table.add_column("Name", style="white")
+    table.add_column("Status", justify="center")
+    table.add_column("Expires", justify="center")
+    table.add_column("Scopes", style="dim")
+
+    for entity in entities:
+        table.add_row(
+            entity.id_[:12] + "...",
+            entity.name or "[dim]-[/dim]",
+            format_status(entity.is_active),
+            format_expires(entity.expires_at),
+            ", ".join(entity.scopes) if entity.scopes else "[dim]-[/dim]",
+        )
+
+    console.print(table)
+
+
+def print_entity_detail(console: Any, entity: ApiKey) -> None:
+    """Print detailed view of an API key."""
+    Panel = _import_panel()
+
+    lines = [
+        f"[bold]ID:[/bold]          {entity.id_}",
+        f"[bold]Key ID:[/bold]      {entity.key_id}",
+        f"[bold]Name:[/bold]        {entity.name or '[dim]-[/dim]'}",
+        f"[bold]Description:[/bold] {entity.description or '[dim]-[/dim]'}",
+        f"[bold]Status:[/bold]      {format_status(entity.is_active)}",
+        f"[bold]Scopes:[/bold]      {', '.join(entity.scopes) if entity.scopes else '[dim]-[/dim]'}",
+        f"[bold]Created:[/bold]     {format_datetime(entity.created_at)}",
+        f"[bold]Last Used:[/bold]   {format_datetime(entity.last_used_at)}",
+        f"[bold]Expires:[/bold]     {format_expires(entity.expires_at)}",
+    ]
+
+    panel = Panel("\n".join(lines), title="API Key Details", border_style="blue")
+    console.print(panel)
 
 
 def _import_typer() -> Any:
@@ -354,3 +384,26 @@ def _import_typer() -> Any:
     except ImportError as exc:
         raise RuntimeError("Typer is required. Install with: pip install fastapi-api-key[cli]") from exc
     return typer
+
+
+def _import_console() -> Any:
+    """Import Rich Console."""
+    try:
+        from rich.console import Console
+    except ImportError as exc:
+        raise RuntimeError("Rich is required. Install with: pip install fastapi-api-key[cli]") from exc
+    return Console()
+
+
+def _import_table() -> Any:
+    """Import Rich Table."""
+    from rich.table import Table
+
+    return Table
+
+
+def _import_panel() -> Any:
+    """Import Rich Panel."""
+    from rich.panel import Panel
+
+    return Panel
