@@ -39,12 +39,15 @@ class ApiKeyCreateIn(BaseModel):
         name: Human-friendly display name.
         description: Optional description to document the purpose of the key.
         is_active: Whether the key is active upon creation.
+        scopes: List of scopes to assign to the key.
+        expires_at: Optional expiration datetime (ISO 8601 format).
     """
 
     name: str = Field(..., min_length=1, max_length=128)
     description: Optional[str] = Field(None, max_length=1024)
     is_active: bool = Field(default=True)
     scopes: List[str] = Field(default_factory=list)
+    expires_at: Optional[datetime] = Field(None, description="Expiration datetime (ISO 8601)")
 
 
 class ApiKeyUpdateIn(BaseModel):
@@ -54,12 +57,17 @@ class ApiKeyUpdateIn(BaseModel):
         name: New display name.
         description: New description.
         is_active: Toggle active state.
+        scopes: New list of scopes.
+        expires_at: New expiration datetime (ISO 8601 format).
+        clear_expires: Set to true to remove expiration (takes precedence over expires_at).
     """
 
     name: Optional[str] = Field(None, min_length=1, max_length=128)
     description: Optional[str] = Field(None, max_length=1024)
     is_active: Optional[bool] = None
     scopes: Optional[List[str]] = None
+    expires_at: Optional[datetime] = Field(None, description="New expiration datetime (ISO 8601)")
+    clear_expires: bool = Field(False, description="Remove expiration date")
 
 
 class ApiKeyOut(BaseModel):
@@ -68,14 +76,27 @@ class ApiKeyOut(BaseModel):
     Note:
         Timestamps are optional to avoid coupling to a particular repository
         schema. If your entity guarantees those fields, they will be populated.
+
+    Attributes:
+        id: Unique identifier of the API key.
+        key_id: Public key identifier (used for lookup, visible in the API key string).
+        name: Human-friendly display name.
+        description: Optional description documenting the key's purpose.
+        is_active: Whether the key is currently active.
+        created_at: When the key was created.
+        last_used_at: When the key was last used for authentication.
+        expires_at: When the key expires (None means no expiration).
+        scopes: List of scopes assigned to this key.
     """
 
     id: str
+    key_id: str
     name: Optional[str] = None
     description: Optional[str] = None
     is_active: bool
     created_at: Optional[datetime] = None
     last_used_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
     scopes: List[str] = Field(default_factory=list)
 
 
@@ -136,15 +157,39 @@ class ApiKeySearchOut(BaseModel):
     offset: int = Field(description="Offset used")
 
 
+class ApiKeyVerifyIn(BaseModel):
+    """Payload to verify an API key.
+
+    Attributes:
+        api_key: The full API key string to verify.
+        required_scopes: Optional list of scopes the key must have.
+    """
+
+    api_key: str = Field(..., min_length=1, description="Full API key string to verify")
+    required_scopes: Optional[List[str]] = Field(None, description="Scopes the key must have")
+
+
+class ApiKeyCountOut(BaseModel):
+    """Response for counting API keys.
+
+    Attributes:
+        total: Total number of keys matching the filter criteria.
+    """
+
+    total: int = Field(description="Total number of matching keys")
+
+
 def _to_out(entity: ApiKey) -> ApiKeyOut:
     """Map an `ApiKey` entity to the public `ApiKeyOut` schema."""
     return ApiKeyOut(
         id=entity.id_,
+        key_id=entity.key_id,
         name=entity.name,
         description=entity.description,
         is_active=entity.is_active,
         created_at=entity.created_at,
         last_used_at=entity.last_used_at,
+        expires_at=entity.expires_at,
         scopes=entity.scopes,
     )
 
@@ -189,6 +234,7 @@ def create_api_keys_router(
             description=payload.description,
             is_active=payload.is_active,
             scopes=payload.scopes,
+            expires_at=payload.expires_at,
         )
         return ApiKeyCreatedOut(api_key=api_key, entity=_to_out(entity))
 
@@ -310,6 +356,10 @@ def create_api_keys_router(
             current.is_active = payload.is_active
         if payload.scopes is not None:
             current.scopes = payload.scopes
+        if payload.clear_expires:
+            current.expires_at = None
+        elif payload.expires_at is not None:
+            current.expires_at = payload.expires_at
 
         try:
             updated = await svc.update(current)
@@ -392,6 +442,87 @@ def create_api_keys_router(
         entity.is_active = False
         updated = await svc.update(entity)
         return _to_out(updated)
+
+    @router.post(
+        path="/verify",
+        response_model=ApiKeyOut,
+        status_code=status.HTTP_200_OK,
+        summary="Verify an API key",
+    )
+    async def verify_api_key(
+        payload: ApiKeyVerifyIn,
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
+    ) -> ApiKeyOut:
+        """Verify an API key and return its details if valid.
+
+        This endpoint validates the API key format, checks if it exists,
+        verifies it's active, not expired, and optionally checks required scopes.
+
+        Args:
+            payload: Verification parameters including the API key and optional scopes.
+            svc: Injected API key service.
+
+        Returns:
+            The API key entity if verification succeeds.
+
+        Raises:
+            HTTPException: 401 if the key is invalid or not found.
+            HTTPException: 403 if the key is inactive, expired, or missing required scopes.
+        """
+        try:
+            entity = await svc.verify_key(
+                api_key=payload.api_key,
+                required_scopes=payload.required_scopes,
+            )
+        except (InvalidKey, KeyNotFound) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API key invalid",
+            ) from exc
+        except KeyInactive as exc:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="API key inactive",
+            ) from exc
+        except KeyExpired as exc:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="API key expired",
+            ) from exc
+        except InvalidScopes as exc:
+            required_scopes_str = ", ".join([f"'{scope}'" for scope in (payload.required_scopes or [])])
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"API key missing required scopes {required_scopes_str}",
+            ) from exc
+
+        return _to_out(entity)
+
+    @router.post(
+        path="/count",
+        response_model=ApiKeyCountOut,
+        status_code=status.HTTP_200_OK,
+        summary="Count API keys with filters",
+    )
+    async def count_api_keys(
+        payload: ApiKeySearchIn,
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
+    ) -> ApiKeyCountOut:
+        """Count API keys matching the given filter criteria.
+
+        Uses the same filter criteria as the search endpoint but only returns
+        the count without fetching the actual entities.
+
+        Args:
+            payload: Filter criteria (all optional, AND logic).
+            svc: Injected API key service.
+
+        Returns:
+            Total count of matching API keys.
+        """
+        filter_ = payload.to_filter(limit=0, offset=0)
+        total = await svc.count(filter_)
+        return ApiKeyCountOut(total=total)
 
     return router
 
