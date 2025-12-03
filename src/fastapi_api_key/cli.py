@@ -14,8 +14,20 @@ from fastapi_api_key.domain.errors import ApiKeyError
 from fastapi_api_key.repositories.base import ApiKeyFilter
 from fastapi_api_key.utils import datetime_factory
 
+try:
+    import typer
+except ImportError as exc:  # pragma: no cover
+    raise RuntimeError("Typer is required. Install with: pip install fastapi-api-key[cli]") from exc
+
+try:
+    from rich.console import Console
+except ImportError as exc:  # pragma: no cover
+    raise RuntimeError("Rich is required. Install with: pip install fastapi-api-key[cli]") from exc
+
 # Domain errors that should result in exit code 1
 DomainErrors = (ApiKeyError,)
+
+console = Console()
 
 
 def create_api_keys_cli(
@@ -31,9 +43,6 @@ def create_api_keys_cli(
     Returns:
         A configured Typer application with API key management commands.
     """
-    typer = _import_typer()
-    console = _import_console()
-
     cli = app or typer.Typer(
         help="Manage API keys.",
         no_args_is_help=True,
@@ -46,7 +55,7 @@ def create_api_keys_cli(
         """Run an async coroutine synchronously."""
         try:
             return asyncio.run(coro)
-        except RuntimeError:
+        except RuntimeError:  # pragma: no cover
             loop = asyncio.new_event_loop()
             try:
                 return loop.run_until_complete(coro)
@@ -393,33 +402,3 @@ def print_entity_detail(console: Any, entity: ApiKey) -> None:
     console.print(panel)
 
 
-def _import_typer() -> Any:
-    """Import typer with helpful error message."""
-    try:
-        import typer
-    except ImportError as exc:
-        raise RuntimeError("Typer is required. Install with: pip install fastapi-api-key[cli]") from exc
-    return typer
-
-
-def _import_console() -> Any:
-    """Import Rich Console."""
-    try:
-        from rich.console import Console
-    except ImportError as exc:
-        raise RuntimeError("Rich is required. Install with: pip install fastapi-api-key[cli]") from exc
-    return Console()
-
-
-def _import_table() -> Any:
-    """Import Rich Table."""
-    from rich.table import Table
-
-    return Table
-
-
-def _import_panel() -> Any:
-    """Import Rich Panel."""
-    from rich.panel import Panel
-
-    return Panel

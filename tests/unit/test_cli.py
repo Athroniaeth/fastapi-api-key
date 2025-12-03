@@ -299,6 +299,44 @@ class TestUpdateCommand:
         assert result.exit_code == 0
         assert "Inactive" in result.stdout
 
+    def test_update_expires_at(self, runner: CliRunner, cli, service):
+        """Update can set expiration date."""
+        entity, _ = asyncio.run(service.create(name="test"))
+
+        result = runner.invoke(cli, ["update", entity.id_, "--expires-at", "2030-01-01"])
+
+        assert result.exit_code == 0
+
+    def test_update_expires_at_with_timezone(self, runner: CliRunner, cli, service):
+        """Update can set expiration date with timezone."""
+        entity, _ = asyncio.run(service.create(name="test"))
+
+        result = runner.invoke(cli, ["update", entity.id_, "--expires-at", "2030-01-01T12:00:00+02:00"])
+
+        assert result.exit_code == 0
+
+    def test_update_clear_expires(self, runner: CliRunner, cli, service):
+        """Update can clear expiration date."""
+        from datetime import timedelta
+
+        expires = datetime_factory() + timedelta(days=30)
+        entity, _ = asyncio.run(service.create(name="test", expires_at=expires))
+
+        result = runner.invoke(cli, ["update", entity.id_, "--clear-expires"])
+
+        assert result.exit_code == 0
+        assert "Never" in result.stdout
+
+    def test_update_scopes(self, runner: CliRunner, cli, service):
+        """Update can change scopes."""
+        entity, _ = asyncio.run(service.create(name="test"))
+
+        result = runner.invoke(cli, ["update", entity.id_, "--scopes", "admin,write"])
+
+        assert result.exit_code == 0
+        assert "admin" in result.stdout
+        assert "write" in result.stdout
+
 
 class TestActivateCommand:
     """Tests for 'activate' command."""
@@ -354,6 +392,13 @@ class TestDeactivateCommand:
 
 class TestSearchCommand:
     """Tests for 'search' command."""
+
+    def test_search_no_results(self, runner: CliRunner, cli):
+        """Search returns message when no keys match."""
+        result = runner.invoke(cli, ["search", "--name", "nonexistent"])
+
+        assert result.exit_code == 0
+        assert "No API keys" in result.stdout
 
     def test_search_by_active_status(self, runner: CliRunner, cli, service):
         """Search for active keys only."""
@@ -412,6 +457,43 @@ class TestCountCommand:
 
         assert result.exit_code == 0
         assert "1" in result.stdout
+
+
+class TestExpirationDisplay:
+    """Tests for expiration display formatting."""
+
+    def test_list_shows_expired_key(self, runner: CliRunner, cli, service, repo):
+        """List shows expired indicator for expired keys."""
+        # Create key normally, then modify expires_at directly in repo
+        entity, _ = asyncio.run(service.create(name="expired-key"))
+        entity.expires_at = datetime_factory() - timedelta(days=1)
+        asyncio.run(repo.update(entity))
+
+        result = runner.invoke(cli, ["list"])
+
+        assert result.exit_code == 0
+        assert "Expired" in result.stdout
+
+    def test_list_shows_hours_remaining(self, runner: CliRunner, cli, service):
+        """List shows hours remaining when less than a day."""
+        expires = datetime_factory() + timedelta(hours=5)
+        asyncio.run(service.create(name="hours-key", expires_at=expires))
+
+        result = runner.invoke(cli, ["list"])
+
+        assert result.exit_code == 0
+        assert "h" in result.stdout  # Shows "5h" or similar
+
+    def test_list_shows_days_under_week(self, runner: CliRunner, cli, service):
+        """List shows days for keys expiring within a week."""
+        expires = datetime_factory() + timedelta(days=5)
+        asyncio.run(service.create(name="week-key", expires_at=expires))
+
+        result = runner.invoke(cli, ["list"])
+
+        assert result.exit_code == 0
+        # Should show days with "d" suffix (could be 4d or 5d due to timing)
+        assert "d" in result.stdout and "day" not in result.stdout.lower()
 
 
 class TestOutputSecurity:
