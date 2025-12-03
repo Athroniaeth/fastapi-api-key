@@ -4,14 +4,18 @@ Provides commands for CRUD operations on API keys using the service layer.
 Uses Rich for beautiful terminal output.
 """
 
-import asyncio
+from asyncio import run
+from collections import defaultdict
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from typing import Any, Callable, Coroutine, List, Optional
+from functools import wraps
+from typing import Any, AsyncIterator, Callable, List, Optional
 
 from fastapi_api_key._types import ServiceFactory
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.errors import ApiKeyError
 from fastapi_api_key.repositories.base import ApiKeyFilter
+from fastapi_api_key.services.base import AbstractApiKeyService
 from fastapi_api_key.utils import datetime_factory
 
 try:
@@ -21,6 +25,8 @@ except ImportError as exc:  # pragma: no cover
 
 try:
     from rich.console import Console
+    from rich.panel import Panel
+    from rich.table import Table
 except ImportError as exc:  # pragma: no cover
     raise RuntimeError("Rich is required. Install with: pip install fastapi-api-key[cli]") from exc
 
@@ -30,50 +36,71 @@ DomainErrors = (ApiKeyError,)
 console = Console()
 
 
+class AsyncTyper(typer.Typer):
+    """Typer subclass with native async command support."""
+
+    event_handlers: defaultdict[str, list[Callable]] = defaultdict(list)
+
+    def async_command(self, *args: Any, **kwargs: Any) -> Callable:
+        """Decorator for async commands."""
+
+        def decorator(async_func: Callable) -> Callable:
+            @wraps(async_func)
+            def sync_func(*_args: Any, **_kwargs: Any) -> Any:
+                self.run_event_handlers("startup")
+                try:
+                    return run(async_func(*_args, **_kwargs))
+                finally:
+                    self.run_event_handlers("shutdown")
+
+            self.command(*args, **kwargs)(sync_func)
+            return async_func
+
+        return decorator
+
+    def run_event_handlers(self, event_type: str) -> None:
+        """Run registered event handlers for the given event type."""
+        for event in self.event_handlers[event_type]:  # pragma: no cover
+            event()
+
+
+@asynccontextmanager
+async def handle_errors(
+    service_factory: ServiceFactory,
+) -> AsyncIterator[AbstractApiKeyService]:
+    """Async context manager for service access with error handling.
+
+    Yields the service and catches domain errors, converting them to CLI exits.
+    """
+    try:
+        async with service_factory() as service:
+            yield service
+    except DomainErrors as exc:
+        console.print(f"[red]Error:[/red] {exc}")
+        raise typer.Exit(1) from exc
+
+
 def create_api_keys_cli(
     service_factory: ServiceFactory,
-    app: Optional[Any] = None,
-) -> Any:
+    app: Optional[AsyncTyper] = None,
+) -> AsyncTyper:
     """Build a Typer CLI bound to an ApiKeyService.
 
     Args:
         service_factory: Async context manager factory returning the service.
-        app: Optional pre-configured Typer instance to extend.
+        app: Optional pre-configured AsyncTyper instance to extend.
 
     Returns:
-        A configured Typer application with API key management commands.
+        A configured AsyncTyper application with API key management commands.
     """
-    cli = app or typer.Typer(
+    cli = app or AsyncTyper(
         help="Manage API keys.",
         no_args_is_help=True,
         pretty_exceptions_enable=False,
     )
 
-    # --- Helpers ---
-
-    def run_async(coro: Coroutine[Any, Any, Any]) -> Any:
-        """Run an async coroutine synchronously."""
-        try:
-            return asyncio.run(coro)
-        except RuntimeError:  # pragma: no cover
-            loop = asyncio.new_event_loop()
-            try:
-                return loop.run_until_complete(coro)
-            finally:
-                loop.close()
-
-    def handle_errors(func: Callable[[], Coroutine[Any, Any, Any]]) -> None:
-        """Execute async function with domain error handling."""
-        try:
-            run_async(func())
-        except DomainErrors as exc:
-            console.print(f"[red]Error:[/red] {exc}")
-            raise typer.Exit(1) from exc
-
-    # --- Commands ---
-
-    @cli.command("create")
-    def create_key(
+    @cli.async_command("create")
+    async def create_key(
         ctx: typer.Context,
         name: Optional[str] = typer.Option(None, "--name", "-n", help="Human-readable name."),
         description: Optional[str] = typer.Option(None, "--description", "-d", help="Description."),
@@ -86,45 +113,38 @@ def create_api_keys_cli(
             typer.echo(ctx.get_help())
             raise typer.Exit(0)
 
-        async def _run() -> None:
-            async with service_factory() as service:
-                parsed_expires = parse_datetime(expires_at) if expires_at else None
-                parsed_scopes = parse_scopes(scopes)
+        async with handle_errors(service_factory) as service:
+            parsed_expires = parse_datetime(expires_at) if expires_at else None
+            parsed_scopes = parse_scopes(scopes)
 
-                entity, api_key = await service.create(
-                    name=name,
-                    description=description,
-                    is_active=not inactive,
-                    expires_at=parsed_expires,
-                    scopes=parsed_scopes,
-                )
+            entity, api_key = await service.create(
+                name=name,
+                description=description,
+                is_active=not inactive,
+                expires_at=parsed_expires,
+                scopes=parsed_scopes,
+            )
 
-                console.print("[green]API key created successfully.[/green]\n")
-                print_entity_detail(console, entity)
-                console.print("\n[yellow]Plain secret (store securely, shown only once):[/yellow]")
-                console.print(f"[bold cyan]{api_key}[/bold cyan]")
+            console.print("[green]API key created successfully.[/green]\n")
+            print_entity_detail(entity)
+            console.print("\n[yellow]Plain secret (store securely, shown only once):[/yellow]")
+            console.print(f"[bold cyan]{api_key}[/bold cyan]")
 
-        handle_errors(_run)
-
-    @cli.command("list")
-    def list_keys(
+    @cli.async_command("list")
+    async def list_keys(
         limit: int = typer.Option(20, "--limit", "-l", min=1, help="Max keys to show."),
         offset: int = typer.Option(0, "--offset", "-o", min=0, help="Skip first N keys."),
     ) -> None:
         """List API keys with pagination."""
+        async with handle_errors(service_factory) as service:
+            items = await service.list(limit=limit, offset=offset)
+            if not items:
+                console.print("[yellow]No API keys found.[/yellow]")
+                return
+            print_keys_table(items, f"API Keys ({len(items)} shown)")
 
-        async def _run() -> None:
-            async with service_factory() as service:
-                items = await service.list(limit=limit, offset=offset)
-                if not items:
-                    console.print("[yellow]No API keys found.[/yellow]")
-                    return
-                print_keys_table(console, items, f"API Keys ({len(items)} shown)")
-
-        handle_errors(_run)
-
-    @cli.command("get")
-    def get_key(
+    @cli.async_command("get")
+    async def get_key(
         ctx: typer.Context,
         id_: Optional[str] = typer.Argument(None, help="ID of the key."),
     ) -> None:
@@ -133,15 +153,12 @@ def create_api_keys_cli(
             typer.echo(ctx.get_help())
             raise typer.Exit(0)
 
-        async def _run() -> None:
-            async with service_factory() as service:
-                entity = await service.get_by_id(id_)
-                print_entity_detail(console, entity)
+        async with handle_errors(service_factory) as service:
+            entity = await service.get_by_id(id_)
+            print_entity_detail(entity)
 
-        handle_errors(_run)
-
-    @cli.command("delete")
-    def delete_key(
+    @cli.async_command("delete")
+    async def delete_key(
         ctx: typer.Context,
         id_: Optional[str] = typer.Argument(None, help="ID of the key to delete."),
     ) -> None:
@@ -150,15 +167,12 @@ def create_api_keys_cli(
             typer.echo(ctx.get_help())
             raise typer.Exit(0)
 
-        async def _run() -> None:
-            async with service_factory() as service:
-                await service.delete_by_id(id_)
-                console.print(f"[green]Deleted API key '{id_}'.[/green]")
+        async with handle_errors(service_factory) as service:
+            await service.delete_by_id(id_)
+            console.print(f"[green]Deleted API key '{id_}'.[/green]")
 
-        handle_errors(_run)
-
-    @cli.command("verify")
-    def verify_key(
+    @cli.async_command("verify")
+    async def verify_key(
         ctx: typer.Context,
         api_key: Optional[str] = typer.Argument(None, help="Full API key string."),
     ) -> None:
@@ -167,16 +181,13 @@ def create_api_keys_cli(
             typer.echo(ctx.get_help())
             raise typer.Exit(0)
 
-        async def _run() -> None:
-            async with service_factory() as service:
-                entity = await service.verify_key(api_key)
-                console.print("[green]API key is valid.[/green]\n")
-                print_entity_detail(console, entity)
+        async with handle_errors(service_factory) as service:
+            entity = await service.verify_key(api_key)
+            console.print("[green]API key is valid.[/green]\n")
+            print_entity_detail(entity)
 
-        handle_errors(_run)
-
-    @cli.command("update")
-    def update_key(
+    @cli.async_command("update")
+    async def update_key(
         ctx: typer.Context,
         id_: Optional[str] = typer.Argument(None, help="ID of the key to update."),
         name: Optional[str] = typer.Option(None, "--name", "-n", help="New name."),
@@ -191,31 +202,28 @@ def create_api_keys_cli(
             typer.echo(ctx.get_help())
             raise typer.Exit(0)
 
-        async def _run() -> None:
-            async with service_factory() as service:
-                entity = await service.get_by_id(id_)
+        async with handle_errors(service_factory) as service:
+            entity = await service.get_by_id(id_)
 
-                if name is not None:
-                    entity.name = name
-                if description is not None:
-                    entity.description = description
-                if expires_at is not None:
-                    entity.expires_at = parse_datetime(expires_at)
-                if clear_expires:
-                    entity.expires_at = None
-                if scopes is not None:
-                    entity.scopes = parse_scopes(scopes) or []
-                if active is not None:
-                    entity.is_active = active
+            if name is not None:
+                entity.name = name
+            if description is not None:
+                entity.description = description
+            if expires_at is not None:
+                entity.expires_at = parse_datetime(expires_at)
+            if clear_expires:
+                entity.expires_at = None
+            if scopes is not None:
+                entity.scopes = parse_scopes(scopes) or []
+            if active is not None:
+                entity.is_active = active
 
-                updated = await service.update(entity)
-                console.print("[green]API key updated.[/green]\n")
-                print_entity_detail(console, updated)
+            updated = await service.update(entity)
+            console.print("[green]API key updated.[/green]\n")
+            print_entity_detail(updated)
 
-        handle_errors(_run)
-
-    @cli.command("activate")
-    def activate_key(
+    @cli.async_command("activate")
+    async def activate_key(
         ctx: typer.Context,
         id_: Optional[str] = typer.Argument(None, help="ID of the key to activate."),
     ) -> None:
@@ -224,17 +232,14 @@ def create_api_keys_cli(
             typer.echo(ctx.get_help())
             raise typer.Exit(0)
 
-        async def _run() -> None:
-            async with service_factory() as service:
-                entity = await service.get_by_id(id_)
-                entity.enable()
-                await service.update(entity)
-                console.print(f"[green]API key '{id_}' activated.[/green]")
+        async with handle_errors(service_factory) as service:
+            entity = await service.get_by_id(id_)
+            entity.enable()
+            await service.update(entity)
+            console.print(f"[green]API key '{id_}' activated.[/green]")
 
-        handle_errors(_run)
-
-    @cli.command("deactivate")
-    def deactivate_key(
+    @cli.async_command("deactivate")
+    async def deactivate_key(
         ctx: typer.Context,
         id_: Optional[str] = typer.Argument(None, help="ID of the key to deactivate."),
     ) -> None:
@@ -243,17 +248,14 @@ def create_api_keys_cli(
             typer.echo(ctx.get_help())
             raise typer.Exit(0)
 
-        async def _run() -> None:
-            async with service_factory() as service:
-                entity = await service.get_by_id(id_)
-                entity.disable()
-                await service.update(entity)
-                console.print(f"[green]API key '{id_}' deactivated.[/green]")
+        async with handle_errors(service_factory) as service:
+            entity = await service.get_by_id(id_)
+            entity.disable()
+            await service.update(entity)
+            console.print(f"[green]API key '{id_}' deactivated.[/green]")
 
-        handle_errors(_run)
-
-    @cli.command("search")
-    def search_keys(
+    @cli.async_command("search")
+    async def search_keys(
         limit: int = typer.Option(20, "--limit", "-l", min=1, help="Max keys to show."),
         offset: int = typer.Option(0, "--offset", "-o", min=0, help="Skip first N keys."),
         active: Optional[bool] = typer.Option(None, "--active/--inactive", help="Filter by status."),
@@ -262,59 +264,50 @@ def create_api_keys_cli(
         never_used: Optional[bool] = typer.Option(None, "--never-used/--used", help="Filter by usage."),
     ) -> None:
         """Search API keys with filters."""
+        async with handle_errors(service_factory) as service:
+            filter_ = ApiKeyFilter(
+                is_active=active,
+                name_contains=name,
+                scopes_contain_all=parse_scopes(scopes),
+                never_used=never_used,
+                limit=limit,
+                offset=offset,
+            )
+            items = await service.find(filter_)
+            total = await service.count(filter_)
 
-        async def _run() -> None:
-            async with service_factory() as service:
-                filter_ = ApiKeyFilter(
-                    is_active=active,
-                    name_contains=name,
-                    scopes_contain_all=parse_scopes(scopes),
-                    never_used=never_used,
-                    limit=limit,
-                    offset=offset,
-                )
-                items = await service.find(filter_)
-                total = await service.count(filter_)
+            if not items:
+                console.print("[yellow]No API keys found.[/yellow]")
+                return
 
-                if not items:
-                    console.print("[yellow]No API keys found.[/yellow]")
-                    return
+            print_keys_table(items, f"Search Results ({len(items)} of {total})")
 
-                print_keys_table(console, items, f"Search Results ({len(items)} of {total})")
-
-        handle_errors(_run)
-
-    @cli.command("count")
-    def count_keys(
+    @cli.async_command("count")
+    async def count_keys(
         active: Optional[bool] = typer.Option(None, "--active/--inactive", help="Filter by status."),
         name: Optional[str] = typer.Option(None, "--name", "-n", help="Name contains."),
         never_used: Optional[bool] = typer.Option(None, "--never-used/--used", help="Filter by usage."),
     ) -> None:
         """Count API keys."""
-
-        async def _run() -> None:
-            async with service_factory() as service:
-                filter_ = ApiKeyFilter(
-                    is_active=active,
-                    name_contains=name,
-                    never_used=never_used,
-                )
-                total = await service.count(filter_)
-                console.print(f"[blue]Total API keys: {total}[/blue]")
-
-        handle_errors(_run)
+        async with handle_errors(service_factory) as service:
+            filter_ = ApiKeyFilter(
+                is_active=active,
+                name_contains=name,
+                never_used=never_used,
+            )
+            total = await service.count(filter_)
+            console.print(f"[blue]Total API keys: {total}[/blue]")
 
     return cli
-
-
-# --- Utility Functions ---
 
 
 def parse_datetime(value: str) -> datetime:
     """Parse ISO datetime string to UTC datetime."""
     parsed = datetime.fromisoformat(value)
+
     if parsed.tzinfo is None:
         return parsed.replace(tzinfo=timezone.utc)
+
     return parsed.astimezone(timezone.utc)
 
 
@@ -342,6 +335,7 @@ def format_expires(expires_at: Optional[datetime]) -> str:
         return "[red]Expired[/red]"
 
     days = delta.days
+
     if days == 0:
         hours = int(delta.total_seconds() // 3600)
         return f"[yellow]{hours}h[/yellow]"
@@ -349,6 +343,7 @@ def format_expires(expires_at: Optional[datetime]) -> str:
         return f"[yellow]{days}d[/yellow]"
     if days <= 30:
         return f"[blue]{days}d[/blue]"
+
     return f"[green]{days}d[/green]"
 
 
@@ -359,9 +354,8 @@ def format_datetime(dt: Optional[datetime]) -> str:
     return dt.strftime("%Y-%m-%d %H:%M")
 
 
-def print_keys_table(console: Any, entities: List[ApiKey], title: str) -> None:
+def print_keys_table(entities: List[ApiKey], title: str) -> None:
     """Print a table of API keys."""
-    Table = _import_table()
     table = Table(title=title, show_header=True, header_style="bold")
 
     table.add_column("ID", style="cyan", no_wrap=True)
@@ -382,10 +376,8 @@ def print_keys_table(console: Any, entities: List[ApiKey], title: str) -> None:
     console.print(table)
 
 
-def print_entity_detail(console: Any, entity: ApiKey) -> None:
+def print_entity_detail(entity: ApiKey) -> None:
     """Print detailed view of an API key."""
-    Panel = _import_panel()
-
     lines = [
         f"[bold]ID:[/bold]          {entity.id_}",
         f"[bold]Key ID:[/bold]      {entity.key_id}",
@@ -400,5 +392,3 @@ def print_entity_detail(console: Any, entity: ApiKey) -> None:
 
     panel = Panel("\n".join(lines), title="API Key Details", border_style="blue")
     console.print(panel)
-
-
