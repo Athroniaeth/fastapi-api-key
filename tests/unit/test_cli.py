@@ -281,6 +281,24 @@ class TestUpdateCommand:
 
         assert result.exit_code == 1
 
+    def test_update_activate(self, runner: CliRunner, cli, service):
+        """Update can activate a key."""
+        entity, _ = asyncio.run(service.create(name="test", is_active=False))
+
+        result = runner.invoke(cli, ["update", entity.id_, "--active"])
+
+        assert result.exit_code == 0
+        assert "Active" in result.stdout
+
+    def test_update_deactivate(self, runner: CliRunner, cli, service):
+        """Update can deactivate a key."""
+        entity, _ = asyncio.run(service.create(name="test", is_active=True))
+
+        result = runner.invoke(cli, ["update", entity.id_, "--inactive"])
+
+        assert result.exit_code == 0
+        assert "Inactive" in result.stdout
+
 
 class TestActivateCommand:
     """Tests for 'activate' command."""

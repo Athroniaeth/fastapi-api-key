@@ -175,6 +175,7 @@ def create_api_keys_cli(
         expires_at: Optional[str] = typer.Option(None, "--expires-at", help="New expiration (ISO datetime)."),
         clear_expires: bool = typer.Option(False, "--clear-expires", help="Remove expiration."),
         scopes: Optional[str] = typer.Option(None, "--scopes", "-s", help="New scopes (comma-separated)."),
+        active: Optional[bool] = typer.Option(None, "--active/--inactive", help="Activate or deactivate."),
     ) -> None:
         """Update an API key's metadata."""
         if id_ is None:
@@ -195,6 +196,8 @@ def create_api_keys_cli(
                     entity.expires_at = None
                 if scopes is not None:
                     entity.scopes = parse_scopes(scopes) or []
+                if active is not None:
+                    entity.is_active = active
 
                 updated = await service.update(entity)
                 console.print("[green]API key updated.[/green]\n")
