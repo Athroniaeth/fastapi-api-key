@@ -52,43 +52,49 @@ def cli(service: ApiKeyService):
 
 
 class TestNoArgsShowsHelp:
-    """Commands without required args should show help or error."""
+    """Commands without args should show help."""
 
     def test_create_no_args_shows_help(self, runner: CliRunner, cli):
         """create without --name shows help."""
         result = runner.invoke(cli, ["create"])
-        # no_args_is_help shows usage
-        assert result.exit_code == 0 or "name" in (result.stdout + (result.stderr or "")).lower()
+        assert result.exit_code == 0
+        assert "Usage" in result.stdout or "--name" in result.stdout
 
-    def test_get_no_args_shows_error(self, runner: CliRunner, cli):
-        """get without ID shows error."""
+    def test_get_no_args_shows_help(self, runner: CliRunner, cli):
+        """get without ID shows help."""
         result = runner.invoke(cli, ["get"])
-        assert result.exit_code != 0  # Missing required argument
+        assert result.exit_code == 0
+        assert "Usage" in result.stdout
 
-    def test_delete_no_args_shows_error(self, runner: CliRunner, cli):
-        """delete without ID shows error."""
+    def test_delete_no_args_shows_help(self, runner: CliRunner, cli):
+        """delete without ID shows help."""
         result = runner.invoke(cli, ["delete"])
-        assert result.exit_code != 0
+        assert result.exit_code == 0
+        assert "Usage" in result.stdout
 
-    def test_verify_no_args_shows_error(self, runner: CliRunner, cli):
-        """verify without API key shows error."""
+    def test_verify_no_args_shows_help(self, runner: CliRunner, cli):
+        """verify without API key shows help."""
         result = runner.invoke(cli, ["verify"])
-        assert result.exit_code != 0
+        assert result.exit_code == 0
+        assert "Usage" in result.stdout
 
-    def test_update_no_args_shows_error(self, runner: CliRunner, cli):
-        """update without ID shows error."""
+    def test_update_no_args_shows_help(self, runner: CliRunner, cli):
+        """update without ID shows help."""
         result = runner.invoke(cli, ["update"])
-        assert result.exit_code != 0
+        assert result.exit_code == 0
+        assert "Usage" in result.stdout
 
-    def test_activate_no_args_shows_error(self, runner: CliRunner, cli):
-        """activate without ID shows error."""
+    def test_activate_no_args_shows_help(self, runner: CliRunner, cli):
+        """activate without ID shows help."""
         result = runner.invoke(cli, ["activate"])
-        assert result.exit_code != 0
+        assert result.exit_code == 0
+        assert "Usage" in result.stdout
 
-    def test_deactivate_no_args_shows_error(self, runner: CliRunner, cli):
-        """deactivate without ID shows error."""
+    def test_deactivate_no_args_shows_help(self, runner: CliRunner, cli):
+        """deactivate without ID shows help."""
         result = runner.invoke(cli, ["deactivate"])
-        assert result.exit_code != 0
+        assert result.exit_code == 0
+        assert "Usage" in result.stdout
 
 
 class TestCreateCommand:

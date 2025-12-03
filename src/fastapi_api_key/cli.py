@@ -63,15 +63,19 @@ def create_api_keys_cli(
 
     # --- Commands ---
 
-    @cli.command("create", no_args_is_help=True)
+    @cli.command("create")
     def create_key(
-        name: str = typer.Option(..., "--name", "-n", help="Human-readable name."),
+        ctx: typer.Context,
+        name: Optional[str] = typer.Option(None, "--name", "-n", help="Human-readable name."),
         description: Optional[str] = typer.Option(None, "--description", "-d", help="Description."),
         inactive: bool = typer.Option(False, "--inactive/--active", help="Create as inactive."),
         expires_at: Optional[str] = typer.Option(None, "--expires-at", help="ISO datetime expiration."),
         scopes: Optional[str] = typer.Option(None, "--scopes", "-s", help="Comma-separated scopes."),
     ) -> None:
         """Create a new API key."""
+        if name is None:
+            typer.echo(ctx.get_help())
+            raise typer.Exit(0)
 
         async def _run() -> None:
             async with service_factory() as service:
@@ -112,9 +116,13 @@ def create_api_keys_cli(
 
     @cli.command("get")
     def get_key(
-        id_: str = typer.Argument(..., help="ID of the key."),
+        ctx: typer.Context,
+        id_: Optional[str] = typer.Argument(None, help="ID of the key."),
     ) -> None:
         """Get an API key by ID."""
+        if id_ is None:
+            typer.echo(ctx.get_help())
+            raise typer.Exit(0)
 
         async def _run() -> None:
             async with service_factory() as service:
@@ -125,9 +133,13 @@ def create_api_keys_cli(
 
     @cli.command("delete")
     def delete_key(
-        id_: str = typer.Argument(..., help="ID of the key to delete."),
+        ctx: typer.Context,
+        id_: Optional[str] = typer.Argument(None, help="ID of the key to delete."),
     ) -> None:
         """Delete an API key."""
+        if id_ is None:
+            typer.echo(ctx.get_help())
+            raise typer.Exit(0)
 
         async def _run() -> None:
             async with service_factory() as service:
@@ -138,9 +150,13 @@ def create_api_keys_cli(
 
     @cli.command("verify")
     def verify_key(
-        api_key: str = typer.Argument(..., help="Full API key string."),
+        ctx: typer.Context,
+        api_key: Optional[str] = typer.Argument(None, help="Full API key string."),
     ) -> None:
         """Verify an API key."""
+        if api_key is None:
+            typer.echo(ctx.get_help())
+            raise typer.Exit(0)
 
         async def _run() -> None:
             async with service_factory() as service:
@@ -152,7 +168,8 @@ def create_api_keys_cli(
 
     @cli.command("update")
     def update_key(
-        id_: str = typer.Argument(..., help="ID of the key to update."),
+        ctx: typer.Context,
+        id_: Optional[str] = typer.Argument(None, help="ID of the key to update."),
         name: Optional[str] = typer.Option(None, "--name", "-n", help="New name."),
         description: Optional[str] = typer.Option(None, "--description", "-d", help="New description."),
         expires_at: Optional[str] = typer.Option(None, "--expires-at", help="New expiration (ISO datetime)."),
@@ -160,6 +177,9 @@ def create_api_keys_cli(
         scopes: Optional[str] = typer.Option(None, "--scopes", "-s", help="New scopes (comma-separated)."),
     ) -> None:
         """Update an API key's metadata."""
+        if id_ is None:
+            typer.echo(ctx.get_help())
+            raise typer.Exit(0)
 
         async def _run() -> None:
             async with service_factory() as service:
@@ -184,9 +204,13 @@ def create_api_keys_cli(
 
     @cli.command("activate")
     def activate_key(
-        id_: str = typer.Argument(..., help="ID of the key to activate."),
+        ctx: typer.Context,
+        id_: Optional[str] = typer.Argument(None, help="ID of the key to activate."),
     ) -> None:
         """Activate an API key."""
+        if id_ is None:
+            typer.echo(ctx.get_help())
+            raise typer.Exit(0)
 
         async def _run() -> None:
             async with service_factory() as service:
@@ -199,9 +223,13 @@ def create_api_keys_cli(
 
     @cli.command("deactivate")
     def deactivate_key(
-        id_: str = typer.Argument(..., help="ID of the key to deactivate."),
+        ctx: typer.Context,
+        id_: Optional[str] = typer.Argument(None, help="ID of the key to deactivate."),
     ) -> None:
         """Deactivate an API key."""
+        if id_ is None:
+            typer.echo(ctx.get_help())
+            raise typer.Exit(0)
 
         async def _run() -> None:
             async with service_factory() as service:
@@ -325,10 +353,10 @@ def print_keys_table(console: Any, entities: List[ApiKey], title: str) -> None:
     table = Table(title=title, show_header=True, header_style="bold")
 
     table.add_column("ID", style="cyan", no_wrap=True)
-    table.add_column("Name", style="white")
+    table.add_column("Name", style="white", no_wrap=True)
     table.add_column("Status", justify="center")
     table.add_column("Expires", justify="center")
-    table.add_column("Scopes", style="dim")
+    table.add_column("Scopes", style="dim", no_wrap=True)
 
     for entity in entities:
         table.add_row(
