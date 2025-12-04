@@ -36,8 +36,8 @@ def generate(
     separator: str = DEFAULT_SEPARATOR,
 ) -> str:
     """Generate a new API key for set in dotenv file."""
-    key_id = key_id or key_id or key_id_factory()
-    key_secret = key_secret or key_secret or key_secret_factory()
+    key_id = key_id or key_id_factory()
+    key_secret = key_secret or key_secret_factory()
 
     api_key = ApiKey.get_api_key(
         global_prefix=global_prefix,

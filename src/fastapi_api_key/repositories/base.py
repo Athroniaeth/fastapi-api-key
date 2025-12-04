@@ -1,9 +1,22 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import Optional, List
 
 from fastapi_api_key.domain.entities import ApiKey
+
+
+class SortableColumn(str, Enum):
+    """Valid columns for sorting API keys."""
+
+    ID = "id_"
+    NAME = "name"
+    CREATED_AT = "created_at"
+    EXPIRES_AT = "expires_at"
+    LAST_USED_AT = "last_used_at"
+    IS_ACTIVE = "is_active"
+    KEY_ID = "key_id"
 
 
 @dataclass
@@ -48,7 +61,7 @@ class ApiKeyFilter:
     offset: int = 0
 
     # Sorting
-    order_by: str = "created_at"  # Field to sort by
+    order_by: SortableColumn = SortableColumn.CREATED_AT
     order_desc: bool = True  # True = DESC, False = ASC
 
 

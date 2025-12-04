@@ -9,7 +9,7 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
-from fastapi_api_key.repositories.base import ApiKeyFilter
+from fastapi_api_key.repositories.base import ApiKeyFilter, SortableColumn
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, Base
 from fastapi_api_key.utils import datetime_factory
 from tests.conftest import make_api_key
@@ -318,7 +318,7 @@ class TestSqlRepositoryFind:
         for _ in range(3):
             await sql_repo.create(make_api_key())
 
-        result = await sql_repo.find(ApiKeyFilter(order_by="created_at", order_desc=False))
+        result = await sql_repo.find(ApiKeyFilter(order_by=SortableColumn.CREATED_AT, order_desc=False))
         assert len(result) == 3
         assert result[0].created_at <= result[1].created_at
 

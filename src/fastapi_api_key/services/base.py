@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Tuple, List
 
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey
+from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey, ConfigurationError
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
@@ -151,8 +151,18 @@ class AbstractApiKeyService(ABC):
         ...
 
     @abstractmethod
-    async def delete_by_id(self, id_: str) -> bool:
-        """Delete the model by ID and return True if deleted, False if not found."""
+    async def delete_by_id(self, id_: str) -> ApiKey:
+        """Delete the entity by ID and return the deleted entity.
+
+        Args:
+            id_: The unique identifier of the API key to delete.
+
+        Returns:
+            The deleted entity.
+
+        Raises:
+            KeyNotFound: If no API key with the given ID exists.
+        """
         ...
 
     @abstractmethod
@@ -283,7 +293,7 @@ class ApiKeyService(AbstractApiKeyService):
         list_api_key = [os.environ[key] for key in list_keys]
 
         if not list_api_key:
-            raise Exception(f"Don't have envvar with prefix '{envvar_prefix}'")
+            raise ConfigurationError(f"No environment variables found with prefix '{envvar_prefix}'")
 
         for key, api_key in zip(list_keys, list_api_key):
             global_prefix, key_id, key_secret = self._get_parts(api_key)

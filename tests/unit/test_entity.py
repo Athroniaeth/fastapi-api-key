@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes, KeyHashNotSet
+from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes, KeyHashNotSet, KeySecretNotSet
 from fastapi_api_key.utils import datetime_factory
 
 
@@ -263,14 +263,14 @@ class TestKeySecret:
         """key_secret_first raises if no secret available."""
         key = ApiKey()
 
-        with pytest.raises(ValueError, match="Key secret is not set"):
+        with pytest.raises(KeySecretNotSet, match="Key secret is not set"):
             _ = key.key_secret_first
 
     def test_key_secret_last_raises_when_unavailable(self):
         """key_secret_last raises if no secret available."""
         key = ApiKey()
 
-        with pytest.raises(ValueError, match="Key secret is not set"):
+        with pytest.raises(KeySecretNotSet, match="Key secret is not set"):
             _ = key.key_secret_last
 
 

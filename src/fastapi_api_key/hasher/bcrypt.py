@@ -1,10 +1,9 @@
 from typing import Optional
 
 try:
-    import bcrypt  # noqa: F401
+    import bcrypt
 except ModuleNotFoundError as e:
-    raise ImportError("SQLAlchemy backend requires 'bcrypt'. Install it with: uv add fastapi_api_key[bcrypt]") from e
-import bcrypt
+    raise ImportError("Bcrypt backend requires 'bcrypt'. Install it with: uv add fastapi_api_key[bcrypt]") from e
 
 from fastapi_api_key.hasher.base import BaseApiKeyHasher
 

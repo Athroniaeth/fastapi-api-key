@@ -264,7 +264,6 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
         stmt = select(ApiKeyModel)
         stmt = self._apply_filter(stmt, filter_)
 
-        # Sorting
         order_column = getattr(ApiKeyModel, filter_.order_by)
         if filter_.order_desc:
             stmt = stmt.order_by(order_column.desc())
