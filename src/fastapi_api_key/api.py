@@ -7,7 +7,7 @@ from fastapi_api_key._types import SecurityHTTPBearer, SecurityAPIKeyHeader
 try:
     import fastapi  # noqa: F401
     import sqlalchemy  # noqa: F401
-except ModuleNotFoundError as e:
+except ModuleNotFoundError as e:  # pragma: no cover
     raise ImportError(
         "FastAPI and SQLAlchemy backend requires 'fastapi' and 'sqlalchemy'. "
         "Install it with: uv add fastapi_api_key[fastapi]"

@@ -4,17 +4,24 @@ Tests verify API routes work correctly using InMemory repository.
 Focus on behavior, not implementation details.
 """
 
+import asyncio
+import warnings
 from contextlib import asynccontextmanager
 from datetime import timedelta
+from unittest.mock import AsyncMock
 
 import pytest
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from fastapi.security import APIKeyHeader, HTTPBearer
 from fastapi.testclient import TestClient
 
 from fastapi_api_key import ApiKeyService
-from fastapi_api_key.api import create_api_keys_router
+from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
+from fastapi_api_key.domain.entities import ApiKey
+from fastapi_api_key.domain.errors import KeyNotFound, KeyNotProvided
 from fastapi_api_key.hasher.base import MockApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
+from fastapi_api_key.services.base import AbstractApiKeyService
 from fastapi_api_key.utils import datetime_factory
 
 
@@ -195,6 +202,33 @@ class TestUpdateApiKey:
         """Update returns 404 for non-existent key."""
         response = client.patch("/api-keys/non-existent-id", json={"name": "new-name"})
         assert response.status_code == 404
+
+    def test_update_description(self, client: TestClient):
+        """Update key description."""
+        create_response = client.post("/api-keys/", json={"name": "test-key"})
+        key_id = create_response.json()["entity"]["id"]
+
+        response = client.patch(f"/api-keys/{key_id}", json={"description": "New description"})
+        assert response.status_code == 200
+        assert response.json()["description"] == "New description"
+
+    def test_update_is_active(self, client: TestClient):
+        """Update key active status."""
+        create_response = client.post("/api-keys/", json={"name": "test-key", "is_active": True})
+        key_id = create_response.json()["entity"]["id"]
+
+        response = client.patch(f"/api-keys/{key_id}", json={"is_active": False})
+        assert response.status_code == 200
+        assert response.json()["is_active"] is False
+
+    def test_update_scopes(self, client: TestClient):
+        """Update key scopes."""
+        create_response = client.post("/api-keys/", json={"name": "test-key", "scopes": ["read"]})
+        key_id = create_response.json()["entity"]["id"]
+
+        response = client.patch(f"/api-keys/{key_id}", json={"scopes": ["read", "write", "admin"]})
+        assert response.status_code == 200
+        assert response.json()["scopes"] == ["read", "write", "admin"]
 
 
 class TestDeleteApiKey:
@@ -439,3 +473,380 @@ class TestApiKeyOutFields:
         assert response.status_code == 200
         data = response.json()
         assert data["expires_at"] is None
+
+
+class TestCreateDependsApiKey:
+    """Tests for create_depends_api_key function."""
+
+    def test_default_http_bearer(self, service: ApiKeyService):
+        """Default security scheme is HTTPBearer."""
+
+        async def get_service():
+            return service
+
+        dependency = create_depends_api_key(depends_svc_api_keys=get_service)
+        assert callable(dependency)
+
+    @pytest.mark.asyncio
+    async def test_http_bearer_valid_key(self, service: AbstractApiKeyService):
+        """HTTPBearer accepts valid API key."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        dependency = create_depends_api_key(depends_svc_api_keys=get_service)
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        entity, api_key = await service.create(name="test-key")
+
+        client = TestClient(app)
+        response = client.get("/protected", headers={"Authorization": f"Bearer {api_key}"})
+        assert response.status_code == 200
+        assert response.json()["key_id"] == entity.key_id
+
+    def test_http_bearer_missing_key(self, service: ApiKeyService):
+        """HTTPBearer returns 401 for missing key."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        dependency = create_depends_api_key(depends_svc_api_keys=get_service)
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        client = TestClient(app)
+        response = client.get("/protected")
+        assert response.status_code == 401
+        assert response.json()["detail"] == "API key missing"
+
+    def test_http_bearer_invalid_key(self, service: ApiKeyService):
+        """HTTPBearer returns 401 for invalid key."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        dependency = create_depends_api_key(depends_svc_api_keys=get_service)
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        client = TestClient(app)
+        response = client.get("/protected", headers={"Authorization": "Bearer ak-invalid-invalidkey"})
+        assert response.status_code == 401
+        assert response.json()["detail"] == "API key invalid"
+
+    def test_http_bearer_inactive_key(self, service: ApiKeyService):
+        """HTTPBearer returns 403 for inactive key."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        dependency = create_depends_api_key(depends_svc_api_keys=get_service)
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        async def create_key():
+            return await service.create(name="test-key", is_active=False)
+
+        entity, api_key = asyncio.get_event_loop().run_until_complete(create_key())
+
+        client = TestClient(app)
+        response = client.get("/protected", headers={"Authorization": f"Bearer {api_key}"})
+        assert response.status_code == 403
+        assert response.json()["detail"] == "API key inactive"
+
+    def test_http_bearer_expired_key(self, service: ApiKeyService):
+        """HTTPBearer returns 403 for expired key."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        dependency = create_depends_api_key(depends_svc_api_keys=get_service)
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        async def create_and_expire_key():
+            entity, api_key = await service.create(name="test-key")
+            entity.expires_at = datetime_factory() - timedelta(days=1)
+            await service.update(entity)
+            return entity, api_key
+
+        entity, api_key = asyncio.get_event_loop().run_until_complete(create_and_expire_key())
+
+        client = TestClient(app)
+        response = client.get("/protected", headers={"Authorization": f"Bearer {api_key}"})
+        assert response.status_code == 403
+        assert response.json()["detail"] == "API key expired"
+
+    def test_http_bearer_missing_scopes(self, service: ApiKeyService):
+        """HTTPBearer returns 403 for missing scopes."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        dependency = create_depends_api_key(depends_svc_api_keys=get_service, required_scopes=["admin"])
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        async def create_key():
+            return await service.create(name="test-key", scopes=["read"])
+
+        entity, api_key = asyncio.get_event_loop().run_until_complete(create_key())
+
+        client = TestClient(app)
+        response = client.get("/protected", headers={"Authorization": f"Bearer {api_key}"})
+        assert response.status_code == 403
+        assert "missing required scopes" in response.json()["detail"]
+
+    def test_api_key_header_valid_key(self, service: ApiKeyService):
+        """APIKeyHeader accepts valid API key."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        security = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            dependency = create_depends_api_key(depends_svc_api_keys=get_service, security=security)
+            assert len(w) == 1
+            assert "RFC 6750" in str(w[0].message)
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        async def create_key():
+            return await service.create(name="test-key")
+
+        entity, api_key = asyncio.get_event_loop().run_until_complete(create_key())
+
+        client = TestClient(app)
+        response = client.get("/protected", headers={"X-API-Key": api_key})
+        assert response.status_code == 200
+        assert response.json()["key_id"] == entity.key_id
+
+    def test_api_key_header_missing_key(self, service: ApiKeyService):
+        """APIKeyHeader returns 401 for missing key."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        security = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            dependency = create_depends_api_key(depends_svc_api_keys=get_service, security=security)
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        client = TestClient(app)
+        response = client.get("/protected")
+        assert response.status_code == 401
+        assert response.json()["detail"] == "API key missing"
+
+    def test_api_key_header_invalid_key(self, service: ApiKeyService):
+        """APIKeyHeader returns 401 for invalid key."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        security = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            dependency = create_depends_api_key(depends_svc_api_keys=get_service, security=security)
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        client = TestClient(app)
+        response = client.get("/protected", headers={"X-API-Key": "ak-invalid-invalidkey"})
+        assert response.status_code == 401
+        assert response.json()["detail"] == "API key invalid"
+
+    def test_api_key_header_inactive_key(self, service: ApiKeyService):
+        """APIKeyHeader returns 403 for inactive key."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        security = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            dependency = create_depends_api_key(depends_svc_api_keys=get_service, security=security)
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        async def create_key():
+            return await service.create(name="test-key", is_active=False)
+
+        entity, api_key = asyncio.get_event_loop().run_until_complete(create_key())
+
+        client = TestClient(app)
+        response = client.get("/protected", headers={"X-API-Key": api_key})
+        assert response.status_code == 403
+        assert response.json()["detail"] == "API key inactive"
+
+    def test_api_key_header_expired_key(self, service: ApiKeyService):
+        """APIKeyHeader returns 403 for expired key."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        security = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            dependency = create_depends_api_key(depends_svc_api_keys=get_service, security=security)
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        async def create_and_expire_key():
+            entity, api_key = await service.create(name="test-key")
+            entity.expires_at = datetime_factory() - timedelta(days=1)
+            await service.update(entity)
+            return entity, api_key
+
+        entity, api_key = asyncio.get_event_loop().run_until_complete(create_and_expire_key())
+
+        client = TestClient(app)
+        response = client.get("/protected", headers={"X-API-Key": api_key})
+        assert response.status_code == 403
+        assert response.json()["detail"] == "API key expired"
+
+    def test_api_key_header_missing_scopes(self, service: ApiKeyService):
+        """APIKeyHeader returns 403 for missing scopes."""
+
+        async def get_service():
+            return service
+
+        app = FastAPI()
+        security = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            dependency = create_depends_api_key(
+                depends_svc_api_keys=get_service, security=security, required_scopes=["admin"]
+            )
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        async def create_key():
+            return await service.create(name="test-key", scopes=["read"])
+
+        entity, api_key = asyncio.get_event_loop().run_until_complete(create_key())
+
+        client = TestClient(app)
+        response = client.get("/protected", headers={"X-API-Key": api_key})
+        assert response.status_code == 403
+        assert "missing required scopes" in response.json()["detail"]
+
+    def test_auto_error_true_raises_value_error(self, service: ApiKeyService):
+        """auto_error=True raises ValueError."""
+
+        async def get_service():
+            return service
+
+        security = HTTPBearer(auto_error=True)
+
+        with pytest.raises(ValueError, match="auto_error=False"):
+            create_depends_api_key(depends_svc_api_keys=get_service, security=security)
+
+    def test_invalid_security_type_raises_value_error(self, service: ApiKeyService):
+        """Invalid security type raises ValueError."""
+
+        async def get_service():
+            return service
+
+        # Create a mock security object that is neither HTTPBearer nor APIKeyHeader
+        class InvalidSecurity:
+            auto_error = False
+
+        with pytest.raises(ValueError, match="HTTPBearer or APIKeyHeader"):
+            create_depends_api_key(depends_svc_api_keys=get_service, security=InvalidSecurity())  # type: ignore[arg-type]
+
+
+class TestHandleVerifyKeyEdgeCases:
+    """Tests for edge cases in _handle_verify_key."""
+
+    def test_key_not_provided_via_service(self):
+        """KeyNotProvided from service returns 401."""
+        mock_service = AsyncMock()
+        mock_service.verify_key.side_effect = KeyNotProvided("No API key provided")
+
+        async def get_service():
+            return mock_service
+
+        app = FastAPI()
+        dependency = create_depends_api_key(depends_svc_api_keys=get_service)
+
+        @app.get("/protected")
+        async def protected_route(key: ApiKey = Depends(dependency)):
+            return {"key_id": key.key_id}
+
+        client = TestClient(app)
+        # Provide a bearer token so we pass the "if not api_key" check in the dependency
+        response = client.get("/protected", headers={"Authorization": "Bearer some-token"})
+        assert response.status_code == 401
+        assert response.json()["detail"] == "API key missing"
+
+
+class TestUpdateRaceCondition:
+    """Tests for race conditions in update endpoint."""
+
+    def test_update_key_deleted_between_get_and_update(self):
+        """Update returns 404 if key deleted between get and update."""
+        mock_service = AsyncMock()
+
+        # get_by_id succeeds first time
+        mock_entity = ApiKey(id_="test-id", name="test-key", key_hash="hash")
+        mock_service.get_by_id.return_value = mock_entity
+
+        # update raises KeyNotFound (simulating deletion between get and update)
+        mock_service.update.side_effect = KeyNotFound("Key not found")
+
+        async def get_service():
+            return mock_service
+
+        app = FastAPI()
+        router = create_api_keys_router(depends_svc_api_keys=get_service)
+        app.include_router(router)
+
+        client = TestClient(app)
+        response = client.patch("/api-keys/test-id", json={"name": "new-name"})
+        assert response.status_code == 404
+        assert response.json()["detail"] == "API key not found"
