@@ -1,3 +1,34 @@
+## 0.12.0 (2025-12-04)
+
+### Feat
+
+- **api**: add CLI parity with verify/count routes and expiration support
+- **cli**: add --active/--inactive option to update command
+
+### Fix
+
+- **cli**: show help with exit 0 when no args provided
+- **cli**: display full ID in list command
+- **api**: allow clearing name/description with empty string
+- **api**: return HTTP 204 No Content for DELETE endpoint
+- **repo**: increase key_hash column length to 255 chars
+- **service**: validate empty segments in API key format
+
+### Refactor
+
+- **cli**: simplify import, handle errors and async helper functions
+- **cli**: remove redundant revoke command
+- **cli**: improve UX with Rich output and better formatting
+- **cli**: rewrite CLI with cleaner architecture
+- **api**: use AbstractApiKeyService in type hints
+- **api**: rename updated_at to last_used_at in schema
+- **cli**: remove redundant except block
+- **domain**: use KeyHashNotSet error instead of ValueError
+
+### Perf
+
+- **cache**: add default TTL (300s) for cached entries
+
 ## 0.11.0 (2025-12-01)
 
 ### BREAKING CHANGE
