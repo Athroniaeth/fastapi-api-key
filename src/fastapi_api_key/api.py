@@ -7,21 +7,20 @@ from fastapi_api_key._types import SecurityHTTPBearer, SecurityAPIKeyHeader
 try:
     import fastapi  # noqa: F401
     import sqlalchemy  # noqa: F401
-except ModuleNotFoundError as e:
+except ModuleNotFoundError as e:  # pragma: no cover
     raise ImportError(
         "FastAPI and SQLAlchemy backend requires 'fastapi' and 'sqlalchemy'. "
         "Install it with: uv add fastapi_api_key[fastapi]"
     ) from e
 
 from datetime import datetime
-from typing import Annotated, Awaitable, Callable, List, Optional, Literal, Union
+from typing import Annotated, Awaitable, Callable, List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 
 from fastapi_api_key.repositories.base import ApiKeyFilter
-from fastapi_api_key.services.base import ApiKeyService
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.errors import (
     InvalidKey,
@@ -40,12 +39,15 @@ class ApiKeyCreateIn(BaseModel):
         name: Human-friendly display name.
         description: Optional description to document the purpose of the key.
         is_active: Whether the key is active upon creation.
+        scopes: List of scopes to assign to the key.
+        expires_at: Optional expiration datetime (ISO 8601 format).
     """
 
     name: str = Field(..., min_length=1, max_length=128)
     description: Optional[str] = Field(None, max_length=1024)
     is_active: bool = Field(default=True)
     scopes: List[str] = Field(default_factory=list)
+    expires_at: Optional[datetime] = Field(None, description="Expiration datetime (ISO 8601)")
 
 
 class ApiKeyUpdateIn(BaseModel):
@@ -55,12 +57,17 @@ class ApiKeyUpdateIn(BaseModel):
         name: New display name.
         description: New description.
         is_active: Toggle active state.
+        scopes: New list of scopes.
+        expires_at: New expiration datetime (ISO 8601 format).
+        clear_expires: Set to true to remove expiration (takes precedence over expires_at).
     """
 
     name: Optional[str] = Field(None, min_length=1, max_length=128)
     description: Optional[str] = Field(None, max_length=1024)
     is_active: Optional[bool] = None
     scopes: Optional[List[str]] = None
+    expires_at: Optional[datetime] = Field(None, description="New expiration datetime (ISO 8601)")
+    clear_expires: bool = Field(False, description="Remove expiration date")
 
 
 class ApiKeyOut(BaseModel):
@@ -69,14 +76,27 @@ class ApiKeyOut(BaseModel):
     Note:
         Timestamps are optional to avoid coupling to a particular repository
         schema. If your entity guarantees those fields, they will be populated.
+
+    Attributes:
+        id: Unique identifier of the API key.
+        key_id: Public key identifier (used for lookup, visible in the API key string).
+        name: Human-friendly display name.
+        description: Optional description documenting the key's purpose.
+        is_active: Whether the key is currently active.
+        created_at: When the key was created.
+        last_used_at: When the key was last used for authentication.
+        expires_at: When the key expires (None means no expiration).
+        scopes: List of scopes assigned to this key.
     """
 
     id: str
+    key_id: str
     name: Optional[str] = None
     description: Optional[str] = None
     is_active: bool
     created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    last_used_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
     scopes: List[str] = Field(default_factory=list)
 
 
@@ -91,10 +111,6 @@ class ApiKeyCreatedOut(BaseModel):
 
     api_key: str
     entity: ApiKeyOut
-
-
-class DeletedResponse(BaseModel):
-    status: Literal["deleted"] = "deleted"
 
 
 class ApiKeySearchIn(BaseModel):
@@ -141,15 +157,39 @@ class ApiKeySearchOut(BaseModel):
     offset: int = Field(description="Offset used")
 
 
+class ApiKeyVerifyIn(BaseModel):
+    """Payload to verify an API key.
+
+    Attributes:
+        api_key: The full API key string to verify.
+        required_scopes: Optional list of scopes the key must have.
+    """
+
+    api_key: str = Field(..., min_length=1, description="Full API key string to verify")
+    required_scopes: Optional[List[str]] = Field(None, description="Scopes the key must have")
+
+
+class ApiKeyCountOut(BaseModel):
+    """Response for counting API keys.
+
+    Attributes:
+        total: Total number of keys matching the filter criteria.
+    """
+
+    total: int = Field(description="Total number of matching keys")
+
+
 def _to_out(entity: ApiKey) -> ApiKeyOut:
     """Map an `ApiKey` entity to the public `ApiKeyOut` schema."""
     return ApiKeyOut(
         id=entity.id_,
+        key_id=entity.key_id,
         name=entity.name,
         description=entity.description,
         is_active=entity.is_active,
         created_at=entity.created_at,
-        updated_at=entity.last_used_at,
+        last_used_at=entity.last_used_at,
+        expires_at=entity.expires_at,
         scopes=entity.scopes,
     )
 
@@ -177,13 +217,13 @@ def create_api_keys_router(
     )
     async def create_api_key(
         payload: ApiKeyCreateIn,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyCreatedOut:
         """Create an API key and return the plaintext secret once.
 
         Args:
             payload: Creation parameters.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Returns:
             `ApiKeyCreatedOut` with the plaintext API key and the created entity.
@@ -194,6 +234,7 @@ def create_api_keys_router(
             description=payload.description,
             is_active=payload.is_active,
             scopes=payload.scopes,
+            expires_at=payload.expires_at,
         )
         return ApiKeyCreatedOut(api_key=api_key, entity=_to_out(entity))
 
@@ -204,14 +245,14 @@ def create_api_keys_router(
         summary="List API keys",
     )
     async def list_api_keys(
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
         offset: Annotated[int, Query(ge=0, description="Items to skip")] = 0,
         limit: Annotated[int, Query(gt=0, le=100, description="Page size")] = 50,
     ) -> List[ApiKeyOut]:
         """List API keys with basic offset/limit pagination.
 
         Args:
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
             offset: Number of items to skip.
             limit: Max number of items to return.
 
@@ -229,7 +270,7 @@ def create_api_keys_router(
     )
     async def search_api_keys(
         payload: ApiKeySearchIn,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
         offset: Annotated[int, Query(ge=0, description="Items to skip")] = 0,
         limit: Annotated[int, Query(gt=0, le=100, description="Page size")] = 50,
     ) -> ApiKeySearchOut:
@@ -237,7 +278,7 @@ def create_api_keys_router(
 
         Args:
             payload: Search criteria (all optional, AND logic).
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
             offset: Number of items to skip.
             limit: Max number of items to return.
 
@@ -263,13 +304,13 @@ def create_api_keys_router(
     )
     async def get_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Retrieve an API key by its identifier.
 
         Args:
             api_key_id: Unique identifier of the API key.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Raises:
             HTTPException: 404 if the key does not exist.
@@ -290,14 +331,14 @@ def create_api_keys_router(
     async def update_api_key(
         api_key_id: str,
         payload: ApiKeyUpdateIn,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Partially update an API key.
 
         Args:
             api_key_id: Unique identifier of the API key to update.
             payload: Fields to update.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Raises:
             HTTPException: 404 if the key does not exist.
@@ -307,10 +348,18 @@ def create_api_keys_router(
         except KeyNotFound as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found") from exc
 
-        current.name = payload.name or current.name
-        current.description = payload.description or current.description
-        current.is_active = payload.is_active if payload.is_active is not None else current.is_active
-        current.scopes = payload.scopes if payload.scopes is not None else current.scopes
+        if payload.name is not None:
+            current.name = payload.name
+        if payload.description is not None:
+            current.description = payload.description
+        if payload.is_active is not None:
+            current.is_active = payload.is_active
+        if payload.scopes is not None:
+            current.scopes = payload.scopes
+        if payload.clear_expires:
+            current.expires_at = None
+        elif payload.expires_at is not None:
+            current.expires_at = payload.expires_at
 
         try:
             updated = await svc.update(current)
@@ -321,18 +370,18 @@ def create_api_keys_router(
 
     @router.delete(
         "/{api_key_id}",
-        status_code=status.HTTP_200_OK,
+        status_code=status.HTTP_204_NO_CONTENT,
         summary="Delete an API key",
     )
     async def delete_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
-    ) -> DeletedResponse:
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
+    ) -> None:
         """Delete an API key by ID.
 
         Args:
             api_key_id: Unique identifier of the API key to delete.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Raises:
             HTTPException: 404 if the key does not exist.
@@ -342,18 +391,16 @@ def create_api_keys_router(
         except KeyNotFound as exc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="API key not found") from exc
 
-        return DeletedResponse()
-
     @router.post("/{api_key_id}/activate", response_model=ApiKeyOut)
     async def activate_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Activate an API key by ID.
 
         Args:
             api_key_id: Unique identifier of the API key to activate.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Raises:
             HTTPException: 404 if the key does not exist.
@@ -373,13 +420,13 @@ def create_api_keys_router(
     @router.post("/{api_key_id}/deactivate", response_model=ApiKeyOut)
     async def deactivate_api_key(
         api_key_id: str,
-        svc: ApiKeyService = Depends(depends_svc_api_keys),
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
     ) -> ApiKeyOut:
         """Deactivate an API key by ID.
 
         Args:
             api_key_id: Unique identifier of the API key to deactivate.
-            svc: Injected `ApiKeyService`.
+            svc: Injected API key service.
 
         Raises:
             HTTPException: 404 if the key does not exist.
@@ -395,6 +442,87 @@ def create_api_keys_router(
         entity.is_active = False
         updated = await svc.update(entity)
         return _to_out(updated)
+
+    @router.post(
+        path="/verify",
+        response_model=ApiKeyOut,
+        status_code=status.HTTP_200_OK,
+        summary="Verify an API key",
+    )
+    async def verify_api_key(
+        payload: ApiKeyVerifyIn,
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
+    ) -> ApiKeyOut:
+        """Verify an API key and return its details if valid.
+
+        This endpoint validates the API key format, checks if it exists,
+        verifies it's active, not expired, and optionally checks required scopes.
+
+        Args:
+            payload: Verification parameters including the API key and optional scopes.
+            svc: Injected API key service.
+
+        Returns:
+            The API key entity if verification succeeds.
+
+        Raises:
+            HTTPException: 401 if the key is invalid or not found.
+            HTTPException: 403 if the key is inactive, expired, or missing required scopes.
+        """
+        try:
+            entity = await svc.verify_key(
+                api_key=payload.api_key,
+                required_scopes=payload.required_scopes,
+            )
+        except (InvalidKey, KeyNotFound) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="API key invalid",
+            ) from exc
+        except KeyInactive as exc:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="API key inactive",
+            ) from exc
+        except KeyExpired as exc:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="API key expired",
+            ) from exc
+        except InvalidScopes as exc:
+            required_scopes_str = ", ".join([f"'{scope}'" for scope in (payload.required_scopes or [])])
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"API key missing required scopes {required_scopes_str}",
+            ) from exc
+
+        return _to_out(entity)
+
+    @router.post(
+        path="/count",
+        response_model=ApiKeyCountOut,
+        status_code=status.HTTP_200_OK,
+        summary="Count API keys with filters",
+    )
+    async def count_api_keys(
+        payload: ApiKeySearchIn,
+        svc: AbstractApiKeyService = Depends(depends_svc_api_keys),
+    ) -> ApiKeyCountOut:
+        """Count API keys matching the given filter criteria.
+
+        Uses the same filter criteria as the search endpoint but only returns
+        the count without fetching the actual entities.
+
+        Args:
+            payload: Filter criteria (all optional, AND logic).
+            svc: Injected API key service.
+
+        Returns:
+            Total count of matching API keys.
+        """
+        filter_ = payload.to_filter(limit=0, offset=0)
+        total = await svc.count(filter_)
+        return ApiKeyCountOut(total=total)
 
     return router
 

@@ -42,17 +42,20 @@ class CachedApiKeyService(ApiKeyService):
         when only the entity is available (e.g., during update/delete).
 
     Attributes:
-        cache: The aiocache backend instance (configure TTL on the cache itself).
+        cache: The aiocache backend instance.
         cache_prefix: Prefix for index keys (default: "api_key").
+        cache_ttl: Time-to-live for cached entries in seconds (default: 300).
     """
 
     cache: aiocache.BaseCache
+    cache_ttl: int
 
     def __init__(
         self,
         repo: AbstractApiKeyRepository,
         cache: Optional[BaseCache] = None,
         cache_prefix: str = "api_key",
+        cache_ttl: int = 300,
         hasher: Optional[ApiKeyHasher] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
@@ -66,6 +69,7 @@ class CachedApiKeyService(ApiKeyService):
             rrd=rrd,
         )
         self.cache_prefix = cache_prefix
+        self.cache_ttl = cache_ttl
         self.cache = cache or aiocache.SimpleMemoryCache()
 
     def _get_index_key(self, key_id: str) -> str:
@@ -122,7 +126,7 @@ class CachedApiKeyService(ApiKeyService):
 
         # Store in cache + create secondary index for invalidation
         index_key = self._get_index_key(parsed.key_id)
-        await self.cache.set(cache_key, entity)
-        await self.cache.set(index_key, cache_key)
+        await self.cache.set(cache_key, entity, ttl=self.cache_ttl)
+        await self.cache.set(index_key, cache_key, ttl=self.cache_ttl)
 
         return entity

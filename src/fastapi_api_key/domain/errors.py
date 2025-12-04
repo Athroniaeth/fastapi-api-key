@@ -38,3 +38,9 @@ class InvalidScopes(ApiKeyError):
     """Raised when an API key does not have the required scopes for an operation."""
 
     ...
+
+
+class KeyHashNotSet(ApiKeyError):
+    """Raised when accessing key_hash on an entity that hasn't been hashed yet."""
+
+    ...

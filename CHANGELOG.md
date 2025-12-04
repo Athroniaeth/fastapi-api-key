@@ -1,3 +1,22 @@
+## 0.11.0 (2025-12-01)
+
+### BREAKING CHANGE
+
+- key_hash property now raises ValueError when unset
+  instead of returning None. Use try/except or check _key_hash directly.
+- Remove generic type D, entity_factory parameter, and custom entity/model support. Services and repositories now work directly with ApiKey. Remove extensibility patterns. ApiKeyService no longer accepts entity_factory parameter. SqlAlchemyApiKeyRepository no longer accepts model_cls/domain_cls parameters. Custom entities are no longer supported.
+- Please delete all domain_cls parameter use with service
+
+### Refactor
+
+- delete claude code comments and remove str | None who aren't compatible with python 3.9
+- **domain**: add key_hash validation, public init aliases, and secure repr
+- **tests**: mock crypto backends in hasher tests and improve typing in SqlAlchemyApiKeyRepository
+- **tests**: restructure unit tests with 100% coverage on core modules
+- remove extensibility patterns (generics, entity factory, custom mapping)
+- **svc**: remove optional domain cls to service init
+- **cli**: modify bad message for updating .env
+
 ## 0.10.0 (2025-11-26)
 
 ### Feat

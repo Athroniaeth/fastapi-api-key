@@ -71,7 +71,7 @@ class ApiKeyModelMixin:
         index=True,
     )
     key_hash: Mapped[str] = mapped_column(
-        String(128),
+        String(255),
         nullable=False,
         unique=True,
     )
