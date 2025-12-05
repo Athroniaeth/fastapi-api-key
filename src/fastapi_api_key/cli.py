@@ -39,7 +39,9 @@ console = Console()
 class AsyncTyper(typer.Typer):
     """Typer subclass with native async command support."""
 
-    event_handlers: defaultdict[str, list[Callable]] = defaultdict(list)
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.event_handlers: defaultdict[str, list[Callable]] = defaultdict(list)
 
     def async_command(self, *args: Any, **kwargs: Any) -> Callable:
         """Decorator for async commands."""
