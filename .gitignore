@@ -242,5 +242,12 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea/
 
+# Examples generated database files
+examples/*.sqlite3
+
 # Keep personal TODO list file
 TODO.md
+todo.md
+
+# Keep AI assistant conversation history
+CLAUDE.md
