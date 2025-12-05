@@ -1,3 +1,4 @@
+import sys
 from datetime import datetime
 from typing import Optional, List
 
@@ -135,7 +136,7 @@ class InMemoryApiKeyRepository(AbstractApiKeyRepository):
             scopes_contain_any=filter.scopes_contain_any,
             name_contains=filter.name_contains,
             name_exact=filter.name_exact,
-            limit=999999,
+            limit=sys.maxsize,
             offset=0,
         )
         return len(await self.find(unlimited_filter))

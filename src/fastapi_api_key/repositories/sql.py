@@ -1,3 +1,4 @@
+import sys
 import typing
 
 try:
@@ -312,7 +313,7 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
                         scopes_contain_any=filter_.scopes_contain_any,
                         name_contains=filter_.name_contains,
                         name_exact=filter_.name_exact,
-                        limit=999999,
+                        limit=sys.maxsize,
                         offset=0,
                     )
                 )
