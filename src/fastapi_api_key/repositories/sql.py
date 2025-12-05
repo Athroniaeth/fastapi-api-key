@@ -262,6 +262,14 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
         return stmt
 
     async def find(self, filter_: ApiKeyFilter) -> List[ApiKey]:
+        """Search entities by filtering criteria.
+
+        Note:
+            Scope filters (scopes_contain_all, scopes_contain_any) are applied
+            in Python after pagination due to limited JSON support in SQLite.
+            This means when using scope filters, fewer results than `limit`
+            may be returned even if more matching records exist.
+        """
         stmt = select(ApiKeyModel)
         stmt = self._apply_filter(stmt, filter_)
 
@@ -278,7 +286,8 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
         models: Sequence[ApiKeyModel] = result.scalars().all()
         entities = [self._to_domain(m) for m in models]
 
-        # Apply scope filters in Python (SQLite JSON support is limited)
+        # Apply scope filters in Python (SQLite JSON support is limited).
+        # Note: This happens after pagination, so results may be fewer than limit.
         if filter_.scopes_contain_all:
             entities = [e for e in entities if all(s in e.scopes for s in filter_.scopes_contain_all)]
 
