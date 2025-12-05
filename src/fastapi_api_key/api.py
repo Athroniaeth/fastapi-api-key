@@ -20,7 +20,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 
-from fastapi_api_key.repositories.base import ApiKeyFilter
+from fastapi_api_key.repositories.base import ApiKeyFilter, SortableColumn
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.errors import (
     InvalidKey,
@@ -124,11 +124,15 @@ class ApiKeySearchIn(BaseModel):
     expires_after: Optional[datetime] = Field(None, description="Keys expiring after this date")
     created_before: Optional[datetime] = Field(None, description="Keys created before this date")
     created_after: Optional[datetime] = Field(None, description="Keys created after this date")
+    last_used_before: Optional[datetime] = Field(None, description="Keys last used before this date")
+    last_used_after: Optional[datetime] = Field(None, description="Keys last used after this date")
     never_used: Optional[bool] = Field(None, description="True = never used keys, False = used keys")
     scopes_contain_all: Optional[List[str]] = Field(None, description="Keys must have ALL these scopes")
     scopes_contain_any: Optional[List[str]] = Field(None, description="Keys must have at least ONE of these scopes")
     name_contains: Optional[str] = Field(None, description="Name contains this substring (case-insensitive)")
     name_exact: Optional[str] = Field(None, description="Exact name match")
+    order_by: SortableColumn = Field(SortableColumn.CREATED_AT, description="Field to sort by")
+    order_desc: bool = Field(True, description="Sort descending (True) or ascending (False)")
 
     def to_filter(self, limit: int = 100, offset: int = 0) -> ApiKeyFilter:
         """Convert to ApiKeyFilter with pagination."""
@@ -138,11 +142,15 @@ class ApiKeySearchIn(BaseModel):
             expires_after=self.expires_after,
             created_before=self.created_before,
             created_after=self.created_after,
+            last_used_before=self.last_used_before,
+            last_used_after=self.last_used_after,
             never_used=self.never_used,
             scopes_contain_all=self.scopes_contain_all,
             scopes_contain_any=self.scopes_contain_any,
             name_contains=self.name_contains,
             name_exact=self.name_exact,
+            order_by=self.order_by,
+            order_desc=self.order_desc,
             limit=limit,
             offset=offset,
         )
