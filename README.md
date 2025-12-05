@@ -136,7 +136,7 @@ This is a classic API key if you don't modify the service behavior:
 
 **Structure:**
 
-`{global_prefix}`-`{delimiter}`-`{identifier}`-`{delimiter}`-`{secret}`
+`{global_prefix}{separator}{key_id}{separator}{key_secret}`
 
 **Example:**
 
