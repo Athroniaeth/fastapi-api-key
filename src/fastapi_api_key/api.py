@@ -3,6 +3,7 @@ import warnings
 
 from fastapi_api_key.services.base import AbstractApiKeyService
 from fastapi_api_key._types import SecurityHTTPBearer, SecurityAPIKeyHeader
+from fastapi_api_key.utils import datetime_factory
 
 try:
     import fastapi  # noqa: F401
@@ -13,7 +14,7 @@ except ModuleNotFoundError as e:  # pragma: no cover
         "Install it with: uv add fastapi_api_key[fastapi]"
     ) from e
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Annotated, Awaitable, Callable, List, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
@@ -47,7 +48,11 @@ class ApiKeyCreateIn(BaseModel):
     description: Optional[str] = Field(None, max_length=1024)
     is_active: bool = Field(default=True)
     scopes: List[str] = Field(default_factory=list)
-    expires_at: Optional[datetime] = Field(None, description="Expiration datetime (ISO 8601)")
+    expires_at: Optional[datetime] = Field(
+        default=None,
+        examples=[(datetime_factory() + timedelta(days=30)).isoformat()],
+        description="Expiration datetime (ISO 8601)"
+    )
 
 
 class ApiKeyUpdateIn(BaseModel):
