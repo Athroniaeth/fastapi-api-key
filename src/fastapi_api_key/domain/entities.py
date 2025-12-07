@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from typing import Optional, List
 
 from fastapi_api_key.domain.base import ApiKeyEntity
-from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes, KeyHashNotSet
+from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes, KeyHashNotSet, KeySecretNotSet
 from fastapi_api_key.utils import (
     uuid_factory,
     datetime_factory,
@@ -128,7 +128,7 @@ class ApiKey(ApiKeyEntity):
         if self._key_secret is not None:
             return self._key_secret[:4]
 
-        raise ValueError("Key secret is not set")
+        raise KeySecretNotSet("Key secret is not set")
 
     @property
     def key_secret_last(self) -> str:
@@ -139,7 +139,7 @@ class ApiKey(ApiKeyEntity):
         if self._key_secret is not None:
             return self._key_secret[-4:]
 
-        raise ValueError("Key secret is not set")
+        raise KeySecretNotSet("Key secret is not set")
 
     @staticmethod
     def get_api_key(

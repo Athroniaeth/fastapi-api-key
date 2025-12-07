@@ -1,3 +1,4 @@
+import sys
 import typing
 
 try:
@@ -13,7 +14,7 @@ from typing import List, Optional, Sequence
 
 from sqlalchemy import String, Text, Boolean, DateTime, JSON, func
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
 from fastapi_api_key.domain.entities import ApiKey
@@ -98,13 +99,13 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
     def __init__(self, async_session: AsyncSession) -> None:
         self._async_session = async_session
 
-    async def ensure_table(self) -> None:
+    async def ensure_table(self, async_engine: AsyncEngine) -> None:
         """Ensure the database table for API keys exists.
 
         Notes:
             This method creates the table if it does not exist.
         """
-        async with self._async_session.bind.begin() as conn:
+        async with async_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
     @staticmethod
@@ -261,10 +262,17 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
         return stmt
 
     async def find(self, filter_: ApiKeyFilter) -> List[ApiKey]:
+        """Search entities by filtering criteria.
+
+        Note:
+            Scope filters (scopes_contain_all, scopes_contain_any) are applied
+            in Python after pagination due to limited JSON support in SQLite.
+            This means when using scope filters, fewer results than `limit`
+            may be returned even if more matching records exist.
+        """
         stmt = select(ApiKeyModel)
         stmt = self._apply_filter(stmt, filter_)
 
-        # Sorting
         order_column = getattr(ApiKeyModel, filter_.order_by)
         if filter_.order_desc:
             stmt = stmt.order_by(order_column.desc())
@@ -278,7 +286,8 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
         models: Sequence[ApiKeyModel] = result.scalars().all()
         entities = [self._to_domain(m) for m in models]
 
-        # Apply scope filters in Python (SQLite JSON support is limited)
+        # Apply scope filters in Python (SQLite JSON support is limited).
+        # Note: This happens after pagination, so results may be fewer than limit.
         if filter_.scopes_contain_all:
             entities = [e for e in entities if all(s in e.scopes for s in filter_.scopes_contain_all)]
 
@@ -313,7 +322,7 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
                         scopes_contain_any=filter_.scopes_contain_any,
                         name_contains=filter_.name_contains,
                         name_exact=filter_.name_exact,
-                        limit=999999,
+                        limit=sys.maxsize,
                         offset=0,
                     )
                 )

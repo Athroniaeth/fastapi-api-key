@@ -9,10 +9,10 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
-from fastapi_api_key.repositories.base import ApiKeyFilter
+from fastapi_api_key.repositories.base import ApiKeyFilter, SortableColumn
 from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, Base
 from fastapi_api_key.utils import datetime_factory
-from tests.conftest import make_api_key
+from tests.conftest import make_api_key  # pyrefly: ignore[missing-import]
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -318,7 +318,7 @@ class TestSqlRepositoryFind:
         for _ in range(3):
             await sql_repo.create(make_api_key())
 
-        result = await sql_repo.find(ApiKeyFilter(order_by="created_at", order_desc=False))
+        result = await sql_repo.find(ApiKeyFilter(order_by=SortableColumn.CREATED_AT, order_desc=False))
         assert len(result) == 3
         assert result[0].created_at <= result[1].created_at
 
@@ -435,27 +435,27 @@ class TestSqlRepositoryEnsureTable:
     @pytest.mark.asyncio
     async def test_ensure_table_creates_table(self):
         """ensure_table() creates table if not exists."""
-        engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
-        session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+        async_engine = create_async_engine("sqlite+aiosqlite:///:memory:", future=True)
+        async_session_maker = async_sessionmaker(async_engine, class_=AsyncSession, expire_on_commit=False)
 
-        async with session_maker() as session:
-            repo = SqlAlchemyApiKeyRepository(session)
+        async with async_session_maker() as async_session:
+            repo = SqlAlchemyApiKeyRepository(async_session)
 
             # Table doesn't exist yet, create should fail
             with pytest.raises(Exception):
                 await repo.create(make_api_key())
 
-            await session.rollback()
+            await async_session.rollback()
 
             # Now ensure table exists
-            await repo.ensure_table()
+            await repo.ensure_table(async_engine=async_engine)
 
             # Should work now
             entity = make_api_key()
             created = await repo.create(entity)
             assert created.id_ == entity.id_
 
-        await engine.dispose()
+        await async_engine.dispose()
 
 
 class TestSqlRepositoryConversion:

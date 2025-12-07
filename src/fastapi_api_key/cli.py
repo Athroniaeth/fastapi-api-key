@@ -14,7 +14,7 @@ from typing import Any, AsyncIterator, Callable, List, Optional
 from fastapi_api_key._types import ServiceFactory
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.errors import ApiKeyError
-from fastapi_api_key.repositories.base import ApiKeyFilter
+from fastapi_api_key.repositories.base import ApiKeyFilter, SortableColumn
 from fastapi_api_key.services.base import AbstractApiKeyService
 from fastapi_api_key.utils import datetime_factory
 
@@ -39,7 +39,9 @@ console = Console()
 class AsyncTyper(typer.Typer):
     """Typer subclass with native async command support."""
 
-    event_handlers: defaultdict[str, list[Callable]] = defaultdict(list)
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.event_handlers: defaultdict[str, list[Callable]] = defaultdict(list)
 
     def async_command(self, *args: Any, **kwargs: Any) -> Callable:
         """Decorator for async commands."""
@@ -260,16 +262,40 @@ def create_api_keys_cli(
         offset: int = typer.Option(0, "--offset", "-o", min=0, help="Skip first N keys."),
         active: Optional[bool] = typer.Option(None, "--active/--inactive", help="Filter by status."),
         name: Optional[str] = typer.Option(None, "--name", "-n", help="Name contains."),
+        name_exact: Optional[str] = typer.Option(None, "--name-exact", help="Exact name match."),
         scopes: Optional[str] = typer.Option(None, "--scopes", "-s", help="Must have ALL scopes."),
+        scopes_any: Optional[str] = typer.Option(None, "--scopes-any", help="Must have at least ONE scope."),
         never_used: Optional[bool] = typer.Option(None, "--never-used/--used", help="Filter by usage."),
+        expires_before: Optional[str] = typer.Option(None, "--expires-before", help="Expiring before (ISO datetime)."),
+        expires_after: Optional[str] = typer.Option(None, "--expires-after", help="Expiring after (ISO datetime)."),
+        created_before: Optional[str] = typer.Option(None, "--created-before", help="Created before (ISO datetime)."),
+        created_after: Optional[str] = typer.Option(None, "--created-after", help="Created after (ISO datetime)."),
+        last_used_before: Optional[str] = typer.Option(
+            None, "--last-used-before", help="Last used before (ISO datetime)."
+        ),
+        last_used_after: Optional[str] = typer.Option(
+            None, "--last-used-after", help="Last used after (ISO datetime)."
+        ),
+        order_by: SortableColumn = typer.Option(SortableColumn.CREATED_AT, "--order-by", help="Field to sort by."),
+        descending: bool = typer.Option(True, "--desc/--asc", help="Sort descending or ascending."),
     ) -> None:
         """Search API keys with filters."""
         async with handle_errors(service_factory) as service:
             filter_ = ApiKeyFilter(
                 is_active=active,
                 name_contains=name,
+                name_exact=name_exact,
                 scopes_contain_all=parse_scopes(scopes),
+                scopes_contain_any=parse_scopes(scopes_any),
                 never_used=never_used,
+                expires_before=parse_datetime(expires_before) if expires_before else None,
+                expires_after=parse_datetime(expires_after) if expires_after else None,
+                created_before=parse_datetime(created_before) if created_before else None,
+                created_after=parse_datetime(created_after) if created_after else None,
+                last_used_before=parse_datetime(last_used_before) if last_used_before else None,
+                last_used_after=parse_datetime(last_used_after) if last_used_after else None,
+                order_by=order_by,
+                order_desc=descending,
                 limit=limit,
                 offset=offset,
             )

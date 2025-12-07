@@ -41,7 +41,7 @@ async def inject_svc_api_keys(async_session: AsyncSession = Depends(inject_async
     repo = SqlAlchemyApiKeyRepository(async_session)
 
     # Necessary if you don't use your own DeclarativeBase
-    await repo.ensure_table()
+    await repo.ensure_table(async_engine=async_engine)
 
     return ApiKeyService(repo=repo, hasher=hasher)
 

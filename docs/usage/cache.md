@@ -29,18 +29,19 @@ A **secondary index** (`key_id → cache_key`) enables cache invalidation when u
 
 ### Cache Backend
 
-You can use any `aiocache` backend. Configure TTL directly on the cache instance:
+You can use any `aiocache` backend. Configure TTL via the service:
 
 ```python
+from aiocache import SimpleMemoryCache
 from aiocache import Cache
 
-# In-memory with 5 min TTL
-memory_cache = Cache(Cache.MEMORY, ttl=300)
-service = CachedApiKeyService(repo=repo, hasher=hasher, cache=memory_cache)
+# In-memory (default)
+memory_cache = SimpleMemoryCache()
+service = CachedApiKeyService(repo=repo, hasher=hasher, cache=memory_cache, cache_ttl=300)
 
-# Redis backend with 10 min TTL
-redis_cache = Cache(Cache.REDIS, endpoint="localhost", port=6379, namespace="api_keys", ttl=600)
-service = CachedApiKeyService(repo=repo, hasher=hasher, cache=redis_cache)
+# Redis backend
+redis_cache = Cache(Cache.REDIS, endpoint="localhost", port=6379, namespace="api_keys")
+service = CachedApiKeyService(repo=repo, hasher=hasher, cache=redis_cache, cache_ttl=600)
 ```
 
 ## Example

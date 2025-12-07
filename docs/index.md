@@ -45,7 +45,7 @@ This is a classic API key if you don't modify the service behavior:
 
 **Structure:**
 
-`{global_prefix}`-`{delimiter}`-`{identifier}`-`{delimiter}`-`{secret}`
+`{global_prefix}{separator}{key_id}{separator}{key_secret}`
 
 **Example:**
 
@@ -54,7 +54,7 @@ This is a classic API key if you don't modify the service behavior:
 - "-" separators so that systems can easily split
 - Prefix `ak` (for "Api Key"), to identify the key type (useful to indicate that it is an API key).
 - 16 first characters are the identifier (UUIDv4 without dashes)
-- 48 last characters are the secret (random URL-safe base64 string)
+- 64 last characters are the secret (random alphanumeric string)
 
 When verifying an API key, the service extracts the identifier, retrieves the corresponding record from the repository,
 and compares the hashed secret. If found, it hashes the provided secret (with the same salt and pepper) and compares it

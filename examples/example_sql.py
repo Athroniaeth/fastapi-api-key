@@ -30,7 +30,7 @@ async def main():
         repo = SqlAlchemyApiKeyRepository(session)
 
         # Don't need to create Base and ApiKeyModel, the repository does it for you
-        await repo.ensure_table()
+        await repo.ensure_table(async_engine=async_engine)
 
         service = ApiKeyService(repo=repo, hasher=hasher)
 

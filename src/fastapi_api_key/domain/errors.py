@@ -44,3 +44,15 @@ class KeyHashNotSet(ApiKeyError):
     """Raised when accessing key_hash on an entity that hasn't been hashed yet."""
 
     ...
+
+
+class KeySecretNotSet(ApiKeyError):
+    """Raised when accessing key_secret on an entity that hasn't been set."""
+
+    ...
+
+
+class ConfigurationError(ApiKeyError):
+    """Raised when there is a configuration issue."""
+
+    ...

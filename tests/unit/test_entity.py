@@ -12,7 +12,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes, KeyHashNotSet
+from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes, KeyHashNotSet, KeySecretNotSet
 from fastapi_api_key.utils import datetime_factory
 
 
@@ -26,7 +26,7 @@ class TestApiKeyStructure:
         assert isinstance(key.id_, str)
         assert key.name is None
         assert key.description is None
-        assert key.is_active is True
+        assert key.is_active
         assert key.expires_at is None
         assert isinstance(key.created_at, datetime)
         assert key.last_used_at is None
@@ -123,18 +123,18 @@ class TestApiKeyStateMethods:
     def test_disable(self):
         """disable() sets is_active to False."""
         key = ApiKey()
-        assert key.is_active is True
+        assert key.is_active
 
         key.disable()
-        assert key.is_active is False
+        assert key.is_active is False  # pyrefly: ignore[unnecessary-comparison]
 
     def test_enable(self):
         """enable() sets is_active to True."""
         key = ApiKey(is_active=False)
-        assert key.is_active is False
+        assert key.is_active is False  # pyrefly: ignore[unnecessary-comparison]
 
         key.enable()
-        assert key.is_active is True
+        assert key.is_active
 
     def test_touch_updates_last_used_at(self):
         """touch() updates last_used_at to current time."""
@@ -263,14 +263,14 @@ class TestKeySecret:
         """key_secret_first raises if no secret available."""
         key = ApiKey()
 
-        with pytest.raises(ValueError, match="Key secret is not set"):
+        with pytest.raises(KeySecretNotSet, match="Key secret is not set"):
             _ = key.key_secret_first
 
     def test_key_secret_last_raises_when_unavailable(self):
         """key_secret_last raises if no secret available."""
         key = ApiKey()
 
-        with pytest.raises(ValueError, match="Key secret is not set"):
+        with pytest.raises(KeySecretNotSet, match="Key secret is not set"):
             _ = key.key_secret_last
 
 

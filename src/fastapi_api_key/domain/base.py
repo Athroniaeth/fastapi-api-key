@@ -37,6 +37,15 @@ class ApiKeyEntity(Protocol):
 
     # Required properties
     @property
+    def key_hash(self) -> str:
+        """The hashed part of the API key used for verification.
+
+        Raises:
+            KeyHashNotSet: If the key hash is not set.
+        """
+        ...
+
+    @property
     def key_secret(self) -> Optional[str]:
         """The secret part of the API key, only available at creation time.
 

@@ -8,10 +8,10 @@ from datetime import timedelta
 
 import pytest
 
-from fastapi_api_key.repositories.base import ApiKeyFilter
+from fastapi_api_key.repositories.base import ApiKeyFilter, SortableColumn
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.utils import datetime_factory, key_id_factory
-from tests.conftest import make_api_key
+from tests.conftest import make_api_key  # pyrefly: ignore[missing-import]
 
 
 class TestRepositoryCRUD:
@@ -440,7 +440,7 @@ class TestRepositoryFindAndCount:
         for _ in range(3):
             await repo.create(make_api_key())
 
-        result = await repo.find(ApiKeyFilter(order_by="created_at", order_desc=False))
+        result = await repo.find(ApiKeyFilter(order_by=SortableColumn.CREATED_AT, order_desc=False))
         assert len(result) == 3
         assert result[0].created_at <= result[1].created_at
         assert result[1].created_at <= result[2].created_at

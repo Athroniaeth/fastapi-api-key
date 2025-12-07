@@ -14,6 +14,7 @@ import pytest
 from fastapi_api_key import ApiKeyService
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.errors import (
+    ConfigurationError,
     InvalidKey,
     InvalidScopes,
     KeyExpired,
@@ -337,6 +338,7 @@ class TestServiceTimingAttackMitigation:
                 await service.verify_key("ak.fake.secret")
 
             mock_sleep.assert_awaited_once()
+            assert mock_sleep.await_args, "Expected sleep to be called"
             delay = mock_sleep.await_args.args[0]
             assert 0.1 <= delay <= 0.2  # Between rrd and rrd*2
 
@@ -460,7 +462,7 @@ class TestServiceLoadDotenv:
             if key.startswith("API_KEY_"):
                 monkeypatch.delenv(key, raising=False)
 
-        with pytest.raises(Exception, match="Don't have envvar"):
+        with pytest.raises(ConfigurationError, match="No environment variables found"):
             await service.load_dotenv()
 
     @pytest.mark.asyncio

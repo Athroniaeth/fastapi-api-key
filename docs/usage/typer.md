@@ -26,7 +26,11 @@ This is the canonical example from `examples/example_cli.py`.
 |--------------------|-----------------------------------|
 | `create`           | Create a new API key              |
 | `list`             | List all API keys                 |
-| `show <key_id>`    | Get details of a specific API key |
-| `delete <key_id>`  | Delete an API key                 |
+| `get <id>`         | Get details of a specific API key |
+| `delete <id>`      | Delete an API key                 |
 | `verify <api_key>` | Verify an API key                 |
-| `update <key_id>`  | Update an existing API key        |
+| `update <id>`      | Update an existing API key        |
+| `activate <id>`    | Activate an API key               |
+| `deactivate <id>`  | Deactivate an API key             |
+| `search`           | Search API keys with filters      |
+| `count`            | Count API keys                    |

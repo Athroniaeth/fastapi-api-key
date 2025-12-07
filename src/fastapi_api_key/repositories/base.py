@@ -1,9 +1,22 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
+from enum import Enum
 from typing import Optional, List
 
 from fastapi_api_key.domain.entities import ApiKey
+
+
+class SortableColumn(str, Enum):
+    """Valid columns for sorting API keys."""
+
+    ID = "id_"
+    NAME = "name"
+    CREATED_AT = "created_at"
+    EXPIRES_AT = "expires_at"
+    LAST_USED_AT = "last_used_at"
+    IS_ACTIVE = "is_active"
+    KEY_ID = "key_id"
 
 
 @dataclass
@@ -48,7 +61,7 @@ class ApiKeyFilter:
     offset: int = 0
 
     # Sorting
-    order_by: str = "created_at"  # Field to sort by
+    order_by: SortableColumn = SortableColumn.CREATED_AT
     order_desc: bool = True  # True = DESC, False = ASC
 
 
@@ -101,11 +114,11 @@ class AbstractApiKeyRepository(ABC):
         ...
 
     @abstractmethod
-    async def find(self, filter: ApiKeyFilter) -> List[ApiKey]:
+    async def find(self, filter_: ApiKeyFilter) -> List[ApiKey]:
         """Search entities by filtering criteria.
 
         Args:
-            filter: Filtering criteria and pagination options.
+            filter_: Filtering criteria and pagination options.
 
         Returns:
             List of entities matching the criteria.
@@ -125,11 +138,11 @@ class AbstractApiKeyRepository(ABC):
         ...
 
     @abstractmethod
-    async def count(self, filter: Optional[ApiKeyFilter] = None) -> int:
+    async def count(self, filter_: Optional[ApiKeyFilter] = None) -> int:
         """Count entities matching the criteria.
 
         Args:
-            filter: Filtering criteria (pagination is ignored). None = count all.
+            filter_: Filtering criteria (pagination is ignored). None = count all.
 
         Returns:
             Number of matching entities.

@@ -2,13 +2,10 @@
 
 If you don't need to have complex system (add, remove, update API keys) management, you can use environment variables to store your API keys.
 
-You can generate API keys using the `fak` (Fastapi Api Key) CLI
-```bash
-fak generate
-```
+You can generate API keys using the CLI `create` command or programmatically, then store them in your `.env` file:
 
 ```bash
-Set in your .env : "API_KEY_DEV=ak-dcde9fa8eec44aa2-n8JK2HPXoosH6UXPL5h2YeO3OdW55WESb97CKc7mbVUzFpWFQYLuDD7Xs8fbco5d"
+API_KEY_DEV=ak-dcde9fa8eec44aa2-n8JK2HPXoosH6UXPL5h2YeO3OdW55WESb97CKc7mbVUzFpWFQYLuDD7Xs8fbco5d
 ```
 
 ## Example

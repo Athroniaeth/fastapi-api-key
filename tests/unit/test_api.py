@@ -52,7 +52,7 @@ def app(service: ApiKeyService) -> FastAPI:
     app = FastAPI(lifespan=lifespan)
 
     async def get_service():
-        yield service
+        return service
 
     router = create_api_keys_router(depends_svc_api_keys=get_service)
     app.include_router(router)

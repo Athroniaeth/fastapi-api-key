@@ -1,7 +1,7 @@
 try:
     import argon2  # noqa: F401
 except ModuleNotFoundError as e:
-    raise ImportError("SQLAlchemy backend requires 'argon2'. Install it with: uv add fastapi_api_key[argon2]") from e
+    raise ImportError("Argon2 backend requires 'argon2'. Install it with: uv add fastapi_api_key[argon2]") from e
 
 from typing import Optional
 
