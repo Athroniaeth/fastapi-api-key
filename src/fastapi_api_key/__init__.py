@@ -53,6 +53,7 @@ def lint():  # pragma: no cover
         "ruff format .",
         "ruff check --fix .",
         "ty check .",
+        "pyrefly check .",
         "bandit -c pyproject.toml -r src examples -q",
     ]
 

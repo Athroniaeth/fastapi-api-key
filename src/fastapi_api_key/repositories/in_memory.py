@@ -65,77 +65,77 @@ class InMemoryApiKeyRepository(AbstractApiKeyRepository):
         )
         return items[offset : offset + limit]
 
-    async def find(self, filter: ApiKeyFilter) -> List[ApiKey]:
+    async def find(self, filter_: ApiKeyFilter) -> List[ApiKey]:
         results = list(self._store.values())
 
         # Boolean filters
-        if filter.is_active is not None:
-            results = [e for e in results if e.is_active == filter.is_active]
+        if filter_.is_active is not None:
+            results = [e for e in results if e.is_active == filter_.is_active]
 
         # Date filters
-        if filter.expires_before is not None:
-            results = [e for e in results if e.expires_at and e.expires_at < filter.expires_before]
+        if filter_.expires_before is not None:
+            results = [e for e in results if e.expires_at and e.expires_at < filter_.expires_before]
 
-        if filter.expires_after is not None:
-            results = [e for e in results if e.expires_at and e.expires_at > filter.expires_after]
+        if filter_.expires_after is not None:
+            results = [e for e in results if e.expires_at and e.expires_at > filter_.expires_after]
 
-        if filter.created_before is not None:
-            results = [e for e in results if e.created_at < filter.created_before]
+        if filter_.created_before is not None:
+            results = [e for e in results if e.created_at < filter_.created_before]
 
-        if filter.created_after is not None:
-            results = [e for e in results if e.created_at > filter.created_after]
+        if filter_.created_after is not None:
+            results = [e for e in results if e.created_at > filter_.created_after]
 
-        if filter.last_used_before is not None:
-            results = [e for e in results if e.last_used_at and e.last_used_at < filter.last_used_before]
+        if filter_.last_used_before is not None:
+            results = [e for e in results if e.last_used_at and e.last_used_at < filter_.last_used_before]
 
-        if filter.last_used_after is not None:
-            results = [e for e in results if e.last_used_at and e.last_used_at > filter.last_used_after]
+        if filter_.last_used_after is not None:
+            results = [e for e in results if e.last_used_at and e.last_used_at > filter_.last_used_after]
 
-        if filter.never_used is not None:
-            if filter.never_used:
+        if filter_.never_used is not None:
+            if filter_.never_used:
                 results = [e for e in results if e.last_used_at is None]
             else:
                 results = [e for e in results if e.last_used_at is not None]
 
         # Scope filters
-        if filter.scopes_contain_all:
-            results = [e for e in results if all(s in e.scopes for s in filter.scopes_contain_all)]
+        if filter_.scopes_contain_all:
+            results = [e for e in results if all(s in e.scopes for s in filter_.scopes_contain_all)]
 
-        if filter.scopes_contain_any:
-            results = [e for e in results if any(s in e.scopes for s in filter.scopes_contain_any)]
+        if filter_.scopes_contain_any:
+            results = [e for e in results if any(s in e.scopes for s in filter_.scopes_contain_any)]
 
         # Text filters
-        if filter.name_contains:
-            results = [e for e in results if e.name and filter.name_contains.lower() in e.name.lower()]
+        if filter_.name_contains:
+            results = [e for e in results if e.name and filter_.name_contains.lower() in e.name.lower()]
 
-        if filter.name_exact:
-            results = [e for e in results if e.name == filter.name_exact]
+        if filter_.name_exact:
+            results = [e for e in results if e.name == filter_.name_exact]
 
         # Sorting
-        reverse = filter.order_desc
-        results.sort(key=lambda e: getattr(e, filter.order_by) or datetime.min, reverse=reverse)
+        reverse = filter_.order_desc
+        results.sort(key=lambda e: getattr(e, filter_.order_by) or datetime.min, reverse=reverse)
 
         # Pagination
-        return results[filter.offset : filter.offset + filter.limit]
+        return results[filter_.offset : filter_.offset + filter_.limit]
 
-    async def count(self, filter: Optional[ApiKeyFilter] = None) -> int:
-        if filter is None:
+    async def count(self, filter_: Optional[ApiKeyFilter] = None) -> int:
+        if filter_ is None:
             return len(self._store)
 
         # Reuse find() logic without pagination
         unlimited_filter = ApiKeyFilter(
-            is_active=filter.is_active,
-            expires_before=filter.expires_before,
-            expires_after=filter.expires_after,
-            created_before=filter.created_before,
-            created_after=filter.created_after,
-            last_used_before=filter.last_used_before,
-            last_used_after=filter.last_used_after,
-            never_used=filter.never_used,
-            scopes_contain_all=filter.scopes_contain_all,
-            scopes_contain_any=filter.scopes_contain_any,
-            name_contains=filter.name_contains,
-            name_exact=filter.name_exact,
+            is_active=filter_.is_active,
+            expires_before=filter_.expires_before,
+            expires_after=filter_.expires_after,
+            created_before=filter_.created_before,
+            created_after=filter_.created_after,
+            last_used_before=filter_.last_used_before,
+            last_used_after=filter_.last_used_after,
+            never_used=filter_.never_used,
+            scopes_contain_all=filter_.scopes_contain_all,
+            scopes_contain_any=filter_.scopes_contain_any,
+            name_contains=filter_.name_contains,
+            name_exact=filter_.name_exact,
             limit=sys.maxsize,
             offset=0,
         )

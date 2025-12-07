@@ -51,7 +51,7 @@ class ApiKeyCreateIn(BaseModel):
     expires_at: Optional[datetime] = Field(
         default=None,
         examples=[(datetime_factory() + timedelta(days=30)).isoformat()],
-        description="Expiration datetime (ISO 8601)"
+        description="Expiration datetime (ISO 8601)",
     )
 
 

@@ -338,6 +338,7 @@ class TestServiceTimingAttackMitigation:
                 await service.verify_key("ak.fake.secret")
 
             mock_sleep.assert_awaited_once()
+            assert mock_sleep.await_args, "Expected sleep to be called"
             delay = mock_sleep.await_args.args[0]
             assert 0.1 <= delay <= 0.2  # Between rrd and rrd*2
 

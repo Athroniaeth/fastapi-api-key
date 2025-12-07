@@ -114,11 +114,11 @@ class AbstractApiKeyRepository(ABC):
         ...
 
     @abstractmethod
-    async def find(self, filter: ApiKeyFilter) -> List[ApiKey]:
+    async def find(self, filter_: ApiKeyFilter) -> List[ApiKey]:
         """Search entities by filtering criteria.
 
         Args:
-            filter: Filtering criteria and pagination options.
+            filter_: Filtering criteria and pagination options.
 
         Returns:
             List of entities matching the criteria.
@@ -138,11 +138,11 @@ class AbstractApiKeyRepository(ABC):
         ...
 
     @abstractmethod
-    async def count(self, filter: Optional[ApiKeyFilter] = None) -> int:
+    async def count(self, filter_: Optional[ApiKeyFilter] = None) -> int:
         """Count entities matching the criteria.
 
         Args:
-            filter: Filtering criteria (pagination is ignored). None = count all.
+            filter_: Filtering criteria (pagination is ignored). None = count all.
 
         Returns:
             Number of matching entities.

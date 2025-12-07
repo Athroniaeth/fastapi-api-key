@@ -73,7 +73,7 @@ class TestOptionalDependencyErrors:
         module_path: str,
     ):
         """Missing optional dependency raises ImportError with install hint."""
-        monkeypatch.setitem(sys.modules, library, None)
+        monkeypatch.setitem(sys.modules, library, None)  # pyrefly: ignore[bad-argument-type]
 
         with pytest.raises(ImportError) as exc_info:
             module = importlib.import_module(module_path)

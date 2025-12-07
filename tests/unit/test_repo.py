@@ -11,7 +11,7 @@ import pytest
 from fastapi_api_key.repositories.base import ApiKeyFilter, SortableColumn
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.utils import datetime_factory, key_id_factory
-from tests.conftest import make_api_key
+from tests.conftest import make_api_key  # pyrefly: ignore[missing-import]
 
 
 class TestRepositoryCRUD:

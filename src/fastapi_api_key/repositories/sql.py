@@ -14,7 +14,7 @@ from typing import List, Optional, Sequence
 
 from sqlalchemy import String, Text, Boolean, DateTime, JSON, func
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
 from fastapi_api_key.domain.entities import ApiKey
@@ -99,13 +99,13 @@ class SqlAlchemyApiKeyRepository(AbstractApiKeyRepository):
     def __init__(self, async_session: AsyncSession) -> None:
         self._async_session = async_session
 
-    async def ensure_table(self) -> None:
+    async def ensure_table(self, async_engine: AsyncEngine) -> None:
         """Ensure the database table for API keys exists.
 
         Notes:
             This method creates the table if it does not exist.
         """
-        async with self._async_session.bind.begin() as conn:
+        async with async_engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
     @staticmethod

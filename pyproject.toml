@@ -101,6 +101,7 @@ dev = [
     "mkdocs>=1.6.1",
     "mkdocs-material>=9.6.23",
     "httpx>=0.28.1",
+    "pyrefly>=0.44.2",
 ]
 
 [tool.commitizen]
@@ -135,6 +136,12 @@ doctest_optionflags = [
     "IGNORE_EXCEPTION_DETAIL",
 ]
 testpaths = ["src", "tests"]
+
+[tool.pyrefly]
+project-includes = [
+    "**/*.py*",
+    "**/*.ipynb",
+]
 
 
 [tool.coverage.run]

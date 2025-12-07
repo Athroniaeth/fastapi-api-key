@@ -26,7 +26,7 @@ class TestApiKeyStructure:
         assert isinstance(key.id_, str)
         assert key.name is None
         assert key.description is None
-        assert key.is_active is True
+        assert key.is_active
         assert key.expires_at is None
         assert isinstance(key.created_at, datetime)
         assert key.last_used_at is None
@@ -123,18 +123,18 @@ class TestApiKeyStateMethods:
     def test_disable(self):
         """disable() sets is_active to False."""
         key = ApiKey()
-        assert key.is_active is True
+        assert key.is_active
 
         key.disable()
-        assert key.is_active is False
+        assert key.is_active is False  # pyrefly: ignore[unnecessary-comparison]
 
     def test_enable(self):
         """enable() sets is_active to True."""
         key = ApiKey(is_active=False)
-        assert key.is_active is False
+        assert key.is_active is False  # pyrefly: ignore[unnecessary-comparison]
 
         key.enable()
-        assert key.is_active is True
+        assert key.is_active
 
     def test_touch_updates_last_used_at(self):
         """touch() updates last_used_at to current time."""
