@@ -1,3 +1,22 @@
+## 0.13.0 (2025-12-07)
+
+### Feat
+
+- **cli,-api**: add CLI parity with advanced search filtering and sorting options
+
+### Fix
+
+- **cli**: move event_handlers to instance variable to prevent sharing between instances
+- **hasher**: correct error message in Argon2ApiKeyHasher import
+
+### Refactor
+
+- replace ty by pyrefly and lint/format all code
+- **domain**: add key_hash property to ApiKeyEntity Protocol
+- **repo**: replace magic number 999999 with sys.maxsize
+- **types**: remove redundant Union wrapper from type aliases
+- use domain errors consistently and add SortableColumn enum
+
 ## 0.12.0 (2025-12-04)
 
 ### Feat
