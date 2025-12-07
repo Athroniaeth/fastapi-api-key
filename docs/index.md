@@ -9,9 +9,7 @@
 [![Deps: uv](https://img.shields.io/badge/deps-managed%20with%20uv-3E4DD8.svg)](https://docs.astral.sh/uv/)
 [![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-4B32C3.svg)](https://docs.astral.sh/ruff/)
 
-`fastapi-api-key` provides reusable building blocks to issue, persist, and verify API keys in FastAPI applications. It
-ships with a domain model, hashing helpers, repository contracts, and an optional FastAPI router for CRUD management of
-keys.
+`fastapi-api-key` provides a backend-agnostic library that provides a production-ready, secure API key system, with optional FastAPI and Typer connectors.
 
 ## Links
 
@@ -22,7 +20,7 @@ keys.
 
 - **Security-first**: secrets are hashed with a salt and a pepper, and never logged or returned after creation
 - **Prod-ready**: services and repositories are async, and battle-tested
-- **Agnostic hasher**: choose between Argon2 (default) or Bcrypt hashing strategies
+- **Agnostic hasher**: choose between Argon2 (default) or Bcrypt hashing strategies (with caching support)
 - **Agnostic backend**: abstract repository pattern, currently with SQLAlchemy implementation
 - **Connectors**: FastAPI router and Typer CLI for API key management
 - **Envvar support**: easily configure peppers and other secrets via environment variables
@@ -45,7 +43,7 @@ This is a classic API key if you don't modify the service behavior:
 
 **Structure:**
 
-`{global_prefix}{separator}{key_id}{separator}{key_secret}`
+`{global_prefix}`-`{separator}`-`{key_id}`-`{separator}`-`{key_secret}`
 
 **Example:**
 
