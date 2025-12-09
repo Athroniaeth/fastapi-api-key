@@ -53,10 +53,10 @@ class CachedApiKeyService(ApiKeyService):
     def __init__(
         self,
         repo: AbstractApiKeyRepository,
+        hasher: ApiKeyHasher,
         cache: Optional[BaseCache] = None,
         cache_prefix: str = "api_key",
         cache_ttl: int = 300,
-        hasher: Optional[ApiKeyHasher] = None,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
         rrd: float = 1 / 3,

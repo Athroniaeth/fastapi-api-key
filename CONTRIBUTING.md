@@ -41,9 +41,9 @@ source .venv/bin/activate  # or .venv\Scripts\Activate.ps1 on Windows
 
 1. **Format & lint**
    ```bash
-   uv run lint
+   make lint
    ```
-   Runs `ruff format`, `ruff check --fix`, `ty`, and `bandit` in one pass.
+   The Makefile wraps the Ruff, Ty, Pyrefly, and Bandit checks behind `uv run` so you get the same output on every platform. Install `make` with `sudo apt install make` on Debian/Ubuntu or `choco install make` (or Git for Windows) on Windows, then run commands from the project root.
 
 2. **Run the tests**
    ```bash
@@ -75,7 +75,7 @@ source .venv/bin/activate  # or .venv\Scripts\Activate.ps1 on Windows
 
 ## Pull request checklist
 
-- [ ] `uv run lint`
+- [ ] `make lint`
 - [ ] `uv run pytest`
 - [ ] `uv run mkdocs build` *(when documentation changes)*
 - [ ] Commits follow Commitizen/Conventional Commit format

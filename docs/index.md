@@ -71,6 +71,10 @@ Here is a diagram showing what happens after you initialize your API key service
 - The library issues warnings if you keep the default pepper; always configure a secret value outside source control.
 - Never log peppers or plaintext API keys, change the pepper of prod will prevent you from reading API keys
 
+### Development helpers
+
+Run the curated lint suite with `make lint`; it chains Ruff format/check, Ty, Pyrefly, and Bandit via `uv run` so CI and local runs match. Install `make` with `sudo apt install make` on Debian/Ubuntu or `choco install make` (or the binary from Git for Windows) before executing commands from the repository root.
+
 ## What to read next
 
 1. Head to the [Quickstart](quickstart.md) to wire the service in a REPL or script.
