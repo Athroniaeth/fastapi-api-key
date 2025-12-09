@@ -83,6 +83,16 @@ uv sync --extra dev
 uv pip install -e ".[dev]"
 ```
 
+### Makefile helpers
+
+Run the full lint suite with the provided Makefile:
+
+```bash
+make lint
+```
+
+Install `make` via `sudo apt install make` on Debian/Ubuntu or `choco install make` (Git for Windows also ships one) on Windows, then run the command from the project root to trigger Ruff, Ty, Pyrefly, and Bandit through `uv run`.
+
 ## Quick start
 
 ### Use the service with an in-memory repository
