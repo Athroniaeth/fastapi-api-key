@@ -1,3 +1,9 @@
+## 0.13.1 (2025-12-09)
+
+### Fix
+
+- clean dev-only lint command path and repair bad imports
+
 ## 0.13.0 (2025-12-07)
 
 ### Feat
