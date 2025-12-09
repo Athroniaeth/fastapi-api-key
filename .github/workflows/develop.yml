@@ -39,7 +39,7 @@ jobs:
         run: uv sync --locked --all-extras --dev --no-progress -q
 
       - name: Lint / Format / Type-check
-        run: uv run lint
+        run: make lint
 
   tests:
     name: Run tests (matrix)

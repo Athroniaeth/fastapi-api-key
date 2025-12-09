@@ -8,7 +8,6 @@ from typing import Optional, Tuple, List
 
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey, ConfigurationError
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.hasher.base import ApiKeyHasher
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
 from fastapi_api_key.utils import datetime_factory, key_secret_factory, key_id_factory
@@ -57,9 +56,9 @@ class AbstractApiKeyService(ABC):
     def __init__(
         self,
         repo: AbstractApiKeyRepository,
-        hasher: Optional[ApiKeyHasher] = None,
+        hasher: ApiKeyHasher,
         separator: str = DEFAULT_SEPARATOR,
-        global_prefix: str = "ak",
+        global_prefix: str = DEFAULT_GLOBAL_PREFIX,
         rrd: float = 1 / 3,
     ) -> None:
         # Warning developer that separator is automatically added to the global key_id
@@ -67,11 +66,11 @@ class AbstractApiKeyService(ABC):
             raise ValueError("Separator must not be in the global key_id")
 
         self._repo = repo
-        self._hasher = hasher or Argon2ApiKeyHasher()
+        self._hasher = hasher
 
+        self.rrd = rrd
         self.separator = separator
         self.global_prefix = global_prefix
-        self.rrd = rrd
         self._system_random = SystemRandom()
 
     @abstractmethod
@@ -270,9 +269,9 @@ class ApiKeyService(AbstractApiKeyService):
     def __init__(
         self,
         repo: AbstractApiKeyRepository,
-        hasher: Optional[ApiKeyHasher] = None,
+        hasher: ApiKeyHasher,
         separator: str = DEFAULT_SEPARATOR,
-        global_prefix: str = "ak",
+        global_prefix: str = DEFAULT_GLOBAL_PREFIX,
         rrd: float = 1 / 3,
     ) -> None:
         super().__init__(
