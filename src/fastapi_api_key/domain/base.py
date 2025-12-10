@@ -103,3 +103,18 @@ class ApiKeyEntity(Protocol):
             InvalidScopes: If the key does not have the required scopes.
         """
         ...
+
+    def ensure_valid(self, scopes: List[str]) -> None:
+        """Ensure the API key is valid for authentication and scopes.
+
+        This is a convenience method that combines both `ensure_can_authenticate`
+        and `ensure_valid_scopes`.
+
+        Arguments:
+            scopes (List[str]): List of required scopes to check against the key's scopes.
+        Raises:
+            KeyInactive: If the key is disabled.
+            KeyExpired: If the key is expired.
+            InvalidScopes: If the key does not have the required scopes.
+        """
+        ...

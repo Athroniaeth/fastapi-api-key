@@ -112,12 +112,11 @@ class CachedApiKeyService(ApiKeyService):
 
         # Compute cache key from the full API key (secure: requires complete key)
         cache_key = _compute_cache_key(parsed.raw)
-        cached_entity = await self.cache.get(cache_key)
+        cached_entity: ApiKey = await self.cache.get(cache_key)
 
         if cached_entity:
             # Cache hit: the full API key is correct (hash matched)
-            cached_entity.ensure_can_authenticate()
-            cached_entity.ensure_valid_scopes(required_scopes)
+            cached_entity.ensure_valid(scopes=required_scopes)
             return await self.touch(cached_entity)
 
         # Cache miss: perform full verification via parent's helper

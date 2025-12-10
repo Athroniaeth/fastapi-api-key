@@ -174,6 +174,10 @@ class ApiKey(ApiKeyEntity):
             if missing_scopes:
                 raise InvalidScopes(f"API key is missing required scopes: {missing_scopes_str}")
 
+    def ensure_valid(self, scopes: List[str]) -> None:
+        self.ensure_can_authenticate()
+        self.ensure_valid_scopes(scopes)
+
     def __repr__(self):
         return (
             f"ApiKey(id_={self.id_!r}, name={self.name!r}, description={self.description!r}, "

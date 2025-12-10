@@ -295,18 +295,15 @@ class ApiKeyService(AbstractApiKeyService):
             raise ConfigurationError(f"No environment variables found with prefix '{envvar_prefix}'")
 
         for key, api_key in zip(list_keys, list_api_key):
-            global_prefix, key_id, key_secret = self._get_parts(api_key)
+            parsed = self._get_parts(api_key)
 
             await self.create(
                 name=key,
-                key_id=key_id,
-                key_secret=key_secret,
+                key_id=parsed.key_id,
+                key_secret=parsed.key_secret,
             )
 
     async def get_by_id(self, id_: str) -> ApiKey:
-        if id_.strip() == "":
-            raise KeyNotProvided("No API key provided")
-
         entity = await self._repo.get_by_id(id_)
 
         if entity is None:
@@ -315,9 +312,6 @@ class ApiKeyService(AbstractApiKeyService):
         return entity
 
     async def get_by_key_id(self, key_id: str) -> ApiKey:
-        if not key_id.strip():
-            raise KeyNotProvided("No API key key_id provided (key_id cannot be empty)")
-
         entity = await self._repo.get_by_key_id(key_id)
 
         if entity is None:
@@ -426,20 +420,10 @@ class ApiKeyService(AbstractApiKeyService):
             KeyNotProvided: If the key is None or empty.
             InvalidKey: If the format or prefix is invalid.
         """
-        if api_key is None:
+        if api_key is None or api_key.strip() == "":
             raise KeyNotProvided("Api key must be provided (not given)")
 
-        global_prefix, key_id, key_secret = self._get_parts(api_key)
-
-        if global_prefix != self.global_prefix:
-            raise InvalidKey("Api key is invalid (wrong global prefix)")
-
-        return ParsedApiKey(
-            global_prefix=global_prefix,
-            key_id=key_id,
-            key_secret=key_secret,
-            raw=api_key,
-        )
+        return self._get_parts(api_key)
 
     async def _verify_entity(self, entity: ApiKey, key_secret: str, required_scopes: List[str]) -> ApiKey:
         """Verify that an entity can authenticate with the provided secret.
@@ -458,18 +442,17 @@ class ApiKeyService(AbstractApiKeyService):
             InvalidKey: If the hash does not match.
             InvalidScopes: If scopes are insufficient.
         """
-        assert entity.key_hash is not None, "key_hash must be set for existing API keys"  # nosec B101
+        # Todo: IDK if this line ise usefully
+        # assert entity.key_hash is not None, "key_hash must be set for existing API keys"  # nosec B101
 
-        entity.ensure_can_authenticate()
+        entity.ensure_valid(scopes=required_scopes)
 
         if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
 
-        entity.ensure_valid_scopes(required_scopes)
-
         return await self.touch(entity)
 
-    def _get_parts(self, api_key: str) -> Tuple[str, str, str]:
+    def _get_parts(self, api_key: str) -> ParsedApiKey:
         """Extract the parts of the API key string.
 
         Args:
@@ -486,10 +469,20 @@ class ApiKeyService(AbstractApiKeyService):
         if len(parts) != 3:
             raise InvalidKey("API key format is invalid (wrong number of segments).")
 
-        if not all(parts):
+        if not all(p.strip() for p in parts):
             raise InvalidKey("API key format is invalid (empty segment).")
 
-        return parts[0], parts[1], parts[2]
+        parsed_api_key = ParsedApiKey(
+            global_prefix=parts[0],
+            key_id=parts[1],
+            key_secret=parts[2],
+            raw=api_key,
+        )
+
+        if parsed_api_key.global_prefix != self.global_prefix:
+            raise InvalidKey("Api key is invalid (wrong global prefix)")
+
+        return parsed_api_key
 
     async def touch(self, entity: ApiKey) -> ApiKey:
         """Update last_used_at to now and persist the change."""
