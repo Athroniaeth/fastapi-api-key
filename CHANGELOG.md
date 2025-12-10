@@ -1,3 +1,10 @@
+## 0.13.2 (2025-12-10)
+
+### Fix
+
+- **svc**: create ensure_valid method for regroup entity domain errors, delete empty check for get svc method
+- clean dev-only lint command path and repair bad imports
+
 ## 0.13.1 (2025-12-09)
 
 ### Fix
