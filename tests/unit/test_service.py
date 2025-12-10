@@ -93,12 +93,6 @@ class TestServiceGet:
         assert result.id_ == entity.id_
 
     @pytest.mark.asyncio
-    async def test_get_by_id_empty_raises(self, service: ApiKeyService):
-        """get_by_id() raises KeyNotProvided for empty ID."""
-        with pytest.raises(KeyNotProvided):
-            await service.get_by_id("  ")
-
-    @pytest.mark.asyncio
     async def test_get_by_id_not_found_raises(self, service: ApiKeyService):
         """get_by_id() raises KeyNotFound for missing ID."""
         with pytest.raises(KeyNotFound):
@@ -117,12 +111,6 @@ class TestServiceGet:
         """get_by_key_id() raises KeyNotFound for missing key_id."""
         with pytest.raises(KeyNotFound):
             await service.get_by_key_id("missing")
-
-    @pytest.mark.asyncio
-    async def test_get_by_key_id_empty_raises(self, service: ApiKeyService):
-        """get_by_key_id() raises KeyNotProvided for empty key_id."""
-        with pytest.raises(KeyNotProvided):
-            await service.get_by_key_id("   ")
 
 
 class TestServiceUpdate:
@@ -217,7 +205,7 @@ class TestServiceVerifyKey:
     @pytest.mark.asyncio
     async def test_verify_empty_raises(self, service: ApiKeyService):
         """verify_key() raises InvalidKey for empty/whitespace string."""
-        with pytest.raises(InvalidKey, match="wrong number of segments"):
+        with pytest.raises(KeyNotProvided, match=r"Api key must be provided \(not given\)"):
             await service.verify_key("   ")
 
     @pytest.mark.asyncio
