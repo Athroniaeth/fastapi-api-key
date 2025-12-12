@@ -4,7 +4,7 @@ version = "0.13.2"
 description = "fastapi-api-key provides secure, production-ready API key management for FastAPI. It offers pluggable hashing strategies (Argon2 or bcrypt), backend-agnostic persistence (currently SQLAlchemy), and an optional cache layer (aiocache). Includes a Typer CLI and a FastAPI router for CRUD management of keys."
 readme = "README.md"
 authors = [
-    { name = "Athroniaeth", email = "pierre.chaumont@hotmail.fr" }
+    { name = "Athroniaeth" }
 ]
 keywords = [
     "api",
@@ -27,6 +27,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Framework :: FastAPI",
     "Environment :: Web Environment",
     "Topic :: Security",
