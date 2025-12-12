@@ -4,7 +4,7 @@ Thanks for helping improve `fastapi-api-key`! This guide walks you through the t
 
 ## Prerequisites
 
-- Python 3.13+
+- Python 3.9+
 - [`uv`](https://docs.astral.sh/uv/) for dependency management
 - Git and a GitHub account
 

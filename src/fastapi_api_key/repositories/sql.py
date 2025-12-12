@@ -22,7 +22,7 @@ from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFi
 from fastapi_api_key.utils import datetime_factory
 
 
-class Base(DeclarativeBase): ...
+class Base(DeclarativeBase): ...  # pragma: no cover
 
 
 class ApiKeyModelMixin:

@@ -4,7 +4,6 @@ Tests verify API routes work correctly using InMemory repository.
 Focus on behavior, not implementation details.
 """
 
-import asyncio
 import warnings
 from contextlib import asynccontextmanager
 from datetime import timedelta
@@ -544,7 +543,8 @@ class TestCreateDependsApiKey:
         assert response.status_code == 401
         assert response.json()["detail"] == "API key invalid"
 
-    def test_http_bearer_inactive_key(self, service: ApiKeyService):
+    @pytest.mark.asyncio
+    async def test_http_bearer_inactive_key(self, service: ApiKeyService):
         """HTTPBearer returns 403 for inactive key."""
 
         async def get_service():
@@ -560,14 +560,15 @@ class TestCreateDependsApiKey:
         async def create_key():
             return await service.create(name="test-key", is_active=False)
 
-        entity, api_key = asyncio.get_event_loop().run_until_complete(create_key())
+        entity, api_key = await create_key()
 
         client = TestClient(app)
         response = client.get("/protected", headers={"Authorization": f"Bearer {api_key}"})
         assert response.status_code == 403
         assert response.json()["detail"] == "API key inactive"
 
-    def test_http_bearer_expired_key(self, service: ApiKeyService):
+    @pytest.mark.asyncio
+    async def test_http_bearer_expired_key(self, service: ApiKeyService):
         """HTTPBearer returns 403 for expired key."""
 
         async def get_service():
@@ -586,14 +587,15 @@ class TestCreateDependsApiKey:
             await service.update(entity)
             return entity, api_key
 
-        entity, api_key = asyncio.get_event_loop().run_until_complete(create_and_expire_key())
+        entity, api_key = await create_and_expire_key()
 
         client = TestClient(app)
         response = client.get("/protected", headers={"Authorization": f"Bearer {api_key}"})
         assert response.status_code == 403
         assert response.json()["detail"] == "API key expired"
 
-    def test_http_bearer_missing_scopes(self, service: ApiKeyService):
+    @pytest.mark.asyncio
+    async def test_http_bearer_missing_scopes(self, service: ApiKeyService):
         """HTTPBearer returns 403 for missing scopes."""
 
         async def get_service():
@@ -609,14 +611,15 @@ class TestCreateDependsApiKey:
         async def create_key():
             return await service.create(name="test-key", scopes=["read"])
 
-        entity, api_key = asyncio.get_event_loop().run_until_complete(create_key())
+        entity, api_key = await create_key()
 
         client = TestClient(app)
         response = client.get("/protected", headers={"Authorization": f"Bearer {api_key}"})
         assert response.status_code == 403
         assert "missing required scopes" in response.json()["detail"]
 
-    def test_api_key_header_valid_key(self, service: ApiKeyService):
+    @pytest.mark.asyncio
+    async def test_api_key_header_valid_key(self, service: ApiKeyService):
         """APIKeyHeader accepts valid API key."""
 
         async def get_service():
@@ -638,14 +641,15 @@ class TestCreateDependsApiKey:
         async def create_key():
             return await service.create(name="test-key")
 
-        entity, api_key = asyncio.get_event_loop().run_until_complete(create_key())
+        entity, api_key = await create_key()
 
         client = TestClient(app)
         response = client.get("/protected", headers={"X-API-Key": api_key})
         assert response.status_code == 200
         assert response.json()["key_id"] == entity.key_id
 
-    def test_api_key_header_missing_key(self, service: ApiKeyService):
+    @pytest.mark.asyncio
+    async def test_api_key_header_missing_key(self, service: ApiKeyService):
         """APIKeyHeader returns 401 for missing key."""
 
         async def get_service():
@@ -667,7 +671,8 @@ class TestCreateDependsApiKey:
         assert response.status_code == 401
         assert response.json()["detail"] == "API key missing"
 
-    def test_api_key_header_invalid_key(self, service: ApiKeyService):
+    @pytest.mark.asyncio
+    async def test_api_key_header_invalid_key(self, service: ApiKeyService):
         """APIKeyHeader returns 401 for invalid key."""
 
         async def get_service():
@@ -689,7 +694,8 @@ class TestCreateDependsApiKey:
         assert response.status_code == 401
         assert response.json()["detail"] == "API key invalid"
 
-    def test_api_key_header_inactive_key(self, service: ApiKeyService):
+    @pytest.mark.asyncio
+    async def test_api_key_header_inactive_key(self, service: ApiKeyService):
         """APIKeyHeader returns 403 for inactive key."""
 
         async def get_service():
@@ -709,14 +715,15 @@ class TestCreateDependsApiKey:
         async def create_key():
             return await service.create(name="test-key", is_active=False)
 
-        entity, api_key = asyncio.get_event_loop().run_until_complete(create_key())
+        entity, api_key = await create_key()
 
         client = TestClient(app)
         response = client.get("/protected", headers={"X-API-Key": api_key})
         assert response.status_code == 403
         assert response.json()["detail"] == "API key inactive"
 
-    def test_api_key_header_expired_key(self, service: ApiKeyService):
+    @pytest.mark.asyncio
+    async def test_api_key_header_expired_key(self, service: ApiKeyService):
         """APIKeyHeader returns 403 for expired key."""
 
         async def get_service():
@@ -739,14 +746,15 @@ class TestCreateDependsApiKey:
             await service.update(entity)
             return entity, api_key
 
-        entity, api_key = asyncio.get_event_loop().run_until_complete(create_and_expire_key())
+        entity, api_key = await create_and_expire_key()
 
         client = TestClient(app)
         response = client.get("/protected", headers={"X-API-Key": api_key})
         assert response.status_code == 403
         assert response.json()["detail"] == "API key expired"
 
-    def test_api_key_header_missing_scopes(self, service: ApiKeyService):
+    @pytest.mark.asyncio
+    async def test_api_key_header_missing_scopes(self, service: ApiKeyService):
         """APIKeyHeader returns 403 for missing scopes."""
 
         async def get_service():
@@ -768,7 +776,7 @@ class TestCreateDependsApiKey:
         async def create_key():
             return await service.create(name="test-key", scopes=["read"])
 
-        entity, api_key = asyncio.get_event_loop().run_until_complete(create_key())
+        entity, api_key = await create_key()
 
         client = TestClient(app)
         response = client.get("/protected", headers={"X-API-Key": api_key})
