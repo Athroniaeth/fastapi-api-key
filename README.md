@@ -126,7 +126,7 @@ from fastapi_api_key import ApiKeyService
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 
-pepper = os.environ["API_KEY_PEPPER"]
+pepper = os.environ["SECRET_PEPPER"]
 hasher = Argon2ApiKeyHasher(pepper=pepper)
 
 repo = InMemoryApiKeyRepository()
@@ -186,7 +186,7 @@ from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security
 # Default pepper is insecure and should not be used in production
-pepper = os.getenv("API_KEY_PEPPER")
+pepper = os.getenv("SECRET_PEPPER")
 hasher = Argon2ApiKeyHasher(pepper=pepper)
 
 path = Path(__file__).parent / "db.sqlite3"

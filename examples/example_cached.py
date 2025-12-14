@@ -12,7 +12,7 @@ from fastapi_api_key.services.cached import CachedApiKeyService
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security
 # Default pepper is insecure and should not be used in production
-pepper = os.getenv("API_KEY_PEPPER", "change_me")
+pepper = os.getenv("SECRET_PEPPER")
 hasher = Argon2ApiKeyHasher(pepper=pepper)
 
 # default hasher is Argon2 with a default pepper (to be changed in prod)

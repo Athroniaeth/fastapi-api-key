@@ -21,7 +21,7 @@ class ApiKeyModel(Base, ApiKeyModelMixin): ...
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security
 # Default pepper is insecure and should not be used in production
-pepper = os.getenv("API_KEY_PEPPER")
+pepper = os.getenv("SECRET_PEPPER")
 hasher = Argon2ApiKeyHasher(pepper=pepper)
 
 path = Path(__file__).parent / "db.sqlite3"

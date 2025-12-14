@@ -49,7 +49,7 @@ service = CachedApiKeyService(repo=repo, hasher=hasher, cache=redis_cache, cache
 This is the canonical example from `examples/example_cached.py`:
 
 !!! warning "Always set a pepper"
-    The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
+    The default pepper is a placeholder. Set `SECRET_PEPPER` (or pass it explicitly to the hashers) in every environment.
 
 ```python
 --8<-- "examples/example_cached.py"
