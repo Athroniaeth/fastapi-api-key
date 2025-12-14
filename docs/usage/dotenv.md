@@ -13,7 +13,7 @@ API_KEY_DEV=ak-dcde9fa8eec44aa2-n8JK2HPXoosH6UXPL5h2YeO3OdW55WESb97CKc7mbVUzFpWF
 This is the canonical example from `examples/example_inmemory_env.py`:
 
 !!! warning "Always set a pepper"
-    The default pepper is a placeholder. Set `API_KEY_PEPPER` (or pass it explicitly to the hashers) in every environment.
+    The default pepper is a placeholder. Set `SECRET_PEPPER` (or pass it explicitly to the hashers) in every environment.
 
 ```python
 --8<-- "examples/example_inmemory_env.py"
