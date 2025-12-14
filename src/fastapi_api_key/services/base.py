@@ -252,6 +252,14 @@ class AbstractApiKeyService(ABC):
         """
         ...
 
+    async def load_dotenv(self, envvar_prefix: str = "API_KEY_") -> None:
+        """Load environment variables into the service configuration.
+
+        Args:
+            envvar_prefix: The prefix to use for environment variables.
+        """
+        ...
+
 
 class ApiKeyService(AbstractApiKeyService):
     """Concrete implementation of the API key service.
@@ -283,11 +291,6 @@ class ApiKeyService(AbstractApiKeyService):
         )
 
     async def load_dotenv(self, envvar_prefix: str = "API_KEY_"):
-        """Load environment variables into the service configuration.
-
-        Args:
-            envvar_prefix: The prefix to use for environment variables.
-        """
         list_keys = [key for key in os.environ.keys() if key.startswith(envvar_prefix)]
         list_api_key = [os.environ[key] for key in list_keys]
 
