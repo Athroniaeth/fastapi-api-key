@@ -51,6 +51,8 @@ async def service_factory() -> AsyncIterator[ApiKeyService]:
             await async_session.rollback()
             raise
 
+    await async_engine.dispose()
+
 
 app = create_api_keys_cli(service_factory)
 
