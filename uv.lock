@@ -842,7 +842,7 @@ wheels = [
 
 [[package]]
 name = "fastapi-api-key"
-version = "0.13.2"
+version = "0.13.3"
 source = { editable = "." }
 
 [package.optional-dependencies]
