@@ -1,3 +1,9 @@
+## 1.0.0 (2025-12-15)
+
+### Fix
+
+- **deps**: relax dependency version constraints
+
 ## 0.13.3 (2025-12-14)
 
 ## 0.13.2 (2025-12-10)
