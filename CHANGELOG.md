@@ -1,3 +1,9 @@
+## 1.1.0 (2026-01-20)
+
+### Feat
+
+- **security**: apply uniform verify delay for all outcomes
+
 ## 1.0.0 (2025-12-15)
 
 ### Fix
