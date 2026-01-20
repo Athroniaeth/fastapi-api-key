@@ -6,7 +6,7 @@ except ModuleNotFoundError as e:
     ) from e
 
 import hashlib
-from typing import Optional, List
+from typing import List, Optional
 
 import aiocache
 from aiocache import BaseCache
@@ -59,7 +59,9 @@ class CachedApiKeyService(ApiKeyService):
         cache_ttl: int = 300,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = "ak",
-        rrd: float = 1 / 3,
+        rrd: Optional[float] = None,
+        min_delay: float = 0.1,
+        max_delay: float = 0.3,
     ):
         super().__init__(
             repo=repo,
@@ -67,6 +69,8 @@ class CachedApiKeyService(ApiKeyService):
             separator=separator,
             global_prefix=global_prefix,
             rrd=rrd,
+            min_delay=min_delay,
+            max_delay=max_delay,
         )
         self.cache_prefix = cache_prefix
         self.cache_ttl = cache_ttl
@@ -112,7 +116,7 @@ class CachedApiKeyService(ApiKeyService):
 
         # Compute cache key from the full API key (secure: requires complete key)
         cache_key = _compute_cache_key(parsed.raw)
-        cached_entity: ApiKey = await self.cache.get(cache_key)
+        cached_entity: Optional[ApiKey] = await self.cache.get(cache_key)
 
         if cached_entity:
             # Cache hit: the full API key is correct (hash matched)

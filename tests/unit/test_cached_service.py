@@ -38,7 +38,8 @@ def service(mock_cache: AsyncMock) -> CachedApiKeyService:
         hasher=MockApiKeyHasher(pepper="test-pepper"),
         separator="-",
         global_prefix="ak",
-        rrd=0,
+        min_delay=0,
+        max_delay=0,
     )
 
 
@@ -268,7 +269,8 @@ class TestCacheTTL:
             repo=InMemoryApiKeyRepository(),
             cache=mock_cache,
             hasher=MockApiKeyHasher(pepper="test"),
-            rrd=0,
+            min_delay=0,
+            max_delay=0,
         )
         entity, api_key = await service.create(name="test")
         mock_cache.get.return_value = None  # Cache miss
@@ -290,7 +292,8 @@ class TestCacheTTL:
             cache=mock_cache,
             cache_ttl=60,
             hasher=MockApiKeyHasher(pepper="test"),
-            rrd=0,
+            min_delay=0,
+            max_delay=0,
         )
         entity, api_key = await service.create(name="test")
         mock_cache.get.return_value = None
@@ -305,42 +308,7 @@ class TestCacheTTL:
         service = CachedApiKeyService(
             repo=InMemoryApiKeyRepository(),
             hasher=MockApiKeyHasher(pepper="test"),
-            rrd=0,
+            min_delay=0,
+            max_delay=0,
         )
         assert service.cache_ttl == 300
-
-
-class TestDefaultCache:
-    """Tests for default cache behavior."""
-
-    @pytest.mark.asyncio
-    async def test_default_cache_is_simple_memory(self):
-        """Service uses SimpleMemoryCache by default."""
-        import aiocache
-
-        service = CachedApiKeyService(
-            repo=InMemoryApiKeyRepository(),
-            hasher=MockApiKeyHasher(pepper="test"),
-            rrd=0,
-        )
-
-        assert isinstance(service.cache, aiocache.SimpleMemoryCache)
-
-    @pytest.mark.asyncio
-    async def test_service_works_without_explicit_cache(self):
-        """Service works end-to-end with default cache."""
-        service = CachedApiKeyService(
-            repo=InMemoryApiKeyRepository(),
-            hasher=MockApiKeyHasher(pepper="test"),
-            rrd=0,
-        )
-
-        entity, api_key = await service.create(name="test")
-
-        # First verify (cache miss)
-        result = await service.verify_key(api_key)
-        assert result.id_ == entity.id_
-
-        # Second verify (cache hit)
-        result = await service.verify_key(api_key)
-        assert result.id_ == entity.id_

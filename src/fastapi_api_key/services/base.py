@@ -1,10 +1,11 @@
 import asyncio
 import os
+import warnings
 from dataclasses import dataclass
 from datetime import datetime
 from random import SystemRandom
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple, List
+from typing import List, Optional, Tuple
 
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey, ConfigurationError
@@ -45,7 +46,9 @@ class AbstractApiKeyService(ABC):
         hasher: Hasher for hashing secrets. Defaults to Argon2ApiKeyHasher.
         separator: Separator in API key format. Defaults to "-".
         global_prefix: Prefix for API keys. Defaults to "ak".
-        rrd: Random response delay for timing attack mitigation. Defaults to 1/3.
+        rrd: Deprecated random response delay. Ignored if provided.
+        min_delay: Minimum delay (seconds) applied to all verify responses.
+        max_delay: Maximum delay (seconds) applied to all verify responses.
 
     Notes:
         The global key_id is pure cosmetic, it is not used for anything else.
@@ -59,16 +62,33 @@ class AbstractApiKeyService(ABC):
         hasher: ApiKeyHasher,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = DEFAULT_GLOBAL_PREFIX,
-        rrd: float = 1 / 3,
+        rrd: Optional[float] = None,
+        min_delay: float = 0.1,
+        max_delay: float = 0.3,
     ) -> None:
         # Warning developer that separator is automatically added to the global key_id
         if separator in global_prefix:
             raise ValueError("Separator must not be in the global key_id")
 
+        if rrd is not None:
+            warnings.warn(
+                "rrd is deprecated and ignored. Use min_delay/max_delay instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
+        if min_delay < 0 or max_delay < 0:
+            raise ValueError("min_delay and max_delay must be non-negative")
+
+        if max_delay < min_delay:
+            raise ValueError("max_delay must be greater than or equal to min_delay")
+
         self._repo = repo
         self._hasher = hasher
 
         self.rrd = rrd
+        self.min_delay = min_delay
+        self.max_delay = max_delay
         self.separator = separator
         self.global_prefix = global_prefix
         self._system_random = SystemRandom()
@@ -216,14 +236,21 @@ class AbstractApiKeyService(ABC):
             If the entity is inactive or expired, an exception is raised.
             If the check between the provided plain key and the stored hash fails,
             an InvalidKey exception is raised. Else, the entity is returned.
+            A randomized delay is always applied to reduce timing signals.
         """
         try:
-            return await self._verify_key(api_key, required_scopes)
-        except Exception as e:
-            # Add a small jitter to make timing-based probing harder to profile.
-            wait = self._system_random.uniform(self.rrd, self.rrd * 2)
-            await asyncio.sleep(wait)
-            raise e
+            result = await self._verify_key(api_key, required_scopes)
+        except Exception as exc:
+            await self._apply_delay()
+            raise exc
+
+        await self._apply_delay()
+        return result
+
+    async def _apply_delay(self) -> None:
+        """Apply a randomized delay to reduce timing signals."""
+        wait = self._system_random.uniform(self.min_delay, self.max_delay)
+        await asyncio.sleep(wait)
 
     @abstractmethod
     async def _verify_key(self, api_key: str, required_scopes: Optional[List[str]] = None) -> ApiKey:
@@ -249,6 +276,7 @@ class AbstractApiKeyService(ABC):
             If the entity is inactive or expired, an exception is raised.
             If the check between the provided plain key and the stored hash fails,
             an InvalidKey exception is raised. Else, the entity is returned.
+            A randomized delay is always applied to reduce timing signals.
         """
         ...
 
@@ -280,7 +308,9 @@ class ApiKeyService(AbstractApiKeyService):
         hasher: ApiKeyHasher,
         separator: str = DEFAULT_SEPARATOR,
         global_prefix: str = DEFAULT_GLOBAL_PREFIX,
-        rrd: float = 1 / 3,
+        rrd: Optional[float] = None,
+        min_delay: float = 0.1,
+        max_delay: float = 0.3,
     ) -> None:
         super().__init__(
             repo=repo,
@@ -288,6 +318,8 @@ class ApiKeyService(AbstractApiKeyService):
             separator=separator,
             global_prefix=global_prefix,
             rrd=rrd,
+            min_delay=min_delay,
+            max_delay=max_delay,
         )
 
     async def load_dotenv(self, envvar_prefix: str = "API_KEY_"):

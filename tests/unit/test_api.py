@@ -36,7 +36,8 @@ def service(repo: InMemoryApiKeyRepository) -> ApiKeyService:
     return ApiKeyService(
         repo=repo,
         hasher=MockApiKeyHasher(pepper="test-pepper"),
-        rrd=0,  # No random delay for tests
+        min_delay=0,
+        max_delay=0,
     )
 
 
