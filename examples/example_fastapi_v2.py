@@ -46,26 +46,26 @@ async_session_maker = async_sessionmaker(
 app = FastAPI(title="API with API Key Management", lifespan=lifespan)
 
 
-async def inject_async_session() -> AsyncIterator[AsyncSession]:
+async def get_async_session() -> AsyncIterator[AsyncSession]:
     """Dependency to provide an active SQLAlchemy async session."""
     async with async_session_maker() as session:
         async with session.begin():
             yield session
 
 
-async def inject_svc_api_keys(async_session: AsyncSession = Depends(inject_async_session)) -> ApiKeyService:
+async def get_svc_api_keys(async_session: AsyncSession = Depends(get_async_session)) -> ApiKeyService:
     """Dependency to inject the API key service with an active SQLAlchemy async session."""
     # No need to ensure table here, done in lifespan
     repo = SqlAlchemyApiKeyRepository(async_session)
     return ApiKeyService(repo=repo, hasher=hasher)
 
 
-security = create_depends_api_key(inject_svc_api_keys)
+security = create_depends_api_key(get_svc_api_keys)
 router_protected = APIRouter(prefix="/protected", tags=["Protected"])
 
 router = APIRouter(prefix="/api-keys", tags=["API Keys"])
 router_api_keys = create_api_keys_router(
-    inject_svc_api_keys,
+    get_svc_api_keys,
     router=router,
 )
 
