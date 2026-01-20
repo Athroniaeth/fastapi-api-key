@@ -35,7 +35,8 @@ def service() -> ApiKeyService:
         hasher=MockApiKeyHasher(pepper="test-pepper"),
         separator=".",
         global_prefix="ak",
-        rrd=0,  # No delay for tests
+        min_delay=0,
+        max_delay=0,
     )
 
 
@@ -310,15 +311,16 @@ class TestServiceScopeVerification:
 
 
 class TestServiceTimingAttackMitigation:
-    """Tests for RRD (random response delay) timing attack mitigation."""
+    """Tests for response delay timing attack mitigation."""
 
     @pytest.mark.asyncio
-    async def test_rrd_adds_delay_on_error(self):
+    async def test_delay_applies_on_error(self):
         """verify_key() adds random delay on verification failure."""
         service = ApiKeyService(
             repo=InMemoryApiKeyRepository(),
             hasher=MockApiKeyHasher(pepper="test"),
-            rrd=0.1,  # 100ms base delay
+            min_delay=0.1,
+            max_delay=0.3,
         )
 
         with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
@@ -328,7 +330,35 @@ class TestServiceTimingAttackMitigation:
             mock_sleep.assert_awaited_once()
             assert mock_sleep.await_args, "Expected sleep to be called"
             delay = mock_sleep.await_args.args[0]
-            assert 0.1 <= delay <= 0.2  # Between rrd and rrd*2
+            assert 0.1 <= delay <= 0.3
+
+    @pytest.mark.asyncio
+    async def test_delay_applies_on_success(self):
+        """verify_key() adds random delay on successful verification."""
+        service = ApiKeyService(
+            repo=InMemoryApiKeyRepository(),
+            hasher=MockApiKeyHasher(pepper="test"),
+            min_delay=0.1,
+            max_delay=0.3,
+        )
+        _, full_key = await service.create(name="ok")
+
+        with patch("asyncio.sleep", new_callable=AsyncMock) as mock_sleep:
+            await service.verify_key(full_key)
+
+            mock_sleep.assert_awaited_once()
+            assert mock_sleep.await_args, "Expected sleep to be called"
+            delay = mock_sleep.await_args.args[0]
+            assert 0.1 <= delay <= 0.3
+
+    def test_rrd_warns_and_is_ignored(self):
+        """rrd emits a deprecation warning when provided."""
+        with pytest.warns(DeprecationWarning, match="rrd is deprecated"):
+            ApiKeyService(
+                repo=InMemoryApiKeyRepository(),
+                hasher=MockApiKeyHasher(pepper="test"),
+                rrd=0.1,
+            )
 
 
 class TestServiceConstructor:
@@ -351,9 +381,32 @@ class TestServiceConstructor:
             hasher=MockApiKeyHasher(pepper="test"),
             separator=":",
             global_prefix="KEY",
+            min_delay=0,
+            max_delay=0,
         )
+
         assert service.separator == ":"
         assert service.global_prefix == "KEY"
+
+    def test_negative_delay_raises(self):
+        """Constructor rejects negative delay values."""
+        with pytest.raises(ValueError, match="non-negative"):
+            ApiKeyService(
+                repo=InMemoryApiKeyRepository(),
+                hasher=MockApiKeyHasher(pepper="test"),
+                min_delay=-0.1,
+                max_delay=0.1,
+            )
+
+    def test_max_delay_less_than_min_raises(self):
+        """Constructor rejects max_delay below min_delay."""
+        with pytest.raises(ValueError, match="greater than or equal"):
+            ApiKeyService(
+                repo=InMemoryApiKeyRepository(),
+                hasher=MockApiKeyHasher(pepper="test"),
+                min_delay=0.2,
+                max_delay=0.1,
+            )
 
 
 class TestServiceListFindCount:
@@ -364,7 +417,8 @@ class TestServiceListFindCount:
         return ApiKeyService(
             repo=InMemoryApiKeyRepository(),
             hasher=MockApiKeyHasher(pepper="test"),
-            rrd=0,
+            min_delay=0,
+            max_delay=0,
         )
 
     @pytest.mark.asyncio
@@ -419,7 +473,8 @@ class TestServiceLoadDotenv:
             hasher=MockApiKeyHasher(pepper="test"),
             separator="-",
             global_prefix="ak",
-            rrd=0,
+            min_delay=0,
+            max_delay=0,
         )
 
         # Set environment variables
@@ -442,7 +497,8 @@ class TestServiceLoadDotenv:
         service = ApiKeyService(
             repo=InMemoryApiKeyRepository(),
             hasher=MockApiKeyHasher(pepper="test"),
-            rrd=0,
+            min_delay=0,
+            max_delay=0,
         )
 
         # Clear any existing API_KEY_ vars
@@ -461,7 +517,8 @@ class TestServiceLoadDotenv:
             hasher=MockApiKeyHasher(pepper="test"),
             separator="-",
             global_prefix="ak",
-            rrd=0,
+            min_delay=0,
+            max_delay=0,
         )
 
         monkeypatch.setenv("MYAPP_KEY_TEST", "ak-abc123def456ghij-secretsecretsecretsecretsecretsecretsecretsecret12")
@@ -483,7 +540,8 @@ class TestServiceEdgeCases:
             hasher=MockApiKeyHasher(pepper="test"),
             separator=".",
             global_prefix="ak",
-            rrd=0,
+            min_delay=0,
+            max_delay=0,
         )
 
     @pytest.mark.asyncio
