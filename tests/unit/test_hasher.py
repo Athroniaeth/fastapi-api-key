@@ -4,6 +4,7 @@ Tests each hasher implementation with mocked backends:
 - MockApiKeyHasher (for tests)
 - Argon2ApiKeyHasher
 - BcryptApiKeyHasher
+- HmacSha256ApiKeyHasher
 
 Focus: Testing OUR code (pepper application, error handling, parameter validation),
 NOT the underlying crypto libraries.
@@ -16,6 +17,7 @@ import pytest
 from fastapi_api_key.hasher.base import MockApiKeyHasher, DEFAULT_PEPPER
 from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
 from fastapi_api_key.hasher.bcrypt import BcryptApiKeyHasher
+from fastapi_api_key.hasher.hmac_sha256 import HmacSha256ApiKeyHasher
 
 
 class TestMockHasher:
@@ -214,6 +216,93 @@ class TestBcryptHasher:
 
         assert hasher_min._rounds == 4
         assert hasher_max._rounds == 31
+
+
+class TestHmacSha256Hasher:
+    """Tests for HmacSha256ApiKeyHasher."""
+
+    def test_hash_returns_hex_string(self):
+        """hash() returns a 64-character hex string (SHA-256 output)."""
+        hasher = HmacSha256ApiKeyHasher(pepper="test-pepper")
+        result = hasher.hash("my-api-key")
+
+        assert isinstance(result, str)
+        assert len(result) == 64
+        assert all(c in "0123456789abcdef" for c in result)
+
+    def test_hash_is_deterministic(self):
+        """hash() produces the same output for the same input and pepper."""
+        hasher = HmacSha256ApiKeyHasher(pepper="test-pepper")
+
+        assert hasher.hash("my-key") == hasher.hash("my-key")
+
+    def test_hash_differs_for_different_keys(self):
+        """hash() produces different outputs for different inputs."""
+        hasher = HmacSha256ApiKeyHasher(pepper="test-pepper")
+
+        assert hasher.hash("key-one") != hasher.hash("key-two")
+
+    def test_hash_differs_for_different_peppers(self):
+        """Same key with different peppers produces different hashes."""
+        hasher1 = HmacSha256ApiKeyHasher(pepper="pepper-one")
+        hasher2 = HmacSha256ApiKeyHasher(pepper="pepper-two")
+
+        assert hasher1.hash("my-key") != hasher2.hash("my-key")
+
+    def test_verify_correct_key(self):
+        """verify() returns True for correct key."""
+        hasher = HmacSha256ApiKeyHasher(pepper="test-pepper")
+        key_hash = hasher.hash("my-api-key")
+
+        assert hasher.verify(key_hash, "my-api-key") is True
+
+    def test_verify_wrong_key(self):
+        """verify() returns False for wrong key."""
+        hasher = HmacSha256ApiKeyHasher(pepper="test-pepper")
+        key_hash = hasher.hash("correct-key")
+
+        assert hasher.verify(key_hash, "wrong-key") is False
+
+    def test_verify_wrong_pepper_fails(self):
+        """Hash with one pepper cannot verify with different pepper."""
+        hasher1 = HmacSha256ApiKeyHasher(pepper="pepper-one")
+        hasher2 = HmacSha256ApiKeyHasher(pepper="pepper-two")
+
+        key_hash = hasher1.hash("my-key")
+
+        assert hasher1.verify(key_hash, "my-key") is True
+        assert hasher2.verify(key_hash, "my-key") is False
+
+    def test_verify_empty_hash_returns_false(self):
+        """verify() returns False for an empty hash string."""
+        hasher = HmacSha256ApiKeyHasher(pepper="test-pepper")
+
+        assert hasher.verify("", "my-key") is False
+
+    def test_uses_pepper_as_hmac_key(self):
+        """hash() uses the pepper as the HMAC secret key, not appended to input."""
+        import hashlib
+        import hmac as hmac_mod
+
+        pepper = "my-pepper"
+        key_secret = "api-key"
+
+        hasher = HmacSha256ApiKeyHasher(pepper=pepper)
+        result = hasher.hash(key_secret)
+
+        expected = hmac_mod.new(
+            pepper.encode("utf-8"),
+            key_secret.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+
+        assert result == expected
+
+    def test_exported_from_hasher_package(self):
+        """HmacSha256ApiKeyHasher is accessible via the hasher package."""
+        from fastapi_api_key.hasher import HmacSha256ApiKeyHasher as ImportedHasher
+
+        assert ImportedHasher is HmacSha256ApiKeyHasher
 
 
 class TestPepperWarning:
