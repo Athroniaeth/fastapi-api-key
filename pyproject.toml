@@ -1,7 +1,7 @@
 [project]
 name = "fastapi-api-key"
 version = "1.0.0"
-description = "fastapi-api-key provides secure, production-ready API key management for FastAPI. It offers pluggable hashing strategies (Argon2 or bcrypt), backend-agnostic persistence (currently SQLAlchemy), and an optional cache layer (aiocache). Includes a Typer CLI and a FastAPI router for CRUD management of keys."
+description = "fastapi-api-key provides secure, production-ready API key management for FastAPI. It offers pluggable hashing strategies (Argon2 or bcrypt), backend-agnostic persistence (currently SQLAlchemy and Django ORM), and an optional cache layer (aiocache). Includes a Typer CLI and framework integrations for FastAPI, Litestar, Quart, and Django."
 readme = "README.md"
 authors = [
     { name = "Athroniaeth" }
@@ -14,6 +14,9 @@ keywords = [
     "security",
     "backend-agnostic",
     "fastapi",
+    "litestar",
+    "quart",
+    "django",
     "typer",
     "sqlalchemy",
 ]
@@ -29,6 +32,7 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Framework :: FastAPI",
+    "Framework :: Django",
     "Environment :: Web Environment",
     "Topic :: Security",
     "Topic :: Security :: Cryptography",
@@ -67,6 +71,20 @@ fastapi = [
     "fastapi>=0.100.0",
 ]
 
+litestar = [
+    "litestar[pydantic]>=2.0.0",
+]
+
+quart = [
+    "quart>=0.19.0",
+    "pydantic>=2.0.0",
+]
+
+django = [
+    "django>=4.1",
+    "pydantic>=2.0.0",
+]
+
 core = [
     "sqlalchemy>=2.0.0",
     "argon2-cffi>=23.1.0",
@@ -76,10 +94,14 @@ core = [
 
 all = [
     "fastapi>=0.100.0",
+    "litestar[pydantic]>=2.0.0",
+    "quart>=0.19.0",
+    "django>=4.1",
     "sqlalchemy>=2.0.0",
     "argon2-cffi>=23.1.0",
     "bcrypt>=4.1.0",
     "aiocache>=0.12.0",
+    "pydantic>=2.0.0",
 ]
 
 cli = [
@@ -101,6 +123,7 @@ dev = [
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0",
     "pytest-asyncio>=1.2.0",
+    "pytest-django>=4.11.1",
     "pre-commit>=4.3.0",
     "commitizen>=4.9.1",
     "aiosqlite>=0.21.0",
@@ -134,6 +157,9 @@ addopts = [
     "--junitxml=junit.xml",
     "-o junit_family=legacy"
 ]
+
+DJANGO_SETTINGS_MODULE = "tests.settings_test_django"
+pythonpath = ["."]
 
 doctest_optionflags = [
     # Allow "..." in expected outputs
