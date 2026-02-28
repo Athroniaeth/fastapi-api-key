@@ -37,6 +37,13 @@ This library try to follow best practices and relevant RFCs for API key manageme
 - **[OWASP API2:2023](https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/)**: Hash
   verification is performed before status/scope checks to prevent key-state enumeration — a caller with
   a wrong secret always receives `401 Invalid`, regardless of whether the key is inactive or expired.
+- **[NIST SP 800-132](https://csrc.nist.gov/publications/detail/sp/800-132/final)**: The Bcrypt hasher
+  pre-hashes the secret via `HMAC-SHA256(pepper, secret)` before passing it to bcrypt, producing a fixed
+  32-byte digest that eliminates bcrypt's silent 72-byte input truncation.
+- **Input validation (defense-in-depth)**: Scope strings are validated against a strict allowlist
+  pattern (`^[a-z][a-z0-9:_\-]*$`) at the schema level. Note: [RFC 6749 §3.3](https://datatracker.ietf.org/doc/html/rfc6749#section-3.3)
+  permits a broader character set; this restriction is a deliberate keyshield design choice to
+  prevent injection of arbitrary characters (HTML, SQL fragments, etc.) in scope values.
 
 ## Installation
 
@@ -257,9 +264,10 @@ flowchart LR
     • invalid if api key updated or deleted
     • invalid after 3600s`"]:::noteStyle
 
-    NOTE_ARGON["`**ArgonApiKeyHasher**
-    • line salt apikey
-    • global pepper api key`"]:::noteStyle
+    NOTE_ARGON["`**Hashing strategy**
+    Argon2: concat(secret, pepper)
+    Bcrypt: HMAC-SHA256(pepper, secret)
+    → fixed 32 bytes, no 72-byte truncation`"]:::noteStyle
 
     NOTE_SLEEP["`**sleep random (0.1s – 0.5s)**
     makes brute force less effective;
