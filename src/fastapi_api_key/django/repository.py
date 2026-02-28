@@ -10,18 +10,13 @@ JSON-path support varies.
 """
 
 import sys
-from datetime import datetime
 from typing import List, Optional
 
 try:
     from django.db import models as _dj  # noqa: F401
 except ModuleNotFoundError as e:  # pragma: no cover
-    raise ImportError(
-        "Django integration requires 'django'. "
-        "Install it with: uv add fastapi_api_key[django]"
-    ) from e
+    raise ImportError("Django integration requires 'django'. Install it with: uv add fastapi_api_key[django]") from e
 
-from django.db.models import Q
 
 from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter

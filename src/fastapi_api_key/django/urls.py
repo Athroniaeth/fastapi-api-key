@@ -15,10 +15,7 @@ from typing import Any, Awaitable, Callable, List
 try:
     from django.urls import path
 except ModuleNotFoundError as e:  # pragma: no cover
-    raise ImportError(
-        "Django integration requires 'django'. "
-        "Install it with: uv add fastapi_api_key[django]"
-    ) from e
+    raise ImportError("Django integration requires 'django'. Install it with: uv add fastapi_api_key[django]") from e
 
 from fastapi_api_key.services.base import AbstractApiKeyService
 from fastapi_api_key.django.views import (

@@ -37,12 +37,8 @@ Example::
 try:
     import quart  # noqa: F401
 except ModuleNotFoundError as e:  # pragma: no cover
-    raise ImportError(
-        "Quart integration requires 'quart'. "
-        "Install it with: uv add fastapi_api_key[quart]"
-    ) from e
+    raise ImportError("Quart integration requires 'quart'. Install it with: uv add fastapi_api_key[quart]") from e
 
-import json
 from functools import wraps
 from typing import Any, Awaitable, Callable, List, Optional
 
@@ -62,7 +58,6 @@ from fastapi_api_key._schemas import (
     ApiKeyCountOut,
     ApiKeyCreateIn,
     ApiKeyCreatedOut,
-    ApiKeyOut,
     ApiKeySearchIn,
     ApiKeySearchOut,
     ApiKeyUpdateIn,

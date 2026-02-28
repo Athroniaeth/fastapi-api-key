@@ -26,16 +26,13 @@ Example::
 """
 
 import json
-from typing import Any, Awaitable, Callable, List, Optional
+from typing import Any, Awaitable, Callable
 
 try:
     from django.http import HttpRequest, JsonResponse
     from django.views import View
 except ModuleNotFoundError as e:  # pragma: no cover
-    raise ImportError(
-        "Django integration requires 'django'. "
-        "Install it with: uv add fastapi_api_key[django]"
-    ) from e
+    raise ImportError("Django integration requires 'django'. Install it with: uv add fastapi_api_key[django]") from e
 
 from pydantic import ValidationError
 
@@ -45,7 +42,6 @@ from fastapi_api_key._schemas import (
     ApiKeyCountOut,
     ApiKeyCreateIn,
     ApiKeyCreatedOut,
-    ApiKeyOut,
     ApiKeySearchIn,
     ApiKeySearchOut,
     ApiKeyUpdateIn,
@@ -109,7 +105,7 @@ class _BaseApiKeyView(View):
             return await super().dispatch(request, *args, **kwargs)
         except _HttpError as exc:
             return _error(exc.status, exc.detail)
-        except KeyNotFound as exc:
+        except KeyNotFound:
             return _error(404, "API key not found")
 
     http_method_names = ["get", "post", "patch", "delete", "head", "options"]
@@ -301,7 +297,7 @@ class ApiKeyVerifyView(_BaseApiKeyView):
                 api_key=payload.api_key,
                 required_scopes=payload.required_scopes,
             )
-        except (InvalidKey, KeyNotFound) as exc:
+        except (InvalidKey, KeyNotFound):
             return _error(401, "API key invalid")
         except KeyNotProvided:
             return _error(401, "API key missing")

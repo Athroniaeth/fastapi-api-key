@@ -171,10 +171,31 @@ doctest_optionflags = [
 ]
 testpaths = ["src", "tests"]
 
+[tool.ty.src]
+exclude = [
+    # Django ORM descriptors / manager not understood by ty
+    "src/fastapi_api_key/django/",
+    # Litestar DI / State / Request not understood by ty
+    "src/fastapi_api_key/litestar_api.py",
+    # Quart abort() is NoReturn but not recognised; TestClient __aexit__
+    "src/fastapi_api_key/quart_api.py",
+    "tests/unit/test_quart_api.py",
+]
+
 [tool.pyrefly]
 project-includes = [
     "**/*.py*",
     "**/*.ipynb",
+]
+project_excludes = [
+    # Django ORM descriptors / manager not understood by pyrefly
+    "src/fastapi_api_key/django/*.py",
+    # Litestar DI / State / Request not understood by pyrefly
+    "src/fastapi_api_key/litestar_api.py",
+    # Quart abort() is NoReturn but not recognised; TestClient __aexit__
+    "src/fastapi_api_key/quart_api.py",
+    "tests/unit/test_quart_api.py",
+    "tests/unit/test_litestar_api.py",
 ]
 
 

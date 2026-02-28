@@ -4,7 +4,6 @@ Tests verify API routes work correctly using InMemory repository.
 Structure mirrors test_api.py to keep parity between FastAPI and Litestar.
 """
 
-from contextlib import asynccontextmanager
 from datetime import timedelta
 
 import pytest
@@ -13,7 +12,6 @@ from litestar.di import Provide
 from litestar.testing import TestClient
 
 from fastapi_api_key.litestar_api import create_api_key_guard, create_api_keys_router
-from fastapi_api_key.domain.entities import ApiKey
 from fastapi_api_key.hasher.base import MockApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.services.base import ApiKeyService
@@ -61,7 +59,9 @@ def client(app: Litestar) -> TestClient:
 
 class TestCreateApiKey:
     def test_create_with_name(self, client: TestClient) -> None:
-        response = client.post("/api-keys/", content='{"name": "test-key"}', headers={"Content-Type": "application/json"})
+        response = client.post(
+            "/api-keys/", content='{"name": "test-key"}', headers={"Content-Type": "application/json"}
+        )
         assert response.status_code == 201
         data = response.json()
         assert "api_key" in data
@@ -124,7 +124,9 @@ class TestListApiKeys:
 
 class TestGetApiKey:
     def test_get_existing_key(self, client: TestClient) -> None:
-        create_resp = client.post("/api-keys/", content='{"name":"test-key"}', headers={"Content-Type": "application/json"})
+        create_resp = client.post(
+            "/api-keys/", content='{"name":"test-key"}', headers={"Content-Type": "application/json"}
+        )
         key_id = create_resp.json()["entity"]["id"]
         response = client.get(f"/api-keys/{key_id}")
         assert response.status_code == 200
@@ -144,7 +146,9 @@ class TestUpdateApiKey:
     def test_update_name(self, client: TestClient) -> None:
         create_resp = client.post("/api-keys/", content='{"name":"old"}', headers={"Content-Type": "application/json"})
         key_id = create_resp.json()["entity"]["id"]
-        response = client.patch(f"/api-keys/{key_id}", content='{"name":"new"}', headers={"Content-Type": "application/json"})
+        response = client.patch(
+            f"/api-keys/{key_id}", content='{"name":"new"}', headers={"Content-Type": "application/json"}
+        )
         assert response.status_code == 200
         assert response.json()["name"] == "new"
 
@@ -277,9 +281,15 @@ class TestSearchApiKeys:
         assert len(data["items"]) == 2
 
     def test_search_by_active_status(self, client: TestClient) -> None:
-        client.post("/api-keys/", content='{"name":"active","is_active":true}', headers={"Content-Type": "application/json"})
-        client.post("/api-keys/", content='{"name":"inactive","is_active":false}', headers={"Content-Type": "application/json"})
-        response = client.post("/api-keys/search", content='{"is_active":true}', headers={"Content-Type": "application/json"})
+        client.post(
+            "/api-keys/", content='{"name":"active","is_active":true}', headers={"Content-Type": "application/json"}
+        )
+        client.post(
+            "/api-keys/", content='{"name":"inactive","is_active":false}', headers={"Content-Type": "application/json"}
+        )
+        response = client.post(
+            "/api-keys/search", content='{"is_active":true}', headers={"Content-Type": "application/json"}
+        )
         assert response.status_code == 200
         data = response.json()
         assert len(data["items"]) == 1
@@ -288,7 +298,9 @@ class TestSearchApiKeys:
     def test_search_by_name_contains(self, client: TestClient) -> None:
         client.post("/api-keys/", content='{"name":"production-key"}', headers={"Content-Type": "application/json"})
         client.post("/api-keys/", content='{"name":"staging-key"}', headers={"Content-Type": "application/json"})
-        response = client.post("/api-keys/search", content='{"name_contains":"prod"}', headers={"Content-Type": "application/json"})
+        response = client.post(
+            "/api-keys/search", content='{"name_contains":"prod"}', headers={"Content-Type": "application/json"}
+        )
         assert response.status_code == 200
         assert len(response.json()["items"]) == 1
 
@@ -302,10 +314,18 @@ class TestCountApiKeys:
         assert response.json()["total"] == 3
 
     def test_count_with_filter(self, client: TestClient) -> None:
-        client.post("/api-keys/", content='{"name":"a1","is_active":true}', headers={"Content-Type": "application/json"})
-        client.post("/api-keys/", content='{"name":"a2","is_active":true}', headers={"Content-Type": "application/json"})
-        client.post("/api-keys/", content='{"name":"i","is_active":false}', headers={"Content-Type": "application/json"})
-        response = client.post("/api-keys/count", content='{"is_active":true}', headers={"Content-Type": "application/json"})
+        client.post(
+            "/api-keys/", content='{"name":"a1","is_active":true}', headers={"Content-Type": "application/json"}
+        )
+        client.post(
+            "/api-keys/", content='{"name":"a2","is_active":true}', headers={"Content-Type": "application/json"}
+        )
+        client.post(
+            "/api-keys/", content='{"name":"i","is_active":false}', headers={"Content-Type": "application/json"}
+        )
+        response = client.post(
+            "/api-keys/count", content='{"is_active":true}', headers={"Content-Type": "application/json"}
+        )
         assert response.status_code == 200
         assert response.json()["total"] == 2
 
