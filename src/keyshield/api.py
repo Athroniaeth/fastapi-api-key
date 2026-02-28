@@ -8,8 +8,7 @@ try:
     import sqlalchemy  # noqa: F401
 except ModuleNotFoundError as e:  # pragma: no cover
     raise ImportError(
-        "FastAPI and SQLAlchemy backend requires 'fastapi' and 'sqlalchemy'. "
-        "Install it with: uv add keyshield[fastapi]"
+        "FastAPI and SQLAlchemy backend requires 'fastapi' and 'sqlalchemy'. Install it with: uv add keyshield[fastapi]"
     ) from e
 
 from typing import Annotated, Awaitable, Callable, List, Optional, Union
