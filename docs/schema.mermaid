@@ -87,9 +87,10 @@ flowchart LR
     • invalid if api key updated or deleted
     • invalid after 3600s`"]:::noteStyle
 
-    NOTE_ARGON["`**ArgonApiKeyHasher**
-    • line salt apikey
-    • global pepper api key`"]:::noteStyle
+    NOTE_ARGON["`**Hashing strategy**
+    Argon2: concat(secret, pepper)
+    Bcrypt: HMAC-SHA256(pepper, secret)
+    → fixed 32 bytes, no 72-byte truncation`"]:::noteStyle
 
     NOTE_SLEEP["`**sleep random (0.1s – 0.5s)**
     makes brute force less effective;

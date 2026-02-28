@@ -145,57 +145,62 @@ class TestBcryptHasher:
 
     @patch("keyshield.hasher.bcrypt.bcrypt")
     def test_hash_applies_pepper(self, mock_bcrypt):
-        """hash() passes peppered key to bcrypt.hashpw."""
+        """hash() passes HMAC-SHA256(pepper, key) digest to bcrypt.hashpw."""
+        import hashlib
+        import hmac
+
         mock_bcrypt.gensalt.return_value = b"$2b$04$salt"
         mock_bcrypt.hashpw.return_value = b"hashed-value"
 
         hasher = BcryptApiKeyHasher(pepper="my-pepper", rounds=4)
         result = hasher.hash("api-key")
 
-        # Check pepper was applied
+        expected_digest = hmac.digest(b"my-pepper", b"api-key", hashlib.sha256)
         call_args = mock_bcrypt.hashpw.call_args[0]
-        assert call_args[0] == b"api-keymy-pepper"
+        assert call_args[0] == expected_digest
         assert result == "hashed-value"
 
     @patch("keyshield.hasher.bcrypt.bcrypt")
-    def test_hash_truncates_long_keys(self, mock_bcrypt):
-        """hash() truncates keys longer than 72 bytes."""
+    def test_hash_digest_fixed_size(self, mock_bcrypt):
+        """hash() always passes a fixed 32-byte digest to bcrypt regardless of key length."""
         mock_bcrypt.gensalt.return_value = b"$2b$04$salt"
         mock_bcrypt.hashpw.return_value = b"hashed"
 
         hasher = BcryptApiKeyHasher(pepper="pepper", rounds=4)
-        long_key = "a" * 100
 
-        hasher.hash(long_key)
+        hasher.hash("a" * 100)
 
         call_args = mock_bcrypt.hashpw.call_args[0]
-        assert len(call_args[0]) == 72
+        assert len(call_args[0]) == 32
 
     @patch("keyshield.hasher.bcrypt.bcrypt")
     def test_verify_applies_pepper(self, mock_bcrypt):
-        """verify() passes peppered key to bcrypt.checkpw."""
+        """verify() passes HMAC-SHA256(pepper, key) digest to bcrypt.checkpw."""
+        import hashlib
+        import hmac
+
         mock_bcrypt.checkpw.return_value = True
 
         hasher = BcryptApiKeyHasher(pepper="my-pepper", rounds=4)
         result = hasher.verify("stored-hash", "api-key")
 
+        expected_digest = hmac.digest(b"my-pepper", b"api-key", hashlib.sha256)
         call_args = mock_bcrypt.checkpw.call_args[0]
-        assert call_args[0] == b"api-keymy-pepper"
+        assert call_args[0] == expected_digest
         assert call_args[1] == b"stored-hash"
         assert result is True
 
     @patch("keyshield.hasher.bcrypt.bcrypt")
-    def test_verify_truncates_long_keys(self, mock_bcrypt):
-        """verify() truncates keys longer than 72 bytes."""
+    def test_verify_digest_fixed_size(self, mock_bcrypt):
+        """verify() always passes a fixed 32-byte digest to bcrypt regardless of key length."""
         mock_bcrypt.checkpw.return_value = True
 
         hasher = BcryptApiKeyHasher(pepper="pepper", rounds=4)
-        long_key = "a" * 100
 
-        hasher.verify("hash", long_key)
+        hasher.verify("hash", "a" * 100)
 
         call_args = mock_bcrypt.checkpw.call_args[0]
-        assert len(call_args[0]) == 72
+        assert len(call_args[0]) == 32
 
     def test_rounds_too_low_raises(self):
         """Rounds below 4 raises ValueError."""

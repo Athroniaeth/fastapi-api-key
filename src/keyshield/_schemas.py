@@ -14,11 +14,15 @@ except ModuleNotFoundError as e:  # pragma: no cover
     ) from e
 
 from datetime import datetime, timedelta
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 from keyshield.domain.entities import ApiKey
 from keyshield.repositories.base import ApiKeyFilter, SortableColumn
 from keyshield.utils import datetime_factory
+
+# Scope strings must follow the format: lowercase letter, then lowercase
+# alphanumerics, colons, underscores, or hyphens (e.g. "read", "api:write").
+_ScopeStr = Annotated[str, Field(pattern=r"^[a-z][a-z0-9:_\-]*$")]
 
 
 class ApiKeyCreateIn(BaseModel):
@@ -35,7 +39,7 @@ class ApiKeyCreateIn(BaseModel):
     name: str = Field(..., min_length=1, max_length=128)
     description: Optional[str] = Field(None, max_length=1024)
     is_active: bool = Field(default=True)
-    scopes: List[str] = Field(default_factory=list)
+    scopes: List[_ScopeStr] = Field(default_factory=list)
     expires_at: Optional[datetime] = Field(
         default=None,
         examples=[(datetime_factory() + timedelta(days=30)).isoformat()],
@@ -58,7 +62,7 @@ class ApiKeyUpdateIn(BaseModel):
     name: Optional[str] = Field(None, min_length=1, max_length=128)
     description: Optional[str] = Field(None, max_length=1024)
     is_active: Optional[bool] = None
-    scopes: Optional[List[str]] = None
+    scopes: Optional[List[_ScopeStr]] = None
     expires_at: Optional[datetime] = Field(None, description="New expiration datetime (ISO 8601)")
     clear_expires: bool = Field(False, description="Remove expiration date")
 
@@ -120,8 +124,8 @@ class ApiKeySearchIn(BaseModel):
     last_used_before: Optional[datetime] = Field(None, description="Keys last used before this date")
     last_used_after: Optional[datetime] = Field(None, description="Keys last used after this date")
     never_used: Optional[bool] = Field(None, description="True = never used keys, False = used keys")
-    scopes_contain_all: Optional[List[str]] = Field(None, description="Keys must have ALL these scopes")
-    scopes_contain_any: Optional[List[str]] = Field(None, description="Keys must have at least ONE of these scopes")
+    scopes_contain_all: Optional[List[_ScopeStr]] = Field(None, description="Keys must have ALL these scopes")
+    scopes_contain_any: Optional[List[_ScopeStr]] = Field(None, description="Keys must have at least ONE of these scopes")
     name_contains: Optional[str] = Field(None, description="Name contains this substring (case-insensitive)")
     name_exact: Optional[str] = Field(None, description="Exact name match")
     order_by: SortableColumn = Field(SortableColumn.CREATED_AT, description="Field to sort by")
