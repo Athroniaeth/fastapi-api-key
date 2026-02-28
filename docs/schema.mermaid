@@ -37,6 +37,10 @@ flowchart LR
     COMPARE{"`**Compare db api key hash
     to received api key hash**`"}:::processNode
 
+    STATE_CHECK{"`**Check state & scopes**
+    _(active? not expired?
+    required scopes?)_`"}:::processNode
+
     %% ── Outcomes ────────────────────────────────────────────
     REJECT(["`🔴 **Reject API Key**`"]):::rejectNode
     ACCEPT(["`🟢 **Accept API Key**`"]):::acceptNode
@@ -53,7 +57,8 @@ flowchart LR
 
     %% ── Accept path ─────────────────────────────────────────
     CACHED -- "yes" --> ACCEPT
-    COMPARE -- "equals" --> ACCEPT
+    COMPARE -- "equals" --> STATE_CHECK
+    STATE_CHECK -- "valid" --> ACCEPT
     ACCEPT -- "`**APIKey.touch()**
     _(update last_used_at)_`" --> CACHE_STORE
 
@@ -64,6 +69,7 @@ flowchart LR
     PREFIX_CHECK -- "no" --> REJECT
     QUERY_DB -- "not found" --> REJECT
     COMPARE -- "not equals" --> REJECT
+    STATE_CHECK -- "invalid (403)" --> REJECT
 
     %% ── Notes (annotations) ─────────────────────────────────
     NOTE_FORMAT["`**Format API Key**
