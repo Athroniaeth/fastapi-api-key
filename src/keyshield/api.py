@@ -1,7 +1,7 @@
 import warnings
 
-from fastapi_api_key.services.base import AbstractApiKeyService
-from fastapi_api_key._types import SecurityHTTPBearer, SecurityAPIKeyHeader
+from keyshield.services.base import AbstractApiKeyService
+from keyshield._types import SecurityHTTPBearer, SecurityAPIKeyHeader
 
 try:
     import fastapi  # noqa: F401
@@ -9,7 +9,7 @@ try:
 except ModuleNotFoundError as e:  # pragma: no cover
     raise ImportError(
         "FastAPI and SQLAlchemy backend requires 'fastapi' and 'sqlalchemy'. "
-        "Install it with: uv add fastapi_api_key[fastapi]"
+        "Install it with: uv add keyshield[fastapi]"
     ) from e
 
 from typing import Annotated, Awaitable, Callable, List, Optional, Union
@@ -17,8 +17,8 @@ from typing import Annotated, Awaitable, Callable, List, Optional, Union
 from fastapi import APIRouter, Depends, HTTPException, Query, Security, status
 from fastapi.security import APIKeyHeader, HTTPBearer, HTTPAuthorizationCredentials
 
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import (
+from keyshield.domain.entities import ApiKey
+from keyshield.domain.errors import (
     InvalidKey,
     KeyExpired,
     KeyInactive,
@@ -26,7 +26,7 @@ from fastapi_api_key.domain.errors import (
     KeyNotProvided,
     InvalidScopes,
 )
-from fastapi_api_key._schemas import (  # noqa: F401 – re-exported for backward compat
+from keyshield._schemas import (  # noqa: F401 – re-exported for backward compat
     ApiKeyCreateIn,
     ApiKeyUpdateIn,
     ApiKeyOut,

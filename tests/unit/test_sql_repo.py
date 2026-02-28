@@ -9,9 +9,9 @@ import pytest
 import pytest_asyncio
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
-from fastapi_api_key.repositories.base import ApiKeyFilter, SortableColumn
-from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, Base
-from fastapi_api_key.utils import datetime_factory
+from keyshield.repositories.base import ApiKeyFilter, SortableColumn
+from keyshield.repositories.sql import SqlAlchemyApiKeyRepository, Base
+from keyshield.utils import datetime_factory
 from tests.conftest import make_api_key  # pyrefly: ignore[missing-import]
 
 

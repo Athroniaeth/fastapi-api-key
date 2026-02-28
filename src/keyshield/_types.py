@@ -4,8 +4,8 @@ from typing import Callable, Awaitable
 from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.services.base import AbstractApiKeyService
+from keyshield.domain.entities import ApiKey
+from keyshield.services.base import AbstractApiKeyService
 
 
 AsyncSessionMaker = async_sessionmaker[AsyncSession]

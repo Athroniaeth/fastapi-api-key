@@ -2,8 +2,8 @@ import sys
 from datetime import datetime
 from typing import Optional, List
 
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
+from keyshield.domain.entities import ApiKey
+from keyshield.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
 
 
 class InMemoryApiKeyRepository(AbstractApiKeyRepository):

@@ -14,14 +14,14 @@ from fastapi import Depends, FastAPI
 from fastapi.security import APIKeyHeader, HTTPBearer
 from fastapi.testclient import TestClient
 
-from fastapi_api_key import ApiKeyService
-from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import KeyNotFound, KeyNotProvided
-from fastapi_api_key.hasher.base import MockApiKeyHasher
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.services.base import AbstractApiKeyService
-from fastapi_api_key.utils import datetime_factory
+from keyshield import ApiKeyService
+from keyshield.api import create_api_keys_router, create_depends_api_key
+from keyshield.domain.entities import ApiKey
+from keyshield.domain.errors import KeyNotFound, KeyNotProvided
+from keyshield.hasher.base import MockApiKeyHasher
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield.services.base import AbstractApiKeyService
+from keyshield.utils import datetime_factory
 
 
 @pytest.fixture

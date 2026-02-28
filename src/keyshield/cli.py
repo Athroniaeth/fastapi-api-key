@@ -11,24 +11,24 @@ from datetime import datetime, timezone
 from functools import wraps
 from typing import Any, AsyncIterator, Callable, List, Optional
 
-from fastapi_api_key._types import ServiceFactory
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import ApiKeyError
-from fastapi_api_key.repositories.base import ApiKeyFilter, SortableColumn
-from fastapi_api_key.services.base import AbstractApiKeyService
-from fastapi_api_key.utils import datetime_factory
+from keyshield._types import ServiceFactory
+from keyshield.domain.entities import ApiKey
+from keyshield.domain.errors import ApiKeyError
+from keyshield.repositories.base import ApiKeyFilter, SortableColumn
+from keyshield.services.base import AbstractApiKeyService
+from keyshield.utils import datetime_factory
 
 try:
     import typer
 except ImportError as exc:  # pragma: no cover
-    raise RuntimeError("Typer is required. Install with: pip install fastapi-api-key[cli]") from exc
+    raise RuntimeError("Typer is required. Install with: pip install keyshield[cli]") from exc
 
 try:
     from rich.console import Console
     from rich.panel import Panel
     from rich.table import Table
 except ImportError as exc:  # pragma: no cover
-    raise RuntimeError("Rich is required. Install with: pip install fastapi-api-key[cli]") from exc
+    raise RuntimeError("Rich is required. Install with: pip install keyshield[cli]") from exc
 
 # Domain errors that should result in exit code 1
 DomainErrors = (ApiKeyError,)

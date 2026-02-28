@@ -6,10 +6,10 @@ from typing import AsyncIterator
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-from fastapi_api_key import ApiKeyService
-from fastapi_api_key.cli import create_api_keys_cli
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, ApiKeyModelMixin
+from keyshield import ApiKeyService
+from keyshield.cli import create_api_keys_cli
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.repositories.sql import SqlAlchemyApiKeyRepository, ApiKeyModelMixin
 
 
 class Base(DeclarativeBase): ...

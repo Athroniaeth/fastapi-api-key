@@ -11,9 +11,9 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from fastapi_api_key import ApiKeyService
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import (
+from keyshield import ApiKeyService
+from keyshield.domain.entities import ApiKey
+from keyshield.domain.errors import (
     ConfigurationError,
     InvalidKey,
     InvalidScopes,
@@ -22,9 +22,9 @@ from fastapi_api_key.domain.errors import (
     KeyNotFound,
     KeyNotProvided,
 )
-from fastapi_api_key.hasher.base import MockApiKeyHasher
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
+from keyshield.hasher.base import MockApiKeyHasher
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield.utils import datetime_factory, key_id_factory, key_secret_factory
 
 
 @pytest.fixture
@@ -436,7 +436,7 @@ class TestServiceListFindCount:
         await service.create(name="active", is_active=True)
         await service.create(name="inactive", is_active=False)
 
-        from fastapi_api_key.repositories.base import ApiKeyFilter
+        from keyshield.repositories.base import ApiKeyFilter
 
         result = await service.find(ApiKeyFilter(is_active=True))
         assert len(result) == 1
@@ -457,7 +457,7 @@ class TestServiceListFindCount:
         await service.create(name="active", is_active=True)
         await service.create(name="inactive", is_active=False)
 
-        from fastapi_api_key.repositories.base import ApiKeyFilter
+        from keyshield.repositories.base import ApiKeyFilter
 
         assert await service.count(ApiKeyFilter(is_active=True)) == 1
 

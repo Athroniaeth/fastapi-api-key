@@ -2,7 +2,7 @@
 
 Usage::
 
-    from fastapi_api_key.django.decorators import require_api_key
+    from keyshield.django.decorators import require_api_key
 
     @require_api_key(svc_factory=get_service)
     async def my_view(request):
@@ -16,9 +16,9 @@ from typing import Any, Awaitable, Callable, List, Optional
 try:
     from django.http import HttpRequest, JsonResponse
 except ModuleNotFoundError as e:  # pragma: no cover
-    raise ImportError("Django integration requires 'django'. Install it with: uv add fastapi_api_key[django]") from e
+    raise ImportError("Django integration requires 'django'. Install it with: uv add keyshield[django]") from e
 
-from fastapi_api_key.domain.errors import (
+from keyshield.domain.errors import (
     InvalidKey,
     InvalidScopes,
     KeyExpired,
@@ -26,7 +26,7 @@ from fastapi_api_key.domain.errors import (
     KeyNotFound,
     KeyNotProvided,
 )
-from fastapi_api_key.services.base import AbstractApiKeyService
+from keyshield.services.base import AbstractApiKeyService
 
 
 def require_api_key(
@@ -36,11 +36,11 @@ def require_api_key(
     """Async view decorator that verifies the ``Authorization: Bearer`` header.
 
     On success, sets ``request.api_key`` to the verified
-    :class:`~fastapi_api_key.domain.entities.ApiKey` entity.
+    :class:`~keyshield.domain.entities.ApiKey` entity.
 
     Args:
         svc_factory: Async callable returning an
-            :class:`~fastapi_api_key.services.base.AbstractApiKeyService`.
+            :class:`~keyshield.services.base.AbstractApiKeyService`.
         required_scopes: Optional list of scopes the key must possess.
 
     Example::

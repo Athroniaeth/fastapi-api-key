@@ -8,12 +8,12 @@ This quickstart guide helps you set up the package and create your first API key
 This project is published on PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
 
 ```bash
-uv add fastapi-api-key
+uv add keyshield
 ```
 
 or using pip:
 ```bash
-pip install fastapi-api-key
+pip install keyshield
 ```
 
 ## 2. Create api key

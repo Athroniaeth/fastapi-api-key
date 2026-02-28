@@ -4,10 +4,10 @@ import os
 import time
 from contextlib import contextmanager
 
-from fastapi_api_key import ApiKeyService
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.services.cached import CachedApiKeyService
+from keyshield import ApiKeyService
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield.services.cached import CachedApiKeyService
 
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security

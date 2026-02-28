@@ -5,10 +5,10 @@ from typing import AsyncIterator
 from fastapi import FastAPI, Depends, APIRouter
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from fastapi_api_key import ApiKey, ApiKeyService
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
-from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
+from keyshield import ApiKey, ApiKeyService
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.repositories.sql import SqlAlchemyApiKeyRepository
+from keyshield.api import create_api_keys_router, create_depends_api_key
 
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security

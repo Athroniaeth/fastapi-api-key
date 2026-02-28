@@ -1,7 +1,7 @@
 [project]
-name = "fastapi-api-key"
+name = "keyshield"
 version = "1.0.0"
-description = "fastapi-api-key provides secure, production-ready API key management for FastAPI. It offers pluggable hashing strategies (Argon2 or bcrypt), backend-agnostic persistence (currently SQLAlchemy and Django ORM), and an optional cache layer (aiocache). Includes a Typer CLI and framework integrations for FastAPI, Litestar, Quart, and Django."
+description = "keyshield provides secure, production-ready API key management for Python web frameworks. It offers pluggable hashing strategies (Argon2 or bcrypt), backend-agnostic persistence (currently SQLAlchemy and Django ORM), and an optional cache layer (aiocache). Includes a Typer CLI and framework integrations for FastAPI, Litestar, Quart, and Django."
 readme = "README.md"
 authors = [
     { name = "Athroniaeth" }
@@ -43,10 +43,10 @@ requires-python = ">=3.9"
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/Athroniaeth/fastapi-api-key"
-Documentation = "https://github.com/Athroniaeth/fastapi-api-key#readme"
-Issues = "https://github.com/Athroniaeth/fastapi-api-key/issues"
-Changelog = "https://github.com/Athroniaeth/fastapi-api-key/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/Athroniaeth/keyshield"
+Documentation = "https://github.com/Athroniaeth/keyshield#readme"
+Issues = "https://github.com/Athroniaeth/keyshield/issues"
+Changelog = "https://github.com/Athroniaeth/keyshield/blob/main/CHANGELOG.md"
 
 
 [project.optional-dependencies]
@@ -113,7 +113,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project.scripts]
-fak = "fastapi_api_key.__main__:main"
+keyshield = "keyshield.__main__:main"
 
 [dependency-groups]
 dev = [
@@ -174,11 +174,11 @@ testpaths = ["src", "tests"]
 [tool.ty.src]
 exclude = [
     # Django ORM descriptors / manager not understood by ty
-    "src/fastapi_api_key/django/",
+    "src/keyshield/django/",
     # Litestar DI / State / Request not understood by ty
-    "src/fastapi_api_key/litestar_api.py",
+    "src/keyshield/litestar_api.py",
     # Quart abort() is NoReturn but not recognised; TestClient __aexit__
-    "src/fastapi_api_key/quart_api.py",
+    "src/keyshield/quart_api.py",
     "tests/unit/test_quart_api.py",
 ]
 
@@ -189,11 +189,11 @@ project-includes = [
 ]
 project_excludes = [
     # Django ORM descriptors / manager not understood by pyrefly
-    "src/fastapi_api_key/django/*.py",
+    "src/keyshield/django/*.py",
     # Litestar DI / State / Request not understood by pyrefly
-    "src/fastapi_api_key/litestar_api.py",
+    "src/keyshield/litestar_api.py",
     # Quart abort() is NoReturn but not recognised; TestClient __aexit__
-    "src/fastapi_api_key/quart_api.py",
+    "src/keyshield/quart_api.py",
     "tests/unit/test_quart_api.py",
     "tests/unit/test_litestar_api.py",
 ]
@@ -201,7 +201,7 @@ project_excludes = [
 
 [tool.coverage.run]
 omit = [
-    "src/fastapi_api_key/__init__.py",
-    "src/fastapi_api_key/__main__.py",
+    "src/keyshield/__init__.py",
+    "src/keyshield/__main__.py",
 ]
 branch = true

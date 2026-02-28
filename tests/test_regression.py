@@ -16,10 +16,10 @@ from typing import Optional
 
 import pytest
 
-from fastapi_api_key.hasher.base import MockApiKeyHasher, DEFAULT_PEPPER
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.hasher.bcrypt import BcryptApiKeyHasher
-from fastapi_api_key.utils import (
+from keyshield.hasher.base import MockApiKeyHasher, DEFAULT_PEPPER
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.hasher.bcrypt import BcryptApiKeyHasher
+from keyshield.utils import (
     uuid_factory,
     key_id_factory,
     key_secret_factory,
@@ -49,7 +49,7 @@ class TestPublicApiImports:
     )
     def test_import_public_api(self, module_path: Optional[str], attr: str):
         """Public API attributes are importable."""
-        module_name = "fastapi_api_key" if module_path is None else f"fastapi_api_key.{module_path}"
+        module_name = "keyshield" if module_path is None else f"keyshield.{module_path}"
         module = importlib.import_module(module_name)
         assert hasattr(module, attr)
 
@@ -60,10 +60,10 @@ class TestOptionalDependencyErrors:
     @pytest.mark.parametrize(
         ["library", "module_path"],
         [
-            ("sqlalchemy", "fastapi_api_key.repositories.sql"),
-            ("bcrypt", "fastapi_api_key.hasher.bcrypt"),
-            ("argon2", "fastapi_api_key.hasher.argon2"),
-            ("aiocache", "fastapi_api_key.services.cached"),
+            ("sqlalchemy", "keyshield.repositories.sql"),
+            ("bcrypt", "keyshield.hasher.bcrypt"),
+            ("argon2", "keyshield.hasher.argon2"),
+            ("aiocache", "keyshield.services.cached"),
         ],
     )
     def test_missing_dependency_raises_helpful_error(
@@ -79,7 +79,7 @@ class TestOptionalDependencyErrors:
             module = importlib.import_module(module_path)
             importlib.reload(module)
 
-        expected = f"requires '{library}'. Install it with: uv add fastapi_api_key[{library}]"
+        expected = f"requires '{library}'. Install it with: uv add keyshield[{library}]"
         assert expected in str(exc_info.value)
 
 

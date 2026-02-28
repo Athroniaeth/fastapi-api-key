@@ -8,9 +8,9 @@ from datetime import timedelta
 
 import pytest
 
-from fastapi_api_key.django.repository import DjangoApiKeyRepository
-from fastapi_api_key.repositories.base import ApiKeyFilter, SortableColumn
-from fastapi_api_key.utils import datetime_factory
+from keyshield.django.repository import DjangoApiKeyRepository
+from keyshield.repositories.base import ApiKeyFilter, SortableColumn
+from keyshield.utils import datetime_factory
 from tests.conftest import make_api_key  # pyrefly: ignore[missing-import]
 
 

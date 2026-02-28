@@ -8,7 +8,7 @@ Dependency injection follows Django's ``as_view(svc_factory=...)`` pattern.
 Example::
 
     from django.urls import path
-    from fastapi_api_key.django.views import (
+    from keyshield.django.views import (
         ApiKeyListCreateView,
         ApiKeyDetailView,
         ApiKeyActivateView,
@@ -32,13 +32,13 @@ try:
     from django.http import HttpRequest, JsonResponse
     from django.views import View
 except ModuleNotFoundError as e:  # pragma: no cover
-    raise ImportError("Django integration requires 'django'. Install it with: uv add fastapi_api_key[django]") from e
+    raise ImportError("Django integration requires 'django'. Install it with: uv add keyshield[django]") from e
 
 from pydantic import ValidationError
 
-from fastapi_api_key.domain.errors import KeyNotFound
-from fastapi_api_key.services.base import AbstractApiKeyService
-from fastapi_api_key._schemas import (
+from keyshield.domain.errors import KeyNotFound
+from keyshield.services.base import AbstractApiKeyService
+from keyshield._schemas import (
     ApiKeyCountOut,
     ApiKeyCreateIn,
     ApiKeyCreatedOut,
@@ -281,7 +281,7 @@ class ApiKeyVerifyView(_BaseApiKeyView):
     """``POST /api-keys/verify`` – verify a key and return its details."""
 
     async def post(self, request: HttpRequest) -> JsonResponse:
-        from fastapi_api_key.domain.errors import (
+        from keyshield.domain.errors import (
             InvalidKey,
             InvalidScopes,
             KeyExpired,

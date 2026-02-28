@@ -3,9 +3,9 @@ from typing import Optional
 try:
     import bcrypt
 except ModuleNotFoundError as e:
-    raise ImportError("Bcrypt backend requires 'bcrypt'. Install it with: uv add fastapi_api_key[bcrypt]") from e
+    raise ImportError("Bcrypt backend requires 'bcrypt'. Install it with: uv add keyshield[bcrypt]") from e
 
-from fastapi_api_key.hasher.base import BaseApiKeyHasher
+from keyshield.hasher.base import BaseApiKeyHasher
 
 
 class BcryptApiKeyHasher(BaseApiKeyHasher):

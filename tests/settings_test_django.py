@@ -11,7 +11,7 @@ DATABASES = {
 }
 
 INSTALLED_APPS = [
-    "fastapi_api_key.django",
+    "keyshield.django",
 ]
 
 USE_TZ = True

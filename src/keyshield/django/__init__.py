@@ -1,13 +1,13 @@
-"""Django integration for fastapi-api-key.
+"""Django integration for keyshield.
 
 Sub-modules
 -----------
 - ``models``      – Django ORM model (``ApiKeyModel``).
 - ``repository``  – ``DjangoApiKeyRepository`` implementing
-                    :class:`~fastapi_api_key.repositories.base.AbstractApiKeyRepository`.
+                    :class:`~keyshield.repositories.base.AbstractApiKeyRepository`.
 - ``views``       – Class-based async views with full CRUD management.
 - ``urls``        – ``create_api_keys_urlpatterns`` URL pattern factory.
 - ``decorators``  – ``require_api_key`` async view decorator.
 """
 
-default_app_config = "fastapi_api_key.django.apps.FastApiApiKeyDjangoConfig"
+default_app_config = "keyshield.django.apps.FastApiApiKeyDjangoConfig"

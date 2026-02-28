@@ -7,11 +7,11 @@ from random import SystemRandom
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey, ConfigurationError
-from fastapi_api_key.hasher.base import ApiKeyHasher
-from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
-from fastapi_api_key.utils import datetime_factory, key_secret_factory, key_id_factory
+from keyshield.domain.entities import ApiKey
+from keyshield.domain.errors import KeyNotProvided, KeyNotFound, InvalidKey, ConfigurationError
+from keyshield.hasher.base import ApiKeyHasher
+from keyshield.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
+from keyshield.utils import datetime_factory, key_secret_factory, key_id_factory
 
 DEFAULT_SEPARATOR = "-"
 """
