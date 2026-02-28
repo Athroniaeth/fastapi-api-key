@@ -261,6 +261,19 @@ class TestServiceVerifyKey:
             await service.verify_key(full_key)
 
     @pytest.mark.asyncio
+    async def test_verify_inactive_with_wrong_secret_raises_invalid_key(self, service: ApiKeyService):
+        """verify_key() raises InvalidKey (not KeyInactive) for wrong secret on inactive key.
+
+        Regression test for OWASP API2:2023: the caller must not be able to enumerate
+        key state (active/inactive) without knowing the correct secret.
+        """
+        entity, _ = await service.create(name="inactive", is_active=False)
+        bad_key = _full_key(entity.key_id, key_secret_factory())
+
+        with pytest.raises(InvalidKey):
+            await service.verify_key(bad_key)
+
+    @pytest.mark.asyncio
     async def test_verify_expired_raises(self, service: ApiKeyService):
         """verify_key() raises KeyExpired for expired key."""
         secret = key_secret_factory()
