@@ -34,6 +34,12 @@ This library try to follow best practices and relevant RFCs for API key manageme
   valid but inactive/expired keys
 - **[RFC 6750](https://datatracker.ietf.org/doc/html/rfc6750)**: Supports `Authorization: Bearer <api_key>` header for
   key transmission (also supports deprecated `X-API-Key` header and `api_key` query param)
+- **[OWASP API2:2023](https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/)**: Hash
+  verification is performed before status/scope checks to prevent key-state enumeration — a caller with
+  a wrong secret always receives `401 Invalid`, regardless of whether the key is inactive or expired.
+- **[NIST SP 800-132](https://csrc.nist.gov/publications/detail/sp/800-132/final)**: The Bcrypt hasher
+  pre-hashes the secret via `HMAC-SHA256(pepper, secret)` before passing it to bcrypt, producing a fixed
+  32-byte digest that eliminates bcrypt's silent 72-byte input truncation.
 
 ## How API Keys Work
 
@@ -103,6 +109,10 @@ flowchart LR
     COMPARE{"`**Compare db api key hash
     to received api key hash**`"}:::processNode
 
+    STATE_CHECK{"`**Check state & scopes**
+    _(active? not expired?
+    required scopes?)_`"}:::processNode
+
     %% ── Outcomes ────────────────────────────────────────────
     REJECT(["`🔴 **Reject API Key**`"]):::rejectNode
     ACCEPT(["`🟢 **Accept API Key**`"]):::acceptNode
@@ -119,7 +129,8 @@ flowchart LR
 
     %% ── Accept path ─────────────────────────────────────────
     CACHED -- "yes" --> ACCEPT
-    COMPARE -- "equals" --> ACCEPT
+    COMPARE -- "equals" --> STATE_CHECK
+    STATE_CHECK -- "valid" --> ACCEPT
     ACCEPT -- "`**APIKey.touch()**
     _(update last_used_at)_`" --> CACHE_STORE
 
@@ -130,6 +141,7 @@ flowchart LR
     PREFIX_CHECK -- "no" --> REJECT
     QUERY_DB -- "not found" --> REJECT
     COMPARE -- "not equals" --> REJECT
+    STATE_CHECK -- "invalid (403)" --> REJECT
 
     %% ── Notes (annotations) ─────────────────────────────────
     NOTE_FORMAT["`**Format API Key**
@@ -147,9 +159,10 @@ flowchart LR
     • invalid if api key updated or deleted
     • invalid after 3600s`"]:::noteStyle
 
-    NOTE_ARGON["`**ArgonApiKeyHasher**
-    • line salt apikey
-    • global pepper api key`"]:::noteStyle
+    NOTE_ARGON["`**Hashing strategy**
+    Argon2: concat(secret, pepper)
+    Bcrypt: HMAC-SHA256(pepper, secret)
+    → fixed 32 bytes, no 72-byte truncation`"]:::noteStyle
 
     NOTE_SLEEP["`**sleep random (0.1s – 0.5s)**
     makes brute force less effective;
