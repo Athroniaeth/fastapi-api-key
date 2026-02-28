@@ -472,18 +472,18 @@ class ApiKeyService(AbstractApiKeyService):
             The entity with updated last_used_at.
 
         Raises:
+            InvalidKey: If the hash does not match.
             KeyInactive: If the key is disabled.
             KeyExpired: If the key is expired.
-            InvalidKey: If the hash does not match.
             InvalidScopes: If scopes are insufficient.
         """
         # Todo: IDK if this line ise usefully
         # assert entity.key_hash is not None, "key_hash must be set for existing API keys"  # nosec B101
 
-        entity.ensure_valid(scopes=required_scopes)
-
         if not self._hasher.verify(entity.key_hash, key_secret):
             raise InvalidKey("API key is invalid (hash mismatch)")
+
+        entity.ensure_valid(scopes=required_scopes)
 
         return await self.touch(entity)
 
