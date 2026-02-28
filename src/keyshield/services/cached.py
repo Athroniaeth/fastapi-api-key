@@ -1,9 +1,7 @@
 try:
     import aiocache  # noqa: F401
 except ModuleNotFoundError as e:
-    raise ImportError(
-        "CachedApiKeyService requires 'aiocache'. Install it with: uv add keyshield[aiocache]"
-    ) from e
+    raise ImportError("CachedApiKeyService requires 'aiocache'. Install it with: uv add keyshield[aiocache]") from e
 
 import hashlib
 from typing import List, Optional

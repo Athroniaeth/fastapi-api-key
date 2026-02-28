@@ -40,6 +40,12 @@ theme:
         icon: material/weather-sunny
         name: Switch to light mode
 markdown_extensions:
+
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - admonition
   - def_list
   - footnotes

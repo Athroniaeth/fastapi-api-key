@@ -4,9 +4,7 @@ import typing
 try:
     import sqlalchemy  # noqa: F401
 except ModuleNotFoundError as e:
-    raise ImportError(
-        "SQLAlchemy backend requires 'sqlalchemy'. Install it with: uv add keyshield[sqlalchemy]"
-    ) from e
+    raise ImportError("SQLAlchemy backend requires 'sqlalchemy'. Install it with: uv add keyshield[sqlalchemy]") from e
 
 
 from datetime import datetime
