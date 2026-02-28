@@ -2,7 +2,7 @@ try:
     import aiocache  # noqa: F401
 except ModuleNotFoundError as e:
     raise ImportError(
-        "CachedApiKeyService requires 'aiocache'. Install it with: uv add fastapi_api_key[aiocache]"
+        "CachedApiKeyService requires 'aiocache'. Install it with: uv add keyshield[aiocache]"
     ) from e
 
 import hashlib
@@ -11,11 +11,11 @@ from typing import List, Optional
 import aiocache
 from aiocache import BaseCache
 
-from fastapi_api_key import ApiKeyService
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.hasher.base import ApiKeyHasher
-from fastapi_api_key.repositories.base import AbstractApiKeyRepository
-from fastapi_api_key.services.base import DEFAULT_SEPARATOR
+from keyshield import ApiKeyService
+from keyshield.domain.entities import ApiKey
+from keyshield.hasher.base import ApiKeyHasher
+from keyshield.repositories.base import AbstractApiKeyRepository
+from keyshield.services.base import DEFAULT_SEPARATOR
 
 INDEX_PREFIX = "idx"
 """Prefix for the secondary index mapping key_id to cache_key."""

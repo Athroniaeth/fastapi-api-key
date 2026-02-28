@@ -3,10 +3,10 @@ from pathlib import Path
 
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from fastapi_api_key import ApiKeyService
-from fastapi_api_key.domain.errors import InvalidScopes
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
+from keyshield import ApiKeyService
+from keyshield.domain.errors import InvalidScopes
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.repositories.sql import SqlAlchemyApiKeyRepository
 
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security

@@ -13,9 +13,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from fastapi_api_key.hasher.base import MockApiKeyHasher, DEFAULT_PEPPER
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.hasher.bcrypt import BcryptApiKeyHasher
+from keyshield.hasher.base import MockApiKeyHasher, DEFAULT_PEPPER
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.hasher.bcrypt import BcryptApiKeyHasher
 
 
 class TestMockHasher:
@@ -143,7 +143,7 @@ class TestArgon2Hasher:
 class TestBcryptHasher:
     """Tests for BcryptApiKeyHasher with mocked bcrypt module."""
 
-    @patch("fastapi_api_key.hasher.bcrypt.bcrypt")
+    @patch("keyshield.hasher.bcrypt.bcrypt")
     def test_hash_applies_pepper(self, mock_bcrypt):
         """hash() passes peppered key to bcrypt.hashpw."""
         mock_bcrypt.gensalt.return_value = b"$2b$04$salt"
@@ -157,7 +157,7 @@ class TestBcryptHasher:
         assert call_args[0] == b"api-keymy-pepper"
         assert result == "hashed-value"
 
-    @patch("fastapi_api_key.hasher.bcrypt.bcrypt")
+    @patch("keyshield.hasher.bcrypt.bcrypt")
     def test_hash_truncates_long_keys(self, mock_bcrypt):
         """hash() truncates keys longer than 72 bytes."""
         mock_bcrypt.gensalt.return_value = b"$2b$04$salt"
@@ -171,7 +171,7 @@ class TestBcryptHasher:
         call_args = mock_bcrypt.hashpw.call_args[0]
         assert len(call_args[0]) == 72
 
-    @patch("fastapi_api_key.hasher.bcrypt.bcrypt")
+    @patch("keyshield.hasher.bcrypt.bcrypt")
     def test_verify_applies_pepper(self, mock_bcrypt):
         """verify() passes peppered key to bcrypt.checkpw."""
         mock_bcrypt.checkpw.return_value = True
@@ -184,7 +184,7 @@ class TestBcryptHasher:
         assert call_args[1] == b"stored-hash"
         assert result is True
 
-    @patch("fastapi_api_key.hasher.bcrypt.bcrypt")
+    @patch("keyshield.hasher.bcrypt.bcrypt")
     def test_verify_truncates_long_keys(self, mock_bcrypt):
         """verify() truncates keys longer than 72 bytes."""
         mock_bcrypt.checkpw.return_value = True

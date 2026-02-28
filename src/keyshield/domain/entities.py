@@ -3,9 +3,9 @@ from dataclasses import field, dataclass
 from datetime import datetime, timezone
 from typing import Optional, List
 
-from fastapi_api_key.domain.base import ApiKeyEntity
-from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes, KeyHashNotSet, KeySecretNotSet
-from fastapi_api_key.utils import (
+from keyshield.domain.base import ApiKeyEntity
+from keyshield.domain.errors import KeyExpired, KeyInactive, InvalidScopes, KeyHashNotSet, KeySecretNotSet
+from keyshield.utils import (
     uuid_factory,
     datetime_factory,
     key_id_factory,

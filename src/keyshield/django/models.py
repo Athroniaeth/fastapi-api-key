@@ -1,15 +1,15 @@
 """Django ORM model for API keys.
 
 This model mirrors the SQLAlchemy model in
-:mod:`fastapi_api_key.repositories.sql` so both ORMs persist the same schema
+:mod:`keyshield.repositories.sql` so both ORMs persist the same schema
 (table name ``api_keys``).
 
 Usage
 -----
-Add ``"fastapi_api_key.django"`` to ``INSTALLED_APPS`` in your Django settings,
+Add ``"keyshield.django"`` to ``INSTALLED_APPS`` in your Django settings,
 then run migrations::
 
-    python manage.py makemigrations fastapi_api_key_django
+    python manage.py makemigrations keyshield_django
     python manage.py migrate
 """
 
@@ -17,7 +17,7 @@ try:
     import django  # noqa: F401
     from django.db import models
 except ModuleNotFoundError as e:  # pragma: no cover
-    raise ImportError("Django integration requires 'django'. Install it with: uv add fastapi_api_key[django]") from e
+    raise ImportError("Django integration requires 'django'. Install it with: uv add keyshield[django]") from e
 
 
 class ApiKeyModel(models.Model):
@@ -62,5 +62,5 @@ class ApiKeyModel(models.Model):
     scopes = models.JSONField(default=list)
 
     class Meta:
-        app_label = "fastapi_api_key_django"
+        app_label = "keyshield_django"
         db_table = "api_keys"

@@ -11,11 +11,11 @@ from litestar import Litestar, get
 from litestar.di import Provide
 from litestar.testing import TestClient
 
-from fastapi_api_key.litestar_api import create_api_key_guard, create_api_keys_router
-from fastapi_api_key.hasher.base import MockApiKeyHasher
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.services.base import ApiKeyService
-from fastapi_api_key.utils import datetime_factory
+from keyshield.litestar_api import create_api_key_guard, create_api_keys_router
+from keyshield.hasher.base import MockApiKeyHasher
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield.services.base import ApiKeyService
+from keyshield.utils import datetime_factory
 
 
 # ---------------------------------------------------------------------------

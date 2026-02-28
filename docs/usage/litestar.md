@@ -1,7 +1,7 @@
 # Litestar Integration
 
-`fastapi-api-key` provides first-class support for [Litestar](https://litestar.dev/) via
-`fastapi_api_key.litestar_api`.  The integration exposes two helpers:
+`keyshield` provides first-class support for [Litestar](https://litestar.dev/) via
+`keyshield.litestar_api`.  The integration exposes two helpers:
 
 | Helper | Purpose |
 |---|---|
@@ -11,17 +11,17 @@
 ## Installation
 
 ```bash
-uv add fastapi_api_key[litestar]
+uv add keyshield[litestar]
 ```
 
 ## Quick start
 
 ```python
 from litestar import Litestar
-from fastapi_api_key.litestar_api import create_api_keys_router, create_api_key_guard
-from fastapi_api_key.services.base import ApiKeyService
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.litestar_api import create_api_keys_router, create_api_key_guard
+from keyshield.services.base import ApiKeyService
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
 
 # Shared service provider (called once per request by Litestar DI)
 async def provide_svc() -> ApiKeyService:
@@ -41,7 +41,7 @@ app = Litestar(route_handlers=[mgmt_router])
 ```python
 from litestar import Litestar, get
 from litestar.connection import Request
-from fastapi_api_key.litestar_api import create_api_key_guard
+from keyshield.litestar_api import create_api_key_guard
 
 guard = create_api_key_guard(provide_svc=provide_svc)
 
@@ -93,7 +93,7 @@ lifecycle handles session management transparently:
 
 ```python
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository, Base
+from keyshield.repositories.sql import SqlAlchemyApiKeyRepository, Base
 
 engine = create_async_engine("postgresql+asyncpg://user:pass@localhost/db")
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -107,11 +107,11 @@ async def provide_svc() -> ApiKeyService:
 
 ## Caching
 
-The `CachedApiKeyService` from `fastapi_api_key.services.cached` works
+The `CachedApiKeyService` from `keyshield.services.cached` works
 identically in Litestar:
 
 ```python
-from fastapi_api_key.services.cached import CachedApiKeyService
+from keyshield.services.cached import CachedApiKeyService
 
 async def provide_svc() -> CachedApiKeyService:
     return CachedApiKeyService(

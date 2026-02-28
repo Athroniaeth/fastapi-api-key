@@ -7,7 +7,7 @@ This guide covers SQLAlchemy setup with aiosqlite for persistent API key storage
 Install the SQLAlchemy extra:
 
 ```bash
-pip install fastapi-api-key[sqlalchemy]
+pip install keyshield[sqlalchemy]
 ```
 
 ## Example

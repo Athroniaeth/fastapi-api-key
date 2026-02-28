@@ -1,7 +1,7 @@
 # Django Integration
 
-`fastapi-api-key` supports [Django](https://www.djangoproject.com/) 4.1+ via the
-`fastapi_api_key.django` package.
+`keyshield` supports [Django](https://www.djangoproject.com/) 4.1+ via the
+`keyshield.django` package.
 
 The integration provides:
 
@@ -15,7 +15,7 @@ The integration provides:
 ## Installation
 
 ```bash
-uv add fastapi_api_key[django]
+uv add keyshield[django]
 ```
 
 ## Setup
@@ -26,14 +26,14 @@ Add the app to `INSTALLED_APPS` in your Django settings:
 # settings.py
 INSTALLED_APPS = [
     ...
-    "fastapi_api_key.django",
+    "keyshield.django",
 ]
 ```
 
 Then run migrations to create the `api_keys` table:
 
 ```bash
-python manage.py makemigrations fastapi_api_key_django
+python manage.py makemigrations keyshield_django
 python manage.py migrate
 ```
 
@@ -41,9 +41,9 @@ python manage.py migrate
 
 ```python
 # myapp/api_keys.py
-from fastapi_api_key.django import DjangoApiKeyRepository
-from fastapi_api_key.services.base import ApiKeyService
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.django import DjangoApiKeyRepository
+from keyshield.services.base import ApiKeyService
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
 
 async def get_service() -> ApiKeyService:
     return ApiKeyService(
@@ -57,7 +57,7 @@ Register the management endpoints in your URL configuration:
 ```python
 # myapp/urls.py
 from django.urls import path, include
-from fastapi_api_key.django.urls import create_api_keys_urlpatterns
+from keyshield.django.urls import create_api_keys_urlpatterns
 from myapp.api_keys import get_service
 
 urlpatterns = [
@@ -71,7 +71,7 @@ Use the `require_api_key` decorator on any async view:
 
 ```python
 from django.http import JsonResponse
-from fastapi_api_key.django.decorators import require_api_key
+from keyshield.django.decorators import require_api_key
 from myapp.api_keys import get_service
 
 @require_api_key(svc_factory=get_service)
@@ -111,7 +111,7 @@ Django's `as_view(svc_factory=...)` pattern is used for dependency injection.
 You can wire up any service factory, including one backed by caching:
 
 ```python
-from fastapi_api_key.services.cached import CachedApiKeyService
+from keyshield.services.cached import CachedApiKeyService
 
 async def get_service() -> CachedApiKeyService:
     return CachedApiKeyService(

@@ -3,7 +3,7 @@
 Usage::
 
     from django.urls import path, include
-    from fastapi_api_key.django.urls import create_api_keys_urlpatterns
+    from keyshield.django.urls import create_api_keys_urlpatterns
 
     urlpatterns = [
         path("", include(create_api_keys_urlpatterns(svc_factory=get_service))),
@@ -15,10 +15,10 @@ from typing import Any, Awaitable, Callable, List
 try:
     from django.urls import path
 except ModuleNotFoundError as e:  # pragma: no cover
-    raise ImportError("Django integration requires 'django'. Install it with: uv add fastapi_api_key[django]") from e
+    raise ImportError("Django integration requires 'django'. Install it with: uv add keyshield[django]") from e
 
-from fastapi_api_key.services.base import AbstractApiKeyService
-from fastapi_api_key.django.views import (
+from keyshield.services.base import AbstractApiKeyService
+from keyshield.django.views import (
     ApiKeyActivateView,
     ApiKeyCountView,
     ApiKeyDeactivateView,
@@ -36,7 +36,7 @@ def create_api_keys_urlpatterns(
 
     Args:
         svc_factory: Async callable returning an
-            :class:`~fastapi_api_key.services.base.AbstractApiKeyService`.
+            :class:`~keyshield.services.base.AbstractApiKeyService`.
 
     Returns:
         List of URL patterns to include directly or via ``include()``.

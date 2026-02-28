@@ -1,9 +1,9 @@
 import asyncio
 import os
 
-from fastapi_api_key import ApiKeyService
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield import ApiKeyService
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
 
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security

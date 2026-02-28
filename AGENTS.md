@@ -6,7 +6,7 @@ Follow existing patterns and run the same tooling as humans.
 ## Project overview
 
 - Language: Python 3.9+
-- Package: `fastapi_api_key` (src layout)
+- Package: `keyshield` (src layout)
 - Async-first services and repositories
 - Optional extras for FastAPI, SQLAlchemy, Argon2, bcrypt, aiocache
 
@@ -90,7 +90,7 @@ Artifacts: `coverage.xml`, `htmlcov/`, `junit.xml`.
 
 ### Error handling
 
-- Domain exceptions live in `fastapi_api_key.domain.errors`.
+- Domain exceptions live in `keyshield.domain.errors`.
 - Raise domain errors in services and repositories, translate to HTTP exceptions in API layer.
 - Preserve original errors with `raise ... from exc`.
 - Use specific exceptions (`KeyNotFound`, `InvalidKey`, `ConfigurationError`) rather than `ValueError` unless appropriate.
@@ -123,7 +123,7 @@ Artifacts: `coverage.xml`, `htmlcov/`, `junit.xml`.
 
 ## Repository layout
 
-- `src/fastapi_api_key/` core library
+- `src/keyshield/` core library
 - `tests/` unit/integration tests
 - `examples/` example applications (used in docs)
 

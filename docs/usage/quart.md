@@ -1,7 +1,7 @@
 # Quart Integration
 
-`fastapi-api-key` supports [Quart](https://quart.palletsprojects.com/) — the
-async-native reimplementation of Flask — via `fastapi_api_key.quart_api`.
+`keyshield` supports [Quart](https://quart.palletsprojects.com/) — the
+async-native reimplementation of Flask — via `keyshield.quart_api`.
 
 The integration exposes two helpers:
 
@@ -13,17 +13,17 @@ The integration exposes two helpers:
 ## Installation
 
 ```bash
-uv add fastapi_api_key[quart]
+uv add keyshield[quart]
 ```
 
 ## Quick start
 
 ```python
 from quart import Quart
-from fastapi_api_key.quart_api import create_api_keys_blueprint, require_api_key
-from fastapi_api_key.services.base import ApiKeyService
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.quart_api import create_api_keys_blueprint, require_api_key
+from keyshield.services.base import ApiKeyService
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
 
 _svc = ApiKeyService(
     repo=InMemoryApiKeyRepository(),
@@ -80,7 +80,7 @@ The Blueprint registered by `create_api_keys_blueprint` mounts these routes
 
 ```python
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
+from keyshield.repositories.sql import SqlAlchemyApiKeyRepository
 
 engine = create_async_engine("postgresql+asyncpg://user:pass@localhost/db")
 SessionLocal = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
@@ -95,7 +95,7 @@ async def get_service() -> ApiKeyService:
 ## Caching
 
 ```python
-from fastapi_api_key.services.cached import CachedApiKeyService
+from keyshield.services.cached import CachedApiKeyService
 
 async def get_service() -> CachedApiKeyService:
     return CachedApiKeyService(

@@ -10,15 +10,15 @@ except ModuleNotFoundError as e:  # pragma: no cover
     raise ImportError(
         "Pydantic is required for framework integrations. "
         "Install it via any supported framework extra, e.g.: "
-        "uv add fastapi_api_key[fastapi] or uv add fastapi_api_key[litestar]"
+        "uv add keyshield[fastapi] or uv add keyshield[litestar]"
     ) from e
 
 from datetime import datetime, timedelta
 from typing import List, Optional
 
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.repositories.base import ApiKeyFilter, SortableColumn
-from fastapi_api_key.utils import datetime_factory
+from keyshield.domain.entities import ApiKey
+from keyshield.repositories.base import ApiKeyFilter, SortableColumn
+from keyshield.utils import datetime_factory
 
 
 class ApiKeyCreateIn(BaseModel):

@@ -1,20 +1,20 @@
 ﻿# FastAPI Api Key
 
-![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FAthroniaeth%2Ffastapi-api-key%2Fmain%2Fpyproject.toml)
+![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FAthroniaeth%2Fkeyshield%2Fmain%2Fpyproject.toml)
 [![Tested with pytest](https://img.shields.io/badge/tests-pytest-informational.svg)](https://pytest.org/)
-[![PyPI version](https://img.shields.io/pypi/v/fastapi-api-key.svg)](https://pypi.org/project/fastapi-api-key/)
-[![Docs](https://img.shields.io/badge/docs-online-blue.svg)](https://athroniaeth.github.io/fastapi-api-key/)
-[![codecov](https://codecov.io/gh/Athroniaeth/fastapi-api-key/graph/badge.svg)](https://codecov.io/gh/Athroniaeth/fastapi-api-key)
+[![PyPI version](https://img.shields.io/pypi/v/keyshield.svg)](https://pypi.org/project/keyshield/)
+[![Docs](https://img.shields.io/badge/docs-online-blue.svg)](https://athroniaeth.github.io/keyshield/)
+[![codecov](https://codecov.io/gh/Athroniaeth/keyshield/graph/badge.svg)](https://codecov.io/gh/Athroniaeth/keyshield)
 [![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg)](https://bandit.readthedocs.io/)
 [![Deps: uv](https://img.shields.io/badge/deps-managed%20with%20uv-3E4DD8.svg)](https://docs.astral.sh/uv/)
 [![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-4B32C3.svg)](https://docs.astral.sh/ruff/)
 
-`fastapi-api-key` provides a backend-agnostic library that provides a production-ready, secure API key system, with optional FastAPI and Typer connectors.
+`keyshield` provides a backend-agnostic library that provides a production-ready, secure API key system, with optional FastAPI and Typer connectors.
 
 ## Links
 
-- **Documentation:** [https://athroniaeth.github.io/fastapi-api-key/](https://athroniaeth.github.io/fastapi-api-key/)
-- **PyPI package:** [https://pypi.org/project/fastapi-api-key/](https://pypi.org/project/fastapi-api-key/)
+- **Documentation:** [https://athroniaeth.github.io/keyshield/](https://athroniaeth.github.io/keyshield/)
+- **PyPI package:** [https://pypi.org/project/keyshield/](https://pypi.org/project/keyshield/)
 
 ## Features
 
@@ -41,8 +41,8 @@ This library try to follow best practices and relevant RFCs for API key manageme
 This project is not published to PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
 
 ```bash
-uv add fastapi-api-key
-uv pip install fastapi-api-key
+uv add keyshield
+uv pip install keyshield
 ```
 
 ### Development installation
@@ -60,18 +60,18 @@ For lighter setups you can choose individual extras:
 
 | Installation mode              | Command                       | Description                                                                 |
 |--------------------------------|-------------------------------|-----------------------------------------------------------------------------|
-| **Base installation**          | `fastapi-api-key`             | Installs the core package without any optional dependencies.                |
-| **With Bcrypt support**        | `fastapi-api-key[bcrypt]`     | Adds support for password hashing using **bcrypt**                          |
-| **With Argon2 support**        | `fastapi-api-key[argon2]`     | Adds support for password hashing using **Argon2**                          |
-| **With SQLAlchemy support**    | `fastapi-api-key[sqlalchemy]` | Adds database integration via **SQLAlchemy**                                |
-| **With Cache Service support** | `fastapi-api-key[aiocache]`   | Adds database integration via **Aiocache**                                  |
-| **Core setup**                 | `fastapi-api-key[core]`       | Installs the **core dependencies** (SQLAlchemy + Argon2 + bcrypt + aiocache |
-| **FastAPI only**               | `fastapi-api-key[fastapi]`    | Installs **FastAPI** as an optional dependency                              |
-| **Full installation**          | `fastapi-api-key[all]`        | Installs **all optional dependencies**                                      |
+| **Base installation**          | `keyshield`             | Installs the core package without any optional dependencies.                |
+| **With Bcrypt support**        | `keyshield[bcrypt]`     | Adds support for password hashing using **bcrypt**                          |
+| **With Argon2 support**        | `keyshield[argon2]`     | Adds support for password hashing using **Argon2**                          |
+| **With SQLAlchemy support**    | `keyshield[sqlalchemy]` | Adds database integration via **SQLAlchemy**                                |
+| **With Cache Service support** | `keyshield[aiocache]`   | Adds database integration via **Aiocache**                                  |
+| **Core setup**                 | `keyshield[core]`       | Installs the **core dependencies** (SQLAlchemy + Argon2 + bcrypt + aiocache |
+| **FastAPI only**               | `keyshield[fastapi]`    | Installs **FastAPI** as an optional dependency                              |
+| **Full installation**          | `keyshield[all]`        | Installs **all optional dependencies**                                      |
 
 ```bash
-uv add fastapi-api-key[sqlalchemy]
-uv pip install fastapi-api-key[sqlalchemy]
+uv add keyshield[sqlalchemy]
+uv pip install keyshield[sqlalchemy]
 uv sync --extra sqlalchemy
 uv pip install -e ".[sqlalchemy]"
 ```
@@ -100,8 +100,8 @@ Install `make` via `sudo apt install make` on Debian/Ubuntu or `choco install ma
 ```python
 import asyncio
 
-from fastapi_api_key import ApiKeyService
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield import ApiKeyService
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
 
 
 async def main():
@@ -122,9 +122,9 @@ Override the default pepper in production:
 
 ```python
 import os
-from fastapi_api_key import ApiKeyService
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield import ApiKeyService
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
 
 pepper = os.environ["SECRET_PEPPER"]
 hasher = Argon2ApiKeyHasher(pepper=pepper)
@@ -178,10 +178,10 @@ from typing import AsyncIterator
 from fastapi import FastAPI, Depends, APIRouter
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 
-from fastapi_api_key import ApiKey, ApiKeyService
-from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
-from fastapi_api_key.repositories.sql import SqlAlchemyApiKeyRepository
-from fastapi_api_key.api import create_api_keys_router, create_depends_api_key
+from keyshield import ApiKey, ApiKeyService
+from keyshield.hasher.argon2 import Argon2ApiKeyHasher
+from keyshield.repositories.sql import SqlAlchemyApiKeyRepository
+from keyshield.api import create_api_keys_router, create_depends_api_key
 
 # Set env var to override default pepper
 # Using a strong, unique pepper is crucial for security

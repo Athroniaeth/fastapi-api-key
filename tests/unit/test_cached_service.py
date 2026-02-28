@@ -11,11 +11,11 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from fastapi_api_key.domain.errors import InvalidKey, InvalidScopes, KeyInactive
-from fastapi_api_key.hasher.base import MockApiKeyHasher
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.services.cached import CachedApiKeyService, _compute_cache_key
-from fastapi_api_key.utils import key_secret_factory
+from keyshield.domain.errors import InvalidKey, InvalidScopes, KeyInactive
+from keyshield.hasher.base import MockApiKeyHasher
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield.services.cached import CachedApiKeyService, _compute_cache_key
+from keyshield.utils import key_secret_factory
 
 
 @pytest.fixture

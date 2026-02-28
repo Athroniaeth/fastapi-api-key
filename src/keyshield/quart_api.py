@@ -1,4 +1,4 @@
-"""Quart integration for fastapi-api-key.
+"""Quart integration for keyshield.
 
 Provides:
 - ``create_api_keys_blueprint`` – Quart :class:`~quart.Blueprint` with full
@@ -11,10 +11,10 @@ Provides:
 Example::
 
     from quart import Quart
-    from fastapi_api_key.quart_api import create_api_keys_blueprint, require_api_key
-    from fastapi_api_key.services.base import ApiKeyService
-    from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-    from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
+    from keyshield.quart_api import create_api_keys_blueprint, require_api_key
+    from keyshield.services.base import ApiKeyService
+    from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+    from keyshield.hasher.argon2 import Argon2ApiKeyHasher
 
     _svc = ApiKeyService(
         repo=InMemoryApiKeyRepository(),
@@ -37,7 +37,7 @@ Example::
 try:
     import quart  # noqa: F401
 except ModuleNotFoundError as e:  # pragma: no cover
-    raise ImportError("Quart integration requires 'quart'. Install it with: uv add fastapi_api_key[quart]") from e
+    raise ImportError("Quart integration requires 'quart'. Install it with: uv add keyshield[quart]") from e
 
 from functools import wraps
 from typing import Any, Awaitable, Callable, List, Optional
@@ -45,7 +45,7 @@ from typing import Any, Awaitable, Callable, List, Optional
 from pydantic import ValidationError
 from quart import Blueprint, abort, g, jsonify, request
 
-from fastapi_api_key.domain.errors import (
+from keyshield.domain.errors import (
     InvalidKey,
     InvalidScopes,
     KeyExpired,
@@ -53,8 +53,8 @@ from fastapi_api_key.domain.errors import (
     KeyNotFound,
     KeyNotProvided,
 )
-from fastapi_api_key.services.base import AbstractApiKeyService
-from fastapi_api_key._schemas import (
+from keyshield.services.base import AbstractApiKeyService
+from keyshield._schemas import (
     ApiKeyCountOut,
     ApiKeyCreateIn,
     ApiKeyCreatedOut,
@@ -122,7 +122,7 @@ def create_api_keys_blueprint(
 
     Args:
         svc_factory: Async callable that returns an
-            :class:`~fastapi_api_key.services.base.AbstractApiKeyService`.
+            :class:`~keyshield.services.base.AbstractApiKeyService`.
         url_prefix: URL prefix for all routes (default ``"/api-keys"``).
         name: Blueprint name (default ``"api_keys"``).
 
@@ -340,12 +340,12 @@ def require_api_key(
 ) -> Callable:
     """Decorator that verifies the ``Authorization: Bearer`` header.
 
-    On success, stores the verified :class:`~fastapi_api_key.domain.entities.ApiKey`
+    On success, stores the verified :class:`~keyshield.domain.entities.ApiKey`
     entity in ``quart.g.api_key`` for downstream access.
 
     Args:
         svc_factory: Async callable returning an
-            :class:`~fastapi_api_key.services.base.AbstractApiKeyService`.
+            :class:`~keyshield.services.base.AbstractApiKeyService`.
         required_scopes: Optional list of scopes the key must possess.
 
     Example::

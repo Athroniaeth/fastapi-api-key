@@ -11,9 +11,9 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import KeyExpired, KeyInactive, InvalidScopes, KeyHashNotSet, KeySecretNotSet
-from fastapi_api_key.utils import datetime_factory
+from keyshield.domain.entities import ApiKey
+from keyshield.domain.errors import KeyExpired, KeyInactive, InvalidScopes, KeyHashNotSet, KeySecretNotSet
+from keyshield.utils import datetime_factory
 
 
 class TestApiKeyStructure:

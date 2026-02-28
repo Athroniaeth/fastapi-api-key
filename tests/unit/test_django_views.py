@@ -11,9 +11,9 @@ import pytest
 from django.http import JsonResponse
 from django.test import RequestFactory
 
-from fastapi_api_key.django.decorators import require_api_key
-from fastapi_api_key.django.urls import create_api_keys_urlpatterns
-from fastapi_api_key.django.views import (
+from keyshield.django.decorators import require_api_key
+from keyshield.django.urls import create_api_keys_urlpatterns
+from keyshield.django.views import (
     ApiKeyActivateView,
     ApiKeyCountView,
     ApiKeyDeactivateView,
@@ -22,10 +22,10 @@ from fastapi_api_key.django.views import (
     ApiKeySearchView,
     ApiKeyVerifyView,
 )
-from fastapi_api_key.hasher.base import MockApiKeyHasher
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.services.base import ApiKeyService
-from fastapi_api_key.utils import datetime_factory
+from keyshield.hasher.base import MockApiKeyHasher
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield.services.base import ApiKeyService
+from keyshield.utils import datetime_factory
 
 
 # ---------------------------------------------------------------------------

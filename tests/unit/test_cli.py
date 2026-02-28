@@ -11,11 +11,11 @@ from datetime import timedelta
 import pytest
 from typer.testing import CliRunner
 
-from fastapi_api_key import ApiKeyService
-from fastapi_api_key.cli import create_api_keys_cli
-from fastapi_api_key.hasher.base import MockApiKeyHasher
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.utils import datetime_factory
+from keyshield import ApiKeyService
+from keyshield.cli import create_api_keys_cli
+from keyshield.hasher.base import MockApiKeyHasher
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield.utils import datetime_factory
 
 
 @pytest.fixture

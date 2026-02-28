@@ -20,11 +20,11 @@ from sqlalchemy.ext.asyncio import (
     create_async_engine,
 )
 
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.hasher.base import MockApiKeyHasher, ApiKeyHasher
-from fastapi_api_key.repositories.sql import Base
-from fastapi_api_key._types import AsyncSessionMaker
-from fastapi_api_key.utils import datetime_factory, key_id_factory, key_secret_factory
+from keyshield.domain.entities import ApiKey
+from keyshield.hasher.base import MockApiKeyHasher, ApiKeyHasher
+from keyshield.repositories.sql import Base
+from keyshield._types import AsyncSessionMaker
+from keyshield.utils import datetime_factory, key_id_factory, key_secret_factory
 
 
 @pytest_asyncio.fixture(scope="session")

@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum
 from typing import Optional, List
 
-from fastapi_api_key.domain.entities import ApiKey
+from keyshield.domain.entities import ApiKey
 
 
 class SortableColumn(str, Enum):

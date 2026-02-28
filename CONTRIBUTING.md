@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve `fastapi-api-key`! This guide walks you through the toolchain, branching model, and tooling conventions we follow.
+Thanks for helping improve `keyshield`! This guide walks you through the toolchain, branching model, and tooling conventions we follow.
 
 ## Prerequisites
 
@@ -13,12 +13,12 @@ Thanks for helping improve `fastapi-api-key`! This guide walks you through the t
 1. **Fork** the repository to your own GitHub account.
 2. **Clone** your fork locally:
    ```bash
-   git clone https://github.com/<you>/fastapi-api-key.git
-   cd fastapi-api-key
+   git clone https://github.com/<you>/keyshield.git
+   cd keyshield
    ```
 3. **Add the upstream remote** so you can sync later:
    ```bash
-   git remote add upstream https://github.com/Athroniaeth/fastapi-api-key.git
+   git remote add upstream https://github.com/Athroniaeth/keyshield.git
    ```
 4. **Create a feature branch** from the active integration branch (default: `development`):
    ```bash
@@ -71,7 +71,7 @@ source .venv/bin/activate  # or .venv\Scripts\Activate.ps1 on Windows
    git push origin feat/<short-topic>
    ```
 
-6. **Open a pull request** targeting `Athroniaeth/fastapi-api-key:development`. Summarise the change, mention tests/docs runs, and link related issues if applicable.
+6. **Open a pull request** targeting `Athroniaeth/keyshield:development`. Summarise the change, mention tests/docs runs, and link related issues if applicable.
 
 ## Pull request checklist
 

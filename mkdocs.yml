@@ -1,8 +1,8 @@
-site_name: fastapi-api-key
-site_description: "Fast API key management primitives for FastAPI applications"
+site_name: keyshield
+site_description: "Secure API key management for Python web frameworks"
 site_url: ""
-repo_url: https://github.com/Athroniaeth/fastapi-api-key
-repo_name: Athroniaeth/fastapi-api-key
+repo_url: https://github.com/Athroniaeth/keyshield
+repo_name: Athroniaeth/keyshield
 theme:
   name: material
   language: en
@@ -71,4 +71,4 @@ nav:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/Athroniaeth/fastapi-api-key
+      link: https://github.com/Athroniaeth/keyshield

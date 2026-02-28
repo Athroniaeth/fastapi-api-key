@@ -9,11 +9,11 @@ from datetime import timedelta
 import pytest
 from quart import Quart, g
 
-from fastapi_api_key.quart_api import create_api_keys_blueprint, require_api_key
-from fastapi_api_key.hasher.base import MockApiKeyHasher
-from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-from fastapi_api_key.services.base import ApiKeyService
-from fastapi_api_key.utils import datetime_factory
+from keyshield.quart_api import create_api_keys_blueprint, require_api_key
+from keyshield.hasher.base import MockApiKeyHasher
+from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+from keyshield.services.base import ApiKeyService
+from keyshield.utils import datetime_factory
 
 
 # ---------------------------------------------------------------------------

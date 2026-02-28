@@ -1,4 +1,4 @@
-"""Litestar integration for fastapi-api-key.
+"""Litestar integration for keyshield.
 
 Provides:
 - ``create_api_keys_router`` – builds a :class:`litestar.Router` with full CRUD
@@ -10,10 +10,10 @@ Example::
 
     from litestar import Litestar
     from litestar.di import Provide
-    from fastapi_api_key.litestar_api import create_api_keys_router, create_api_key_guard
-    from fastapi_api_key.services.base import ApiKeyService
-    from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
-    from fastapi_api_key.hasher.argon2 import Argon2ApiKeyHasher
+    from keyshield.litestar_api import create_api_keys_router, create_api_key_guard
+    from keyshield.services.base import ApiKeyService
+    from keyshield.repositories.in_memory import InMemoryApiKeyRepository
+    from keyshield.hasher.argon2 import Argon2ApiKeyHasher
 
     async def provide_svc() -> ApiKeyService:
         return ApiKeyService(repo=InMemoryApiKeyRepository(), hasher=Argon2ApiKeyHasher())
@@ -28,7 +28,7 @@ try:
     import litestar  # noqa: F401
 except ModuleNotFoundError as e:  # pragma: no cover
     raise ImportError(
-        "Litestar integration requires 'litestar'. Install it with: uv add fastapi_api_key[litestar]"
+        "Litestar integration requires 'litestar'. Install it with: uv add keyshield[litestar]"
     ) from e
 
 from typing import Awaitable, Callable, List, Optional
@@ -50,8 +50,8 @@ from litestar.status_codes import (
 )
 from typing_extensions import Annotated
 
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.domain.errors import (
+from keyshield.domain.entities import ApiKey
+from keyshield.domain.errors import (
     InvalidKey,
     InvalidScopes,
     KeyExpired,
@@ -59,8 +59,8 @@ from fastapi_api_key.domain.errors import (
     KeyNotFound,
     KeyNotProvided,
 )
-from fastapi_api_key.services.base import AbstractApiKeyService
-from fastapi_api_key._schemas import (
+from keyshield.services.base import AbstractApiKeyService
+from keyshield._schemas import (
     ApiKeyCountOut,
     ApiKeyCreateIn,
     ApiKeyCreatedOut,
@@ -102,7 +102,7 @@ def create_api_keys_router(
 
     Args:
         provide_svc: Async callable (or coroutine function) that returns an
-            :class:`~fastapi_api_key.services.base.AbstractApiKeyService` instance.
+            :class:`~keyshield.services.base.AbstractApiKeyService` instance.
             It is registered as a Litestar *dependency* named ``svc``.
         path: URL prefix for all routes (default ``"/api-keys"``).
 
@@ -337,12 +337,12 @@ def create_api_key_guard(
 ) -> Callable[[ASGIConnection, BaseRouteHandler], Awaitable[None]]:
     """Create a Litestar *guard* that verifies the ``Authorization: Bearer`` header.
 
-    The verified :class:`~fastapi_api_key.domain.entities.ApiKey` entity is
+    The verified :class:`~keyshield.domain.entities.ApiKey` entity is
     stored in ``connection.state.api_key`` for downstream access.
 
     Args:
         provide_svc: Async callable returning an
-            :class:`~fastapi_api_key.services.base.AbstractApiKeyService` instance.
+            :class:`~keyshield.services.base.AbstractApiKeyService` instance.
         required_scopes: Optional list of scopes the key must possess.
 
     Returns:

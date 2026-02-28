@@ -5,7 +5,7 @@ try:
     import sqlalchemy  # noqa: F401
 except ModuleNotFoundError as e:
     raise ImportError(
-        "SQLAlchemy backend requires 'sqlalchemy'. Install it with: uv add fastapi_api_key[sqlalchemy]"
+        "SQLAlchemy backend requires 'sqlalchemy'. Install it with: uv add keyshield[sqlalchemy]"
     ) from e
 
 
@@ -17,9 +17,9 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
 from sqlalchemy.orm import Mapped, mapped_column, DeclarativeBase
 
-from fastapi_api_key.domain.entities import ApiKey
-from fastapi_api_key.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
-from fastapi_api_key.utils import datetime_factory
+from keyshield.domain.entities import ApiKey
+from keyshield.repositories.base import AbstractApiKeyRepository, ApiKeyFilter
+from keyshield.utils import datetime_factory
 
 
 class Base(DeclarativeBase): ...  # pragma: no cover
