@@ -17,10 +17,7 @@ try:
     import django  # noqa: F401
     from django.db import models
 except ModuleNotFoundError as e:  # pragma: no cover
-    raise ImportError(
-        "Django integration requires 'django'. "
-        "Install it with: uv add fastapi_api_key[django]"
-    ) from e
+    raise ImportError("Django integration requires 'django'. Install it with: uv add fastapi_api_key[django]") from e
 
 
 class ApiKeyModel(models.Model):

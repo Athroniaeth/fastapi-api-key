@@ -28,8 +28,7 @@ try:
     import litestar  # noqa: F401
 except ModuleNotFoundError as e:  # pragma: no cover
     raise ImportError(
-        "Litestar integration requires 'litestar'. "
-        "Install it with: uv add fastapi_api_key[litestar]"
+        "Litestar integration requires 'litestar'. Install it with: uv add fastapi_api_key[litestar]"
     ) from e
 
 from typing import Awaitable, Callable, List, Optional
@@ -38,7 +37,6 @@ from litestar import Controller, Router, delete, get, patch, post
 from litestar.connection import ASGIConnection
 from litestar.di import Provide
 from litestar.exceptions import (
-    HTTPException,
     NotAuthorizedException,
     NotFoundException,
     PermissionDeniedException,
@@ -228,9 +226,7 @@ def create_api_keys_router(
             return _to_out(entity)
 
         @patch("/{api_key_id:str}", status_code=HTTP_200_OK, summary="Update an API key")
-        async def update_api_key(
-            self, api_key_id: str, data: ApiKeyUpdateIn, svc: AbstractApiKeyService
-        ) -> ApiKeyOut:
+        async def update_api_key(self, api_key_id: str, data: ApiKeyUpdateIn, svc: AbstractApiKeyService) -> ApiKeyOut:
             """Partially update an API key.
 
             Args:
