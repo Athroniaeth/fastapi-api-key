@@ -26,7 +26,6 @@ from fastapi_api_key.hasher.base import MockApiKeyHasher
 from fastapi_api_key.repositories.in_memory import InMemoryApiKeyRepository
 from fastapi_api_key.services.base import ApiKeyService
 from fastapi_api_key.utils import datetime_factory
-from tests.conftest import make_api_key  # pyrefly: ignore[missing-import]
 
 
 # ---------------------------------------------------------------------------
@@ -355,9 +354,15 @@ class TestSearchAndCount:
             return service
 
         view_create = _make_view(ApiKeyListCreateView, get_svc)
-        await view_create(factory.post("/", data=_json({"name": "a1", "is_active": True}), content_type="application/json"))
-        await view_create(factory.post("/", data=_json({"name": "a2", "is_active": True}), content_type="application/json"))
-        await view_create(factory.post("/", data=_json({"name": "i", "is_active": False}), content_type="application/json"))
+        await view_create(
+            factory.post("/", data=_json({"name": "a1", "is_active": True}), content_type="application/json")
+        )
+        await view_create(
+            factory.post("/", data=_json({"name": "a2", "is_active": True}), content_type="application/json")
+        )
+        await view_create(
+            factory.post("/", data=_json({"name": "i", "is_active": False}), content_type="application/json")
+        )
 
         view = _make_view(ApiKeyCountView, get_svc)
         response = await view(factory.post("/count/", data=_json({"is_active": True}), content_type="application/json"))
@@ -381,7 +386,9 @@ class TestVerifyApiKey:
         api_key = json.loads(resp.content)["api_key"]
 
         view = _make_view(ApiKeyVerifyView, get_svc)
-        response = await view(factory.post("/verify/", data=_json({"api_key": api_key}), content_type="application/json"))
+        response = await view(
+            factory.post("/verify/", data=_json({"api_key": api_key}), content_type="application/json")
+        )
         assert response.status_code == 200
         assert json.loads(response.content)["name"] == "k"
 
@@ -408,7 +415,9 @@ class TestVerifyApiKey:
         api_key = json.loads(resp.content)["api_key"]
 
         view = _make_view(ApiKeyVerifyView, get_svc)
-        response = await view(factory.post("/verify/", data=_json({"api_key": api_key}), content_type="application/json"))
+        response = await view(
+            factory.post("/verify/", data=_json({"api_key": api_key}), content_type="application/json")
+        )
         assert response.status_code == 403
 
     @pytest.mark.asyncio
