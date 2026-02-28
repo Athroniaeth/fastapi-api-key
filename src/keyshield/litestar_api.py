@@ -27,9 +27,7 @@ Example::
 try:
     import litestar  # noqa: F401
 except ModuleNotFoundError as e:  # pragma: no cover
-    raise ImportError(
-        "Litestar integration requires 'litestar'. Install it with: uv add keyshield[litestar]"
-    ) from e
+    raise ImportError("Litestar integration requires 'litestar'. Install it with: uv add keyshield[litestar]") from e
 
 from typing import Awaitable, Callable, List, Optional
 
