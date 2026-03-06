@@ -1,4 +1,4 @@
-﻿# FastAPI Api Key
+# Keyshield
 
 ![Python Version from PEP 621 TOML](https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FAthroniaeth%2Fkeyshield%2Fmain%2Fpyproject.toml)
 [![Tested with pytest](https://img.shields.io/badge/tests-pytest-informational.svg)](https://pytest.org/)
@@ -9,7 +9,7 @@
 [![Deps: uv](https://img.shields.io/badge/deps-managed%20with%20uv-3E4DD8.svg)](https://docs.astral.sh/uv/)
 [![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-4B32C3.svg)](https://docs.astral.sh/ruff/)
 
-`keyshield` provides a backend-agnostic library that provides a production-ready, secure API key system, with optional FastAPI and Typer connectors.
+`keyshield` provides a backend-agnostic library that provides a production-ready, secure API key system, with optional connectors for FastAPI, Litestar, Quart, Django, and Typer CLI.
 
 ## Links
 
@@ -22,7 +22,7 @@
 - **Prod-ready**: services and repositories are async, and battle-tested
 - **Agnostic hasher**: choose between Argon2 (default) or Bcrypt hashing strategies (with caching support)
 - **Agnostic backend**: abstract repository pattern, currently with SQLAlchemy implementation
-- **Connectors**: FastAPI router and Typer CLI for API key management
+- **Connectors**: FastAPI, Litestar, Quart, and Django routers, plus Typer CLI for API key management
 - **Envvar support**: easily configure peppers and other secrets via environment variables
 - **Scopes support**: assign scopes to API keys for fine-grained access control
 
