@@ -6,7 +6,7 @@ from typer import Typer
 from keyshield.services.base import DEFAULT_SEPARATOR, DEFAULT_GLOBAL_PREFIX
 
 
-app = Typer(no_args_is_help=True, help="FastAPI API Keys CLI")
+app = Typer(no_args_is_help=True, help="Keyshields CLI")
 
 
 @app.callback(invoke_without_command=True)
@@ -15,11 +15,11 @@ def _main(
         None,
         "--version",
         "-v",
-        help="Show the FastAPI API Keys package version and exit.",
+        help="Show the Keyshields package version and exit.",
         is_eager=True,
     ),
 ):
-    """FastAPI API Keys CLI"""
+    """Keyshields CLI"""
     from keyshield import __version__
 
     if version:
