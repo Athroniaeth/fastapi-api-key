@@ -52,7 +52,7 @@ This library try to follow best practices and relevant RFCs for API key manageme
 ## Installation
 
 ### Basic installation
-This project is not published to PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
+This project is published to PyPI. Use a tool like [uv](https://docs.astral.sh/uv/) to manage dependencies.
 
 ```bash
 uv add keyshield
