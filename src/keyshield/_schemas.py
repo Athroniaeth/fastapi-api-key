@@ -125,7 +125,9 @@ class ApiKeySearchIn(BaseModel):
     last_used_after: Optional[datetime] = Field(None, description="Keys last used after this date")
     never_used: Optional[bool] = Field(None, description="True = never used keys, False = used keys")
     scopes_contain_all: Optional[List[_ScopeStr]] = Field(None, description="Keys must have ALL these scopes")
-    scopes_contain_any: Optional[List[_ScopeStr]] = Field(None, description="Keys must have at least ONE of these scopes")
+    scopes_contain_any: Optional[List[_ScopeStr]] = Field(
+        None, description="Keys must have at least ONE of these scopes"
+    )
     name_contains: Optional[str] = Field(None, description="Name contains this substring (case-insensitive)")
     name_exact: Optional[str] = Field(None, description="Exact name match")
     order_by: SortableColumn = Field(SortableColumn.CREATED_AT, description="Field to sort by")

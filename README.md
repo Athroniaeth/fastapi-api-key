@@ -44,6 +44,10 @@ This library try to follow best practices and relevant RFCs for API key manageme
   pattern (`^[a-z][a-z0-9:_\-]*$`) at the schema level. Note: [RFC 6749 §3.3](https://datatracker.ietf.org/doc/html/rfc6749#section-3.3)
   permits a broader character set; this restriction is a deliberate keyshield design choice to
   prevent injection of arbitrary characters (HTML, SQL fragments, etc.) in scope values.
+- **Versioned key format** (industry best practice, aligned with Stripe/GitHub 2023+): the default
+  prefix embeds a format version (`ak_v1`, `ak_v2`, …) so a future algorithm or structure migration
+  can be detected at parse time — old keys keep their prefix and old keys always fail with `401`
+  rather than silently producing wrong hashes.  Custom prefixes are still fully supported.
 
 ## Installation
 
@@ -158,10 +162,10 @@ This is a classic API key if you don't modify the service behavior:
 
 **Example:**
 
-`ak-7a74caa323a5410d-mAfP3l6yAxqFz0FV2LOhu2tPCqL66lQnj3Ubd08w9RyE4rV4skUcpiUVIfsKEbzw`
+`ak_v1-7a74caa323a5410d-mAfP3l6yAxqFz0FV2LOhu2tPCqL66lQnj3Ubd08w9RyE4rV4skUcpiUVIfsKEbzw`
 
 - "-" separators so that systems can easily split
-- Prefix `ak` (for "Api Key"), to identify the key type (useful to indicate that it is an API key).
+- Prefix `ak_v1` (for "Api Key v1"), to identify both the key type and the format version — allowing future algorithm migrations without breaking existing keys (e.g. `ak_v2-…` for a future format).
 - 16 first characters are the identifier (UUIDv4 without dashes)
 - 64 last characters are the secret (random alphanumeric string)
 
@@ -189,7 +193,7 @@ flowchart LR
 
     %% ── Entry ───────────────────────────────────────────────
     INPUT(["`**Api Key**
-    _ak-7a74…10d-mAfP…bzw_`"]):::startNode
+    _ak_v1-7a74…10d-mAfP…bzw_`"]):::startNode
 
     %% ── Main flow ───────────────────────────────────────────
     CACHED{"`**Is cached key?**
@@ -256,7 +260,7 @@ flowchart LR
     {separator}: str
     {key_secret}: UUID
 
-    _global_prefix = 'ak'_
+    _global_prefix = 'ak_v1'_
     _separator = '-'_`"]:::noteStyle
 
     NOTE_CACHE["`**Cache rules**

@@ -18,7 +18,7 @@ DEFAULT_SEPARATOR = "-"
 Default separator between key_type, key_id, key_secret in the API key string.
 Must be not in `token_urlsafe` alphabet. (like '.', ':', '~", '|')
 """
-DEFAULT_GLOBAL_PREFIX = "ak"
+DEFAULT_GLOBAL_PREFIX = "ak_v1"
 
 
 @dataclass
@@ -26,7 +26,7 @@ class ParsedApiKey:
     """Result of parsing an API key string.
 
     Attributes:
-        global_prefix: The prefix identifying the key type (e.g., "ak").
+        global_prefix: The prefix identifying the key type (e.g., "ak_v1").
         key_id: The public identifier part of the API key.
         key_secret: The secret part of the API key.
         raw: The original full API key string.
@@ -45,7 +45,7 @@ class AbstractApiKeyService(ABC):
         repo: Repository for persisting API key entities.
         hasher: Hasher for hashing secrets. Defaults to Argon2ApiKeyHasher.
         separator: Separator in API key format. Defaults to "-".
-        global_prefix: Prefix for API keys. Defaults to "ak".
+        global_prefix: Prefix for API keys. Defaults to "ak_v1".
         rrd: Deprecated random response delay. Ignored if provided.
         min_delay: Minimum delay (seconds) applied to all verify responses.
         max_delay: Maximum delay (seconds) applied to all verify responses.
