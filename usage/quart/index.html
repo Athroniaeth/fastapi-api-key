@@ -11,10 +11,10 @@
       
       
       
-        <link rel="prev" href="../dotenv/">
+        <link rel="prev" href="../litestar/">
       
       
-        <link rel="next" href="../cache/">
+        <link rel="next" href="../django/">
       
       
         
@@ -25,7 +25,7 @@
     
     
       
-        <title>Database - keyshield</title>
+        <title>Quart - keyshield</title>
       
     
     
@@ -76,7 +76,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#database-configuration" class="md-skip">
+        <a href="#quart-integration" class="md-skip">
           Skip to content
         </a>
       
@@ -112,7 +112,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Database
+              Quart
             
           </span>
         </div>
@@ -469,37 +469,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    Database
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../database/" class="md-nav__link">
         
   
   
@@ -515,48 +488,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#installation" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Installation
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#example" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Example
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -650,10 +581,37 @@
                 
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../quart/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quart
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -669,6 +627,131 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#installation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Installation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#quick-start" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick start
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#protecting-routes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Protecting routes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Protecting routes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#scope-restricted-routes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope-restricted routes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#management-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Management endpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sqlalchemy-repository" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        SQLAlchemy repository
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#caching" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Caching
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dev-mode-env-keys" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dev mode (.env keys)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-url-prefix" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom URL prefix
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -782,7 +865,7 @@
 
 
   
-    <a href="https://github.com/Athroniaeth/keyshield/edit/master/docs/usage/database.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/Athroniaeth/keyshield/edit/master/docs/usage/quart.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -790,64 +873,164 @@
   
 
 
-<h1 id="database-configuration">Database Configuration<a class="headerlink" href="#database-configuration" title="Permanent link">&para;</a></h1>
-<p>This guide covers SQLAlchemy setup with aiosqlite for persistent API key storage.</p>
+<h1 id="quart-integration">Quart Integration<a class="headerlink" href="#quart-integration" title="Permanent link">&para;</a></h1>
+<p><code>keyshield</code> supports <a href="https://quart.palletsprojects.com/">Quart</a> — the
+async-native reimplementation of Flask — via <code>keyshield.quart_api</code>.</p>
+<p>The integration exposes two helpers:</p>
+<table>
+<thead>
+<tr>
+<th>Helper</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>create_api_keys_blueprint</code></td>
+<td>Full CRUD management Blueprint</td>
+</tr>
+<tr>
+<td><code>require_api_key</code></td>
+<td>Async decorator that verifies <code>Authorization: Bearer &lt;key&gt;</code></td>
+</tr>
+</tbody>
+</table>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<p>Install the SQLAlchemy extra:</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>keyshield<span class="o">[</span>sqlalchemy<span class="o">]</span>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>add<span class="w"> </span>keyshield<span class="o">[</span>quart<span class="o">]</span>
 </code></pre></div>
-<h2 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h2>
-<p>This is the canonical example from <code>examples/example_sql.py</code>:</p>
-<div class="admonition warning">
-<p class="admonition-title">Always set a pepper</p>
-<p>The default pepper is a placeholder. Set <code>SECRET_PEPPER</code> (or pass it explicitly to the hashers) in every environment.</p>
-</div>
-<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.ext.asyncio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncSession</span><span class="p">,</span> <span class="n">async_sessionmaker</span><span class="p">,</span> <span class="n">create_async_engine</span>
-
-<span class="kn">from</span><span class="w"> </span><span class="nn">keyshield</span><span class="w"> </span><span class="kn">import</span> <span class="n">ApiKeyService</span>
+<h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">quart</span><span class="w"> </span><span class="kn">import</span> <span class="n">Quart</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">keyshield.quart_api</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_api_keys_blueprint</span><span class="p">,</span> <span class="n">require_api_key</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">keyshield.services.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">ApiKeyService</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">keyshield.repositories.in_memory</span><span class="w"> </span><span class="kn">import</span> <span class="n">InMemoryApiKeyRepository</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">keyshield.hasher.argon2</span><span class="w"> </span><span class="kn">import</span> <span class="n">Argon2ApiKeyHasher</span>
-<span class="kn">from</span><span class="w"> </span><span class="nn">keyshield.repositories.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SqlAlchemyApiKeyRepository</span>
 
-<span class="c1"># Set env var to override default pepper</span>
-<span class="c1"># Using a strong, unique pepper is crucial for security</span>
-<span class="c1"># Default pepper is insecure and should not be used in production</span>
-<span class="n">pepper</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SECRET_PEPPER&quot;</span><span class="p">)</span>
-<span class="n">hasher</span> <span class="o">=</span> <span class="n">Argon2ApiKeyHasher</span><span class="p">(</span><span class="n">pepper</span><span class="o">=</span><span class="n">pepper</span><span class="p">)</span>
-
-<span class="n">path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;db.sqlite3&quot;</span>
-<span class="n">database_url</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;DATABASE_URL&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;sqlite+aiosqlite:///</span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
-<span class="n">async_engine</span> <span class="o">=</span> <span class="n">create_async_engine</span><span class="p">(</span><span class="n">database_url</span><span class="p">,</span> <span class="n">future</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="n">async_session_maker</span> <span class="o">=</span> <span class="n">async_sessionmaker</span><span class="p">(</span>
-    <span class="n">async_engine</span><span class="p">,</span>
-    <span class="n">class_</span><span class="o">=</span><span class="n">AsyncSession</span><span class="p">,</span>
-    <span class="n">expire_on_commit</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="n">_svc</span> <span class="o">=</span> <span class="n">ApiKeyService</span><span class="p">(</span>
+    <span class="n">repo</span><span class="o">=</span><span class="n">InMemoryApiKeyRepository</span><span class="p">(),</span>
+    <span class="n">hasher</span><span class="o">=</span><span class="n">Argon2ApiKeyHasher</span><span class="p">(</span><span class="n">pepper</span><span class="o">=</span><span class="s2">&quot;your-secret-pepper&quot;</span><span class="p">),</span>
 <span class="p">)</span>
 
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_service</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ApiKeyService</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">_svc</span>
 
-<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
-    <span class="k">async</span> <span class="k">with</span> <span class="n">async_session_maker</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
-        <span class="n">repo</span> <span class="o">=</span> <span class="n">SqlAlchemyApiKeyRepository</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">Quart</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">app</span><span class="o">.</span><span class="n">register_blueprint</span><span class="p">(</span><span class="n">create_api_keys_blueprint</span><span class="p">(</span><span class="n">svc_factory</span><span class="o">=</span><span class="n">get_service</span><span class="p">))</span>
+</code></pre></div>
+<h2 id="protecting-routes">Protecting routes<a class="headerlink" href="#protecting-routes" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">quart</span><span class="w"> </span><span class="kn">import</span> <span class="n">g</span>
 
-        <span class="c1"># Don&#39;t need to create Base and ApiKeyModel, the repository does it for you</span>
-        <span class="k">await</span> <span class="n">repo</span><span class="o">.</span><span class="n">ensure_table</span><span class="p">(</span><span class="n">async_engine</span><span class="o">=</span><span class="n">async_engine</span><span class="p">)</span>
+<span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/protected&quot;</span><span class="p">)</span>
+<span class="nd">@require_api_key</span><span class="p">(</span><span class="n">svc_factory</span><span class="o">=</span><span class="n">get_service</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">protected</span><span class="p">():</span>
+    <span class="n">key</span> <span class="o">=</span> <span class="n">g</span><span class="o">.</span><span class="n">api_key</span>   <span class="c1"># verified ApiKey entity</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;key_id&quot;</span><span class="p">:</span> <span class="n">key</span><span class="o">.</span><span class="n">key_id</span><span class="p">}</span>
+</code></pre></div>
+<h3 id="scope-restricted-routes">Scope-restricted routes<a class="headerlink" href="#scope-restricted-routes" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><span class="nd">@app</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;/admin&quot;</span><span class="p">)</span>
+<span class="nd">@require_api_key</span><span class="p">(</span><span class="n">svc_factory</span><span class="o">=</span><span class="n">get_service</span><span class="p">,</span> <span class="n">required_scopes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;admin&quot;</span><span class="p">])</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">admin</span><span class="p">():</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;admin&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">}</span>
+</code></pre></div>
+<h2 id="management-endpoints">Management endpoints<a class="headerlink" href="#management-endpoints" title="Permanent link">&para;</a></h2>
+<p>The Blueprint registered by <code>create_api_keys_blueprint</code> mounts these routes
+(prefix defaults to <code>/api-keys</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Path</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api-keys/</code></td>
+<td>Create a new key (returns plaintext once)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api-keys/</code></td>
+<td>List keys (paginated with <code>?offset=</code> / <code>?limit=</code>)</td>
+</tr>
+<tr>
+<td><code>GET</code></td>
+<td><code>/api-keys/&lt;id&gt;</code></td>
+<td>Get a key by ID</td>
+</tr>
+<tr>
+<td><code>PATCH</code></td>
+<td><code>/api-keys/&lt;id&gt;</code></td>
+<td>Partially update a key</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td><code>/api-keys/&lt;id&gt;</code></td>
+<td>Delete a key</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api-keys/&lt;id&gt;/activate</code></td>
+<td>Activate a key</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api-keys/&lt;id&gt;/deactivate</code></td>
+<td>Deactivate a key</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api-keys/search</code></td>
+<td>Search with filters</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api-keys/count</code></td>
+<td>Count keys matching a filter</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td><code>/api-keys/verify</code></td>
+<td>Verify a key</td>
+</tr>
+</tbody>
+</table>
+<h2 id="sqlalchemy-repository">SQLAlchemy repository<a class="headerlink" href="#sqlalchemy-repository" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">sqlalchemy.ext.asyncio</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncSession</span><span class="p">,</span> <span class="n">create_async_engine</span><span class="p">,</span> <span class="n">async_sessionmaker</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">keyshield.repositories.sql</span><span class="w"> </span><span class="kn">import</span> <span class="n">SqlAlchemyApiKeyRepository</span>
 
-        <span class="n">service</span> <span class="o">=</span> <span class="n">ApiKeyService</span><span class="p">(</span><span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="n">hasher</span><span class="o">=</span><span class="n">hasher</span><span class="p">)</span>
+<span class="n">engine</span> <span class="o">=</span> <span class="n">create_async_engine</span><span class="p">(</span><span class="s2">&quot;postgresql+asyncpg://user:pass@localhost/db&quot;</span><span class="p">)</span>
+<span class="n">SessionLocal</span> <span class="o">=</span> <span class="n">async_sessionmaker</span><span class="p">(</span><span class="n">engine</span><span class="p">,</span> <span class="n">class_</span><span class="o">=</span><span class="n">AsyncSession</span><span class="p">,</span> <span class="n">expire_on_commit</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-        <span class="c1"># Entity have updated id after creation</span>
-        <span class="n">entity</span><span class="p">,</span> <span class="n">secret</span> <span class="o">=</span> <span class="k">await</span> <span class="n">service</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;persistent&quot;</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Stored key&quot;</span><span class="p">,</span> <span class="n">entity</span><span class="o">.</span><span class="n">id_</span><span class="p">,</span> <span class="s2">&quot;secret&quot;</span><span class="p">,</span> <span class="n">secret</span><span class="p">)</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_service</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ApiKeyService</span><span class="p">:</span>
+    <span class="k">async</span> <span class="k">with</span> <span class="n">SessionLocal</span><span class="p">()</span> <span class="k">as</span> <span class="n">session</span><span class="p">:</span>
+        <span class="k">async</span> <span class="k">with</span> <span class="n">session</span><span class="o">.</span><span class="n">begin</span><span class="p">():</span>
+            <span class="n">repo</span> <span class="o">=</span> <span class="n">SqlAlchemyApiKeyRepository</span><span class="p">(</span><span class="n">session</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">ApiKeyService</span><span class="p">(</span><span class="n">repo</span><span class="o">=</span><span class="n">repo</span><span class="p">,</span> <span class="n">hasher</span><span class="o">=</span><span class="n">Argon2ApiKeyHasher</span><span class="p">(</span><span class="n">pepper</span><span class="o">=</span><span class="s2">&quot;pepper&quot;</span><span class="p">))</span>
+</code></pre></div>
+<h2 id="caching">Caching<a class="headerlink" href="#caching" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">keyshield.services.cached</span><span class="w"> </span><span class="kn">import</span> <span class="n">CachedApiKeyService</span>
 
-        <span class="c1"># Don&#39;t forget to commit the session to persist the key</span>
-        <span class="c1"># You can also use a transaction `async with session.begin():`</span>
-        <span class="k">await</span> <span class="n">session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_service</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">CachedApiKeyService</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">CachedApiKeyService</span><span class="p">(</span>
+        <span class="n">repo</span><span class="o">=</span><span class="n">InMemoryApiKeyRepository</span><span class="p">(),</span>
+        <span class="n">hasher</span><span class="o">=</span><span class="n">Argon2ApiKeyHasher</span><span class="p">(</span><span class="n">pepper</span><span class="o">=</span><span class="s2">&quot;pepper&quot;</span><span class="p">),</span>
+        <span class="n">cache_ttl</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div>
+<h2 id="dev-mode-env-keys">Dev mode (<code>.env</code> keys)<a class="headerlink" href="#dev-mode-env-keys" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;API_KEY_DEV&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;ak_v1-mydevkeyid-mysecret64chars&quot;</span>
 
-
-<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">())</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">get_service</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">ApiKeyService</span><span class="p">:</span>
+    <span class="n">svc</span> <span class="o">=</span> <span class="n">ApiKeyService</span><span class="p">(</span><span class="n">repo</span><span class="o">=</span><span class="n">InMemoryApiKeyRepository</span><span class="p">(),</span> <span class="n">hasher</span><span class="o">=</span><span class="n">Argon2ApiKeyHasher</span><span class="p">())</span>
+    <span class="k">await</span> <span class="n">svc</span><span class="o">.</span><span class="n">load_dotenv</span><span class="p">(</span><span class="n">envvar_prefix</span><span class="o">=</span><span class="s2">&quot;API_KEY_&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">svc</span>
+</code></pre></div>
+<h2 id="custom-url-prefix">Custom URL prefix<a class="headerlink" href="#custom-url-prefix" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">app</span><span class="o">.</span><span class="n">register_blueprint</span><span class="p">(</span>
+    <span class="n">create_api_keys_blueprint</span><span class="p">(</span><span class="n">svc_factory</span><span class="o">=</span><span class="n">get_service</span><span class="p">,</span> <span class="n">url_prefix</span><span class="o">=</span><span class="s2">&quot;/v1/keys&quot;</span><span class="p">)</span>
+<span class="p">)</span>
 </code></pre></div>
 
 
@@ -884,7 +1067,7 @@
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../dotenv/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Dotenv">
+          <a href="../litestar/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Litestar">
             <div class="md-footer__button md-icon">
               
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
@@ -894,20 +1077,20 @@
                 Previous
               </span>
               <div class="md-ellipsis">
-                Dotenv
+                Litestar
               </div>
             </div>
           </a>
         
         
           
-          <a href="../cache/" class="md-footer__link md-footer__link--next" aria-label="Next: Cache">
+          <a href="../django/" class="md-footer__link md-footer__link--next" aria-label="Next: Django">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Cache
+                Django
               </div>
             </div>
             <div class="md-footer__button md-icon">

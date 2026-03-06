@@ -6,7 +6,7 @@
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width,initial-scale=1">
       
-        <meta name="description" content="Fast API key management primitives for FastAPI applications">
+        <meta name="description" content="Secure API key management for Python web frameworks">
       
       
       
@@ -23,7 +23,7 @@
     
     
       
-        <title>fastapi-api-key</title>
+        <title>keyshield</title>
       
     
     
@@ -74,7 +74,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#fastapi-api-key" class="md-skip">
+        <a href="#keyshield" class="md-skip">
           Skip to content
         </a>
       
@@ -90,7 +90,7 @@
 
 <header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="." title="fastapi-api-key" class="md-header__button md-logo" aria-label="fastapi-api-key" data-md-component="logo">
+    <a href="." title="keyshield" class="md-header__button md-logo" aria-label="keyshield" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 18v4h-4v-3h-3v-3h-3l-2.26-2.26c-.55.17-1.13.26-1.74.26a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6c0 .61-.09 1.19-.26 1.74zM7 5a2 2 0 0 0-2 2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0-2-2"/></svg>
@@ -104,7 +104,7 @@
       <div class="md-header__ellipsis">
         <div class="md-header__topic">
           <span class="md-ellipsis">
-            fastapi-api-key
+            keyshield
           </span>
         </div>
         <div class="md-header__topic" data-md-component="header-topic">
@@ -192,13 +192,13 @@
     
     
       <div class="md-header__source">
-        <a href="https://github.com/Athroniaeth/fastapi-api-key" title="Go to repository" class="md-source" data-md-component="source">
+        <a href="https://github.com/Athroniaeth/keyshield" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
   </div>
   <div class="md-source__repository">
-    Athroniaeth/fastapi-api-key
+    Athroniaeth/keyshield
   </div>
 </a>
       </div>
@@ -301,23 +301,23 @@
 
 <nav class="md-nav md-nav--primary md-nav--lifted md-nav--integrated" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="." title="fastapi-api-key" class="md-nav__button md-logo" aria-label="fastapi-api-key" data-md-component="logo">
+    <a href="." title="keyshield" class="md-nav__button md-logo" aria-label="keyshield" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M22 18v4h-4v-3h-3v-3h-3l-2.26-2.26c-.55.17-1.13.26-1.74.26a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6c0 .61-.09 1.19-.26 1.74zM7 5a2 2 0 0 0-2 2 2 2 0 0 0 2 2 2 2 0 0 0 2-2 2 2 0 0 0-2-2"/></svg>
 
     </a>
-    fastapi-api-key
+    keyshield
   </label>
   
     <div class="md-nav__source">
-      <a href="https://github.com/Athroniaeth/fastapi-api-key" title="Go to repository" class="md-source" data-md-component="source">
+      <a href="https://github.com/Athroniaeth/keyshield" title="Go to repository" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
   </div>
   <div class="md-source__repository">
-    Athroniaeth/fastapi-api-key
+    Athroniaeth/keyshield
   </div>
 </a>
     </div>
@@ -709,6 +709,90 @@
   
   
     <li class="md-nav__item">
+      <a href="usage/litestar/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Litestar
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="usage/quart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="usage/django/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Django
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="usage/scopes/" class="md-nav__link">
         
   
@@ -782,7 +866,7 @@
 
 
   
-    <a href="https://github.com/Athroniaeth/fastapi-api-key/edit/master/docs/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
+    <a href="https://github.com/Athroniaeth/keyshield/edit/master/docs/index.md" title="Edit this page" class="md-content__button md-icon" rel="edit">
       
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
     </a>
@@ -790,20 +874,20 @@
   
 
 
-<h1 id="fastapi-api-key">FastAPI Api Key<a class="headerlink" href="#fastapi-api-key" title="Permanent link">&para;</a></h1>
-<p><img alt="Python Version from PEP 621 TOML" src="https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FAthroniaeth%2Ffastapi-api-key%2Fmain%2Fpyproject.toml" />
+<h1 id="keyshield">Keyshield<a class="headerlink" href="#keyshield" title="Permanent link">&para;</a></h1>
+<p><img alt="Python Version from PEP 621 TOML" src="https://img.shields.io/python/required-version-toml?tomlFilePath=https%3A%2F%2Fraw.githubusercontent.com%2FAthroniaeth%2Fkeyshield%2Fmain%2Fpyproject.toml" />
 <a href="https://pytest.org/"><img alt="Tested with pytest" src="https://img.shields.io/badge/tests-pytest-informational.svg" /></a>
-<a href="https://pypi.org/project/fastapi-api-key/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/fastapi-api-key.svg" /></a>
-<a href="https://athroniaeth.github.io/fastapi-api-key/"><img alt="Docs" src="https://img.shields.io/badge/docs-online-blue.svg" /></a>
-<a href="https://codecov.io/gh/Athroniaeth/fastapi-api-key"><img alt="codecov" src="https://codecov.io/gh/Athroniaeth/fastapi-api-key/graph/badge.svg" /></a>
+<a href="https://pypi.org/project/keyshield/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/keyshield.svg" /></a>
+<a href="https://athroniaeth.github.io/keyshield/"><img alt="Docs" src="https://img.shields.io/badge/docs-online-blue.svg" /></a>
+<a href="https://codecov.io/gh/Athroniaeth/keyshield"><img alt="codecov" src="https://codecov.io/gh/Athroniaeth/keyshield/graph/badge.svg" /></a>
 <a href="https://bandit.readthedocs.io/"><img alt="Security: bandit" src="https://img.shields.io/badge/security-bandit-yellow.svg" /></a>
 <a href="https://docs.astral.sh/uv/"><img alt="Deps: uv" src="https://img.shields.io/badge/deps-managed%20with%20uv-3E4DD8.svg" /></a>
 <a href="https://docs.astral.sh/ruff/"><img alt="Code style: Ruff" src="https://img.shields.io/badge/code%20style-ruff-4B32C3.svg" /></a></p>
-<p><code>fastapi-api-key</code> provides a backend-agnostic library that provides a production-ready, secure API key system, with optional FastAPI and Typer connectors.</p>
+<p><code>keyshield</code> provides a backend-agnostic library that provides a production-ready, secure API key system, with optional connectors for FastAPI, Litestar, Quart, Django, and Typer CLI.</p>
 <h2 id="links">Links<a class="headerlink" href="#links" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong>Documentation:</strong> <a href="https://athroniaeth.github.io/fastapi-api-key/">https://athroniaeth.github.io/fastapi-api-key/</a></li>
-<li><strong>PyPI package:</strong> <a href="https://pypi.org/project/fastapi-api-key/">https://pypi.org/project/fastapi-api-key/</a></li>
+<li><strong>Documentation:</strong> <a href="https://athroniaeth.github.io/keyshield/">https://athroniaeth.github.io/keyshield/</a></li>
+<li><strong>PyPI package:</strong> <a href="https://pypi.org/project/keyshield/">https://pypi.org/project/keyshield/</a></li>
 </ul>
 <h2 id="features">Features<a class="headerlink" href="#features" title="Permanent link">&para;</a></h2>
 <ul>
@@ -811,7 +895,7 @@
 <li><strong>Prod-ready</strong>: services and repositories are async, and battle-tested</li>
 <li><strong>Agnostic hasher</strong>: choose between Argon2 (default) or Bcrypt hashing strategies (with caching support)</li>
 <li><strong>Agnostic backend</strong>: abstract repository pattern, currently with SQLAlchemy implementation</li>
-<li><strong>Connectors</strong>: FastAPI router and Typer CLI for API key management</li>
+<li><strong>Connectors</strong>: FastAPI, Litestar, Quart, and Django routers, plus Typer CLI for API key management</li>
 <li><strong>Envvar support</strong>: easily configure peppers and other secrets via environment variables</li>
 <li><strong>Scopes support</strong>: assign scopes to API keys for fine-grained access control</li>
 </ul>
@@ -822,6 +906,16 @@
   valid but inactive/expired keys</li>
 <li><strong><a href="https://datatracker.ietf.org/doc/html/rfc6750">RFC 6750</a></strong>: Supports <code>Authorization: Bearer &lt;api_key&gt;</code> header for
   key transmission (also supports deprecated <code>X-API-Key</code> header and <code>api_key</code> query param)</li>
+<li><strong><a href="https://owasp.org/API-Security/editions/2023/en/0xa2-broken-authentication/">OWASP API2:2023</a></strong>: Hash
+  verification is performed before status/scope checks to prevent key-state enumeration — a caller with
+  a wrong secret always receives <code>401 Invalid</code>, regardless of whether the key is inactive or expired.</li>
+<li><strong><a href="https://csrc.nist.gov/publications/detail/sp/800-132/final">NIST SP 800-132</a></strong>: The Bcrypt hasher
+  pre-hashes the secret via <code>HMAC-SHA256(pepper, secret)</code> before passing it to bcrypt, producing a fixed
+  32-byte digest that eliminates bcrypt's silent 72-byte input truncation.</li>
+<li><strong>Versioned key format</strong> (industry best practice, aligned with Stripe/GitHub 2023+): the default
+  prefix embeds a format version (<code>ak_v1</code>, <code>ak_v2</code>, …) so a future algorithm or structure migration
+  can be detected at parse time — old keys keep their prefix and always fail with <code>401</code>
+  rather than silently producing wrong hashes.  Custom prefixes are still fully supported.</li>
 </ul>
 <h2 id="how-api-keys-work">How API Keys Work<a class="headerlink" href="#how-api-keys-work" title="Permanent link">&para;</a></h2>
 <h3 id="api-key-format">API Key Format<a class="headerlink" href="#api-key-format" title="Permanent link">&para;</a></h3>
@@ -829,10 +923,10 @@
 <p><strong>Structure:</strong></p>
 <p><code>{global_prefix}</code>-<code>{separator}</code>-<code>{key_id}</code>-<code>{separator}</code>-<code>{key_secret}</code></p>
 <p><strong>Example:</strong></p>
-<p><code>ak-7a74caa323a5410d-mAfP3l6yAxqFz0FV2LOhu2tPCqL66lQnj3Ubd08w9RyE4rV4skUcpiUVIfsKEbzw</code></p>
+<p><code>ak_v1-7a74caa323a5410d-mAfP3l6yAxqFz0FV2LOhu2tPCqL66lQnj3Ubd08w9RyE4rV4skUcpiUVIfsKEbzw</code></p>
 <ul>
 <li>"-" separators so that systems can easily split</li>
-<li>Prefix <code>ak</code> (for "Api Key"), to identify the key type (useful to indicate that it is an API key).</li>
+<li>Prefix <code>ak_v1</code> (for "Api Key v1"), to identify both the key type and the format version — allowing future algorithm migrations without breaking existing keys (e.g. <code>ak_v2-…</code> for a future format).</li>
 <li>16 first characters are the identifier (UUIDv4 without dashes)</li>
 <li>64 last characters are the secret (random alphanumeric string)</li>
 </ul>
@@ -842,7 +936,110 @@ to the stored hash.
 If they match, the key is valid.</p>
 <h3 id="schema-validation">Schema validation<a class="headerlink" href="#schema-validation" title="Permanent link">&para;</a></h3>
 <p>Here is a diagram showing what happens after you initialize your API key service with a global prefix and delimiter when you provide an API key to the <code>.verify_key()</code> method.</p>
-<p><img src="./schema.svg"></p>
+<pre class="mermaid"><code>---
+title: "keyshield — verify_key() Flow"
+---
+flowchart LR
+    %% ── Styles ──────────────────────────────────────────────
+    classDef startNode fill:#90CAF9,stroke:#1565C0,color:#000
+    classDef processNode fill:#FFF9C4,stroke:#F9A825,color:#000
+    classDef rejectNode fill:#EF9A9A,stroke:#C62828,color:#000
+    classDef acceptNode fill:#A5D6A7,stroke:#2E7D32,color:#000
+    classDef cacheNode fill:#90CAF9,stroke:#1565C0,color:#000
+    classDef noteStyle fill:#FFFDE7,stroke:#FBC02D,color:#555,font-size:11px
+
+    %% ── Entry ───────────────────────────────────────────────
+    INPUT(["`**Api Key**
+    _ak_v1-7a74…10d-mAfP…bzw_`"]):::startNode
+
+    %% ── Main flow ───────────────────────────────────────────
+    CACHED{"`**Is cached key?**
+    _(hash api key to SHA-256
+    to avoid Argon slow hashing)_`"}:::processNode
+
+    NULL_CHECK{"`**Is null or empty
+    string value?**`"}:::processNode
+
+    SPLIT["`**Split string**
+    _(by global_prefix)_`"]:::processNode
+
+    THREE_PARTS{"`**Has strictly
+    3 parts?**`"}:::processNode
+
+    PREFIX_CHECK{"`**First part equals
+    to global prefix?**`"}:::processNode
+
+    QUERY_DB["`**Query API Key
+    by key_id**`"]:::processNode
+
+    COMPARE{"`**Compare db api key hash
+    to received api key hash**`"}:::processNode
+
+    STATE_CHECK{"`**Check state &amp; scopes**
+    _(active? not expired?
+    required scopes?)_`"}:::processNode
+
+    %% ── Outcomes ────────────────────────────────────────────
+    REJECT(["`🔴 **Reject API Key**`"]):::rejectNode
+    ACCEPT(["`🟢 **Accept API Key**`"]):::acceptNode
+    CACHE_STORE(["`🔵 **Cache API Key**`"]):::cacheNode
+
+    %% ── Happy path (left → right) ──────────────────────────
+    INPUT --&gt; CACHED
+    CACHED -- "no" --&gt; NULL_CHECK
+    NULL_CHECK -- "no" --&gt; SPLIT
+    SPLIT -- "exec" --&gt; THREE_PARTS
+    THREE_PARTS -- "yes" --&gt; PREFIX_CHECK
+    PREFIX_CHECK -- "yes" --&gt; QUERY_DB
+    QUERY_DB -- "found" --&gt; COMPARE
+
+    %% ── Accept path ─────────────────────────────────────────
+    CACHED -- "yes" --&gt; ACCEPT
+    COMPARE -- "equals" --&gt; STATE_CHECK
+    STATE_CHECK -- "valid" --&gt; ACCEPT
+    ACCEPT -- "`**APIKey.touch()**
+    _(update last_used_at)_`" --&gt; CACHE_STORE
+
+    %% ── Reject paths ────────────────────────────────────────
+    NULL_CHECK -- "yes" --&gt; REJECT
+    SPLIT -- "Exception" --&gt; REJECT
+    THREE_PARTS -- "no" --&gt; REJECT
+    PREFIX_CHECK -- "no" --&gt; REJECT
+    QUERY_DB -- "not found" --&gt; REJECT
+    COMPARE -- "not equals" --&gt; REJECT
+    STATE_CHECK -- "invalid (403)" --&gt; REJECT
+
+    %% ── Notes (annotations) ─────────────────────────────────
+    NOTE_FORMAT["`**Format API Key**
+    {global_prefix}: str
+    {separator}: str
+    {key_prefix}: UUID
+    {separator}: str
+    {key_secret}: UUID
+
+    _global_prefix = 'ak_v1'_
+    _separator = '-'_`"]:::noteStyle
+
+    NOTE_CACHE["`**Cache rules**
+    InMemory / Redis
+    • invalid if api key updated or deleted
+    • invalid after 3600s`"]:::noteStyle
+
+    NOTE_ARGON["`**Hashing strategy**
+    Argon2: concat(secret, pepper)
+    Bcrypt: HMAC-SHA256(pepper, secret)
+    → fixed 32 bytes, no 72-byte truncation`"]:::noteStyle
+
+    NOTE_SLEEP["`**sleep random (0.1s – 0.5s)**
+    makes brute force less effective;
+    randomization helps prevent
+    timing attacks`"]:::noteStyle
+
+    NOTE_FORMAT ~~~ INPUT
+    NOTE_CACHE ~~~ CACHE_STORE
+    NOTE_ARGON ~~~ COMPARE
+    NOTE_SLEEP ~~~ REJECT
+</code></pre>
 <h2 id="additional-notes">Additional notes<a class="headerlink" href="#additional-notes" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Python 3.9+ is required.</li>
@@ -932,7 +1129,7 @@ If they match, the key is valid.</p>
       
       
     
-    <a href="https://github.com/Athroniaeth/fastapi-api-key" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+    <a href="https://github.com/Athroniaeth/keyshield" target="_blank" rel="noopener" title="github.com" class="md-social__link">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
     </a>
   

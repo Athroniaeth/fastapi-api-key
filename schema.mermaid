@@ -1,0 +1,103 @@
+---
+title: "keyshield — verify_key() Flow"
+---
+flowchart LR
+    %% ── Styles ──────────────────────────────────────────────
+    classDef startNode fill:#90CAF9,stroke:#1565C0,color:#000
+    classDef processNode fill:#FFF9C4,stroke:#F9A825,color:#000
+    classDef rejectNode fill:#EF9A9A,stroke:#C62828,color:#000
+    classDef acceptNode fill:#A5D6A7,stroke:#2E7D32,color:#000
+    classDef cacheNode fill:#90CAF9,stroke:#1565C0,color:#000
+    classDef noteStyle fill:#FFFDE7,stroke:#FBC02D,color:#555,font-size:11px
+
+    %% ── Entry ───────────────────────────────────────────────
+    INPUT(["`**Api Key**
+    _ak-7a74…10d-mAfP…bzw_`"]):::startNode
+
+    %% ── Main flow ───────────────────────────────────────────
+    CACHED{"`**Is cached key?**
+    _(hash api key to SHA-256
+    to avoid Argon slow hashing)_`"}:::processNode
+
+    NULL_CHECK{"`**Is null or empty
+    string value?**`"}:::processNode
+
+    SPLIT["`**Split string**
+    _(by global_prefix)_`"]:::processNode
+
+    THREE_PARTS{"`**Has strictly
+    3 parts?**`"}:::processNode
+
+    PREFIX_CHECK{"`**First part equals
+    to global prefix?**`"}:::processNode
+
+    QUERY_DB["`**Query API Key
+    by key_id**`"]:::processNode
+
+    COMPARE{"`**Compare db api key hash
+    to received api key hash**`"}:::processNode
+
+    STATE_CHECK{"`**Check state & scopes**
+    _(active? not expired?
+    required scopes?)_`"}:::processNode
+
+    %% ── Outcomes ────────────────────────────────────────────
+    REJECT(["`🔴 **Reject API Key**`"]):::rejectNode
+    ACCEPT(["`🟢 **Accept API Key**`"]):::acceptNode
+    CACHE_STORE(["`🔵 **Cache API Key**`"]):::cacheNode
+
+    %% ── Happy path (left → right) ──────────────────────────
+    INPUT --> CACHED
+    CACHED -- "no" --> NULL_CHECK
+    NULL_CHECK -- "no" --> SPLIT
+    SPLIT -- "exec" --> THREE_PARTS
+    THREE_PARTS -- "yes" --> PREFIX_CHECK
+    PREFIX_CHECK -- "yes" --> QUERY_DB
+    QUERY_DB -- "found" --> COMPARE
+
+    %% ── Accept path ─────────────────────────────────────────
+    CACHED -- "yes" --> ACCEPT
+    COMPARE -- "equals" --> STATE_CHECK
+    STATE_CHECK -- "valid" --> ACCEPT
+    ACCEPT -- "`**APIKey.touch()**
+    _(update last_used_at)_`" --> CACHE_STORE
+
+    %% ── Reject paths ────────────────────────────────────────
+    NULL_CHECK -- "yes" --> REJECT
+    SPLIT -- "Exception" --> REJECT
+    THREE_PARTS -- "no" --> REJECT
+    PREFIX_CHECK -- "no" --> REJECT
+    QUERY_DB -- "not found" --> REJECT
+    COMPARE -- "not equals" --> REJECT
+    STATE_CHECK -- "invalid (403)" --> REJECT
+
+    %% ── Notes (annotations) ─────────────────────────────────
+    NOTE_FORMAT["`**Format API Key**
+    {global_prefix}: str
+    {separator}: str
+    {key_prefix}: UUID
+    {separator}: str
+    {key_secret}: UUID
+
+    _global_prefix = 'ak'_
+    _separator = '-'_`"]:::noteStyle
+
+    NOTE_CACHE["`**Cache rules**
+    InMemory / Redis
+    • invalid if api key updated or deleted
+    • invalid after 3600s`"]:::noteStyle
+
+    NOTE_ARGON["`**Hashing strategy**
+    Argon2: concat(secret, pepper)
+    Bcrypt: HMAC-SHA256(pepper, secret)
+    → fixed 32 bytes, no 72-byte truncation`"]:::noteStyle
+
+    NOTE_SLEEP["`**sleep random (0.1s – 0.5s)**
+    makes brute force less effective;
+    randomization helps prevent
+    timing attacks`"]:::noteStyle
+
+    NOTE_FORMAT ~~~ INPUT
+    NOTE_CACHE ~~~ CACHE_STORE
+    NOTE_ARGON ~~~ COMPARE
+    NOTE_SLEEP ~~~ REJECT
