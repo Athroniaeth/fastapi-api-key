@@ -72,6 +72,9 @@ nav:
       - Database: usage/database.md
       - Cache: usage/cache.md
       - FastAPI: usage/fastapi.md
+      - Litestar: usage/litestar.md
+      - Quart: usage/quart.md
+      - Django: usage/django.md
       - Scopes: usage/scopes.md
       - Typer: usage/typer.md
 extra:
