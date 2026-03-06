@@ -1,3 +1,25 @@
+## 2.0.0 (2026-03-06)
+
+### BREAKING CHANGE
+
+- **format**: `DEFAULT_GLOBAL_PREFIX` renamed from `ak` to `ak_v1`. All existing API keys with prefix `ak-` must be re-issued.
+- **hasher**: `BcryptApiKeyHasher._apply_pepper()` now uses HMAC-SHA256 instead of string concatenation (NIST SP 800-132). All bcrypt-hashed keys must be re-issued — old hashes cannot be verified.
+- **package**: library renamed from `fastapi-api-key` to `keyshield`. Update all imports: `from fastapi_api_key import ...` → `from keyshield import ...`.
+
+### Feat
+
+- **frameworks**: add Litestar, Quart, and Django framework integrations
+
+### Fix
+
+- **security**: verify hash before status checks to prevent key-state enumeration (OWASP API2:2023)
+- **security**: replace bcrypt pepper string concatenation with HMAC-SHA256 pre-hashing
+
+### Refactor
+
+- **docs**: review README and mkdocs flux schema
+- **lint**: exclude framework files from ty/pyrefly and fix pyrefly invocation
+
 ## 1.1.0 (2026-01-20)
 
 ### Feat

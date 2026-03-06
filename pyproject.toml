@@ -1,6 +1,6 @@
 [project]
 name = "keyshield"
-version = "1.1.0"
+version = "2.0.0"
 description = "keyshield provides secure, production-ready API key management for Python web frameworks. It offers pluggable hashing strategies (Argon2 or bcrypt), backend-agnostic persistence (currently SQLAlchemy and Django ORM), and an optional cache layer (aiocache). Includes a Typer CLI and framework integrations for FastAPI, Litestar, Quart, and Django."
 readme = "README.md"
 authors = [
