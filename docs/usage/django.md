@@ -125,7 +125,7 @@ async def get_service() -> CachedApiKeyService:
 
 ```python
 import os
-os.environ["API_KEY_DEV"] = "ak-mydevkeyid-mysecret64chars"
+os.environ["API_KEY_DEV"] = "ak_v1-mydevkeyid-mysecret64chars"
 
 async def get_service() -> ApiKeyService:
     svc = ApiKeyService(repo=DjangoApiKeyRepository(), hasher=Argon2ApiKeyHasher())

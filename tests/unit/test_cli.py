@@ -107,7 +107,7 @@ class TestCreateCommand:
 
         assert result.exit_code == 0
         assert "test-key" in result.stdout
-        assert "ak-" in result.stdout  # API key is displayed
+        assert "ak_v1-" in result.stdout  # API key is displayed
 
     def test_create_with_description(self, runner: CliRunner, cli):
         """Create a key with name and description."""
@@ -137,7 +137,7 @@ class TestCreateCommand:
 
         assert result.exit_code == 0
         # Should contain an API key format
-        assert "ak-" in result.stdout
+        assert "ak_v1-" in result.stdout
 
 
 class TestListCommand:

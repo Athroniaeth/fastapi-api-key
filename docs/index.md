@@ -40,6 +40,10 @@ This library try to follow best practices and relevant RFCs for API key manageme
 - **[NIST SP 800-132](https://csrc.nist.gov/publications/detail/sp/800-132/final)**: The Bcrypt hasher
   pre-hashes the secret via `HMAC-SHA256(pepper, secret)` before passing it to bcrypt, producing a fixed
   32-byte digest that eliminates bcrypt's silent 72-byte input truncation.
+- **Versioned key format** (industry best practice, aligned with Stripe/GitHub 2023+): the default
+  prefix embeds a format version (`ak_v1`, `ak_v2`, …) so a future algorithm or structure migration
+  can be detected at parse time — old keys keep their prefix and always fail with `401`
+  rather than silently producing wrong hashes.  Custom prefixes are still fully supported.
 
 ## How API Keys Work
 
@@ -53,10 +57,10 @@ This is a classic API key if you don't modify the service behavior:
 
 **Example:**
 
-`ak-7a74caa323a5410d-mAfP3l6yAxqFz0FV2LOhu2tPCqL66lQnj3Ubd08w9RyE4rV4skUcpiUVIfsKEbzw`
+`ak_v1-7a74caa323a5410d-mAfP3l6yAxqFz0FV2LOhu2tPCqL66lQnj3Ubd08w9RyE4rV4skUcpiUVIfsKEbzw`
 
 - "-" separators so that systems can easily split
-- Prefix `ak` (for "Api Key"), to identify the key type (useful to indicate that it is an API key).
+- Prefix `ak_v1` (for "Api Key v1"), to identify both the key type and the format version — allowing future algorithm migrations without breaking existing keys (e.g. `ak_v2-…` for a future format).
 - 16 first characters are the identifier (UUIDv4 without dashes)
 - 64 last characters are the secret (random alphanumeric string)
 
@@ -84,7 +88,7 @@ flowchart LR
 
     %% ── Entry ───────────────────────────────────────────────
     INPUT(["`**Api Key**
-    _ak-7a74…10d-mAfP…bzw_`"]):::startNode
+    _ak_v1-7a74…10d-mAfP…bzw_`"]):::startNode
 
     %% ── Main flow ───────────────────────────────────────────
     CACHED{"`**Is cached key?**
@@ -151,7 +155,7 @@ flowchart LR
     {separator}: str
     {key_secret}: UUID
 
-    _global_prefix = 'ak'_
+    _global_prefix = 'ak_v1'_
     _separator = '-'_`"]:::noteStyle
 
     NOTE_CACHE["`**Cache rules**

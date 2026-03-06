@@ -22,7 +22,7 @@ service = ApiKeyService(
 # load_dotenv()
 
 # Ensure that you respect the format of service
-os.environ["API_KEY_DEV"] = "ak-92f5326fb9b44ab7-fSvBMig0r2vY3WR2SmGoZwM949loPU7Yy1JkjIz3RzfCEkQrprQWqQuToLbM2FzN"
+os.environ["API_KEY_DEV"] = "ak_v1-92f5326fb9b44ab7-fSvBMig0r2vY3WR2SmGoZwM949loPU7Yy1JkjIz3RzfCEkQrprQWqQuToLbM2FzN"
 
 
 async def main():
