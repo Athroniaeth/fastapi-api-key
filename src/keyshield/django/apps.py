@@ -17,5 +17,5 @@ class FastApiApiKeyDjangoConfig(AppConfig):
 
     name = "keyshield.django"
     label = "keyshield_django"
-    verbose_name = "FastAPI API Key"
+    verbose_name = "Keyshield"
     default_auto_field = "django.db.models.BigAutoField"

@@ -1,6 +1,6 @@
 site_name: keyshield
 site_description: "Secure API key management for Python web frameworks"
-site_url: ""
+site_url: "https://Athroniaeth.github.io/keyshield/"
 repo_url: https://github.com/Athroniaeth/keyshield
 repo_name: Athroniaeth/keyshield
 theme:
