@@ -125,7 +125,7 @@ async def provide_svc() -> CachedApiKeyService:
 
 ```python
 import os
-os.environ["API_KEY_DEV"] = "ak-mydevkeyid-mysecret64chars"
+os.environ["API_KEY_DEV"] = "ak_v1-mydevkeyid-mysecret64chars"
 
 async def provide_svc() -> ApiKeyService:
     svc = ApiKeyService(repo=InMemoryApiKeyRepository(), hasher=Argon2ApiKeyHasher())

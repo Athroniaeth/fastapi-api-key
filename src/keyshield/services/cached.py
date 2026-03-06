@@ -13,7 +13,7 @@ from keyshield import ApiKeyService
 from keyshield.domain.entities import ApiKey
 from keyshield.hasher.base import ApiKeyHasher
 from keyshield.repositories.base import AbstractApiKeyRepository
-from keyshield.services.base import DEFAULT_SEPARATOR
+from keyshield.services.base import DEFAULT_SEPARATOR, DEFAULT_GLOBAL_PREFIX
 
 INDEX_PREFIX = "idx"
 """Prefix for the secondary index mapping key_id to cache_key."""
@@ -56,7 +56,7 @@ class CachedApiKeyService(ApiKeyService):
         cache_prefix: str = "api_key",
         cache_ttl: int = 300,
         separator: str = DEFAULT_SEPARATOR,
-        global_prefix: str = "ak",
+        global_prefix: str = DEFAULT_GLOBAL_PREFIX,
         rrd: Optional[float] = None,
         min_delay: float = 0.1,
         max_delay: float = 0.3,
